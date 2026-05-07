@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+dist-ssr/
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Caches
+.cache/
+.parcel-cache/
+.vite/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Local data / scratch
+/scratch/
+/.tmp/
+
+# Vercel
+.vercel/
+
+# Agent / editor metadata (per-machine, not shared)
+.claude/

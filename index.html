@@ -1,0 +1,1878 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>太陽系 3D 模擬</title>
+    <!-- Leaflet (CDN) is now loaded on demand by src/ui/MapPicker.ts on
+         first "select on map" click. Inlining a synchronous <script> tag
+         here used to block first paint by ~42 KB gz for every visitor,
+         even though map-pick is rarely used. -->
+
+    <style>
+      :root {
+        --panel-bg: rgba(12, 14, 22, 0.82);
+        --panel-border: rgba(120, 160, 220, 0.25);
+        --text: #e8eef7;
+        --text-dim: #8a96ad;
+        --accent: #5db1ff;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        color: var(--text);
+        font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+        font-size: 13px;
+      }
+      #app { position: fixed; inset: 0; }
+      canvas { display: block; }
+
+      #loading {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+        color: var(--text-dim);
+        z-index: 1000;
+        transition: opacity 0.6s;
+      }
+      #loading.hidden { opacity: 0; pointer-events: none; display: none; }
+
+      .panel {
+        position: fixed;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 10px;
+        padding: 12px 14px;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        z-index: 100;
+        transition: transform 0.28s ease, opacity 0.2s ease;
+      }
+
+      /* Collapsible side panels — small chevron toggles slide each panel off
+       * its respective screen edge. Toggle buttons stay anchored at the edge
+       * so the user can re-expand. State persists in localStorage. */
+      .panel-toggle {
+        position: fixed;
+        z-index: 110;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        color: var(--text);
+        cursor: pointer;
+        padding: 14px 6px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-family: inherit;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        transition: left 0.28s ease, right 0.28s ease, top 0.28s ease, opacity 0.2s ease;
+      }
+      .panel-toggle:hover { background: rgba(93, 177, 255, 0.18); }
+      #left-panel-toggle  { left: 222px; top: 50%; transform: translateY(-50%); }
+      #info-panel-toggle  { right: 304px; top: 50%; transform: translateY(-50%); display: none; }
+      #sky-panel-toggle   { left: 244px;  bottom: 36px; display: none; }
+      body.left-panel-collapsed  #left-panel  { transform: translateX(calc(-100% - 24px)); }
+      body.left-panel-collapsed  #left-panel-toggle { left: 4px; }
+      body.info-panel-collapsed  #info-panel  { transform: translateX(calc(100% + 24px)); }
+      body.info-panel-collapsed  #info-panel-toggle { right: 4px; }
+      body.sky-panel-collapsed   #sky-panel   { transform: translateX(calc(-100% - 24px)); }
+      body.sky-panel-collapsed   #sky-panel-toggle { left: 4px; }
+      /* Right and bottom-left toggles only meaningful when their target is on. */
+      body.observing #sky-panel-toggle { display: block; }
+
+      #time-controls {
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: opacity 0.25s ease;
+      }
+      /* In observer mode the bar covers high-altitude sky right above the
+       * compass. Fade it out by default; hover (or focus-within) brings it
+       * back so the user can still interact. */
+      body.observing #time-controls { opacity: 0.18; }
+      body.observing #time-controls:hover,
+      body.observing #time-controls:focus-within { opacity: 1; }
+      #time-controls button {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: var(--text);
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      #time-controls button:hover { background: rgba(255,255,255,0.12); }
+      #time-controls button.active { background: var(--accent); color: #001a33; border-color: var(--accent); }
+      #time-controls select, #time-controls input[type="date"], #time-controls input[type="datetime-local"] {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: var(--text);
+        padding: 5px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+      }
+      #time-controls .date-display {
+        color: var(--accent);
+        font-variant-numeric: tabular-nums;
+        min-width: 168px;
+        text-align: center;
+        font-size: 12px;
+      }
+      #time-controls .time-step {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: var(--text-dim);
+        padding: 4px 5px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-variant-numeric: tabular-nums;
+        cursor: pointer;
+        min-width: 30px;
+      }
+      #time-controls .time-step:hover { background: rgba(93,177,255,0.18); color: var(--accent); }
+
+      #info-panel {
+        top: 80px;
+        right: 16px;
+        width: 280px;
+        /* Default: assume bottom-right is free → can take most of the viewport.
+         * When site-info or calc-panel is open we shrink via the .compact class. */
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+        display: none;
+      }
+      #info-panel.compact {
+        max-height: 50vh;
+      }
+
+      #site-info {
+        bottom: 36px;
+        right: 16px;
+        width: 300px;
+        max-width: calc(100vw - 32px);
+        max-height: 50vh;
+        overflow-y: auto;
+      }
+
+      #calc-panel, #auto-events-panel {
+        bottom: 36px;
+        right: 16px;
+        width: 320px;
+        max-width: calc(100vw - 32px);
+        max-height: 60vh;
+        overflow-y: auto;
+      }
+      #auto-events-panel .close {
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        cursor: pointer;
+        color: var(--text-dim);
+        font-size: 18px;
+      }
+      #auto-events-panel .close:hover { color: var(--text); }
+      #auto-events-panel .event-row {
+        padding: 6px 8px;
+        border-bottom: 1px dashed rgba(120,160,220,0.1);
+        cursor: pointer;
+      }
+      #auto-events-panel .event-row:hover {
+        background: rgba(93, 177, 255, 0.12);
+      }
+      #calc-panel .close {
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        cursor: pointer;
+        color: var(--text-dim);
+        font-size: 18px;
+      }
+      #calc-panel .close:hover { color: var(--text); }
+      #calc-panel .calc-row {
+        display: grid;
+        grid-template-columns: 1fr 70px 80px 60px;
+        gap: 4px;
+        padding: 3px 4px;
+        align-items: center;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+      #calc-panel .calc-row.calc-head {
+        color: var(--text-dim);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        border-bottom: 1px solid rgba(120,160,220,0.18);
+      }
+      #calc-panel .calc-row.calc-head .cn { text-align: left; }
+      #calc-panel .calc-row .cn { color: var(--text); text-align: left; }
+      #calc-panel .calc-row .los-pos { color: #ff8a5d; }
+      #calc-panel .calc-row .los-neg { color: #5db1ff; }
+      #calc-panel .calc-extra {
+        padding: 0 4px 4px 4px;
+        color: var(--text-dim);
+        font-size: 10px;
+        border-bottom: 1px dashed rgba(120,160,220,0.08);
+      }
+      #calc-panel .calc-extra b { color: var(--text); }
+      #site-info .close {
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        cursor: pointer;
+        color: var(--text-dim);
+        font-size: 18px;
+      }
+      #site-info .close:hover { color: var(--text); }
+
+      #sky-panel {
+        bottom: 36px;
+        left: 16px;
+        width: 220px;
+        max-height: 40vh;
+        overflow-y: auto;
+      }
+      #sky-panel .sky-row {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 8px;
+        padding: 2px 0;
+        font-variant-numeric: tabular-nums;
+      }
+      #sky-panel .sky-row .name { color: var(--text); }
+      #sky-panel .sky-row .alt { color: var(--accent); text-align: right; min-width: 42px; }
+      #sky-panel .sky-row .az  { color: var(--text-dim); text-align: right; min-width: 42px; }
+      #sky-panel .sky-section-title {
+        color: var(--accent);
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 3px;
+        opacity: 0.85;
+      }
+      #sky-panel .tonight-grid {
+        display: grid;
+        grid-template-columns: auto 1fr auto 1fr;
+        column-gap: 6px;
+        row-gap: 2px;
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+        margin-bottom: 8px;
+      }
+      #sky-panel .tonight-grid .lbl { color: var(--text-dim); white-space: nowrap; }
+      #sky-panel .tonight-grid .val { color: var(--text); text-align: right; }
+      #info-panel.visible { display: block; }
+      #info-panel h2 {
+        margin: 0 0 4px 0;
+        font-size: 18px;
+        color: var(--accent);
+      }
+      #info-panel .subtitle {
+        color: var(--text-dim);
+        font-size: 11px;
+        margin-bottom: 10px;
+      }
+      #info-panel dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 4px 12px;
+        margin: 0;
+      }
+      #info-panel dt {
+        color: var(--text-dim);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      #info-panel dd {
+        margin: 0;
+        font-variant-numeric: tabular-nums;
+        font-size: 12px;
+        text-align: right;
+      }
+      #info-panel .close {
+        position: absolute;
+        top: 8px;
+        right: 10px;
+        cursor: pointer;
+        color: var(--text-dim);
+        font-size: 18px;
+      }
+      #info-panel .close:hover { color: var(--text); }
+
+      #info-panel .info-section-title {
+        margin: 14px 0 6px 0;
+        color: var(--accent);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-top: 1px solid rgba(120,160,220,0.2);
+        padding-top: 10px;
+      }
+      #info-panel .info-comp {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 3px 12px;
+        margin: 0;
+      }
+      #info-panel .info-comp dt {
+        color: var(--text-dim);
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      #info-panel .info-comp dd {
+        margin: 0;
+        font-variant-numeric: tabular-nums;
+        font-size: 12px;
+        text-align: right;
+      }
+      #info-panel .info-text {
+        font-size: 12px;
+        line-height: 1.55;
+        color: var(--text);
+        margin: 4px 0;
+      }
+      /* Planning section: only shown in observer mode for solar-system bodies. */
+      #info-panel .planning-card {
+        margin-top: 10px;
+        padding: 8px 10px;
+        background: rgba(93,177,255,0.06);
+        border: 1px solid rgba(93,177,255,0.18);
+        border-radius: 6px;
+      }
+      #info-panel .planning-status {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      #info-panel .planning-grid {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 2px 10px;
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+      #info-panel .planning-grid dt { color: var(--text-dim); white-space: nowrap; margin: 0; }
+      #info-panel .planning-grid dd { margin: 0; text-align: right; color: var(--text); }
+      #info-panel .planning-window {
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px dashed rgba(93,177,255,0.2);
+        font-size: 11px;
+        color: rgba(220,230,245,0.85);
+      }
+      #info-panel .planning-window .strong { color: var(--accent); font-weight: 600; }
+      #info-panel .info-layers {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      #info-panel .info-layer {
+        background: rgba(255,255,255,0.04);
+        border-left: 2px solid var(--accent);
+        padding: 5px 8px;
+        border-radius: 0 4px 4px 0;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      #info-panel .info-layer b { color: var(--accent); display: block; margin-bottom: 2px; }
+      #info-panel .info-layer span { color: var(--text); }
+      #info-panel .info-list {
+        margin: 4px 0 0 0;
+        padding-left: 18px;
+        font-size: 12px;
+        line-height: 1.55;
+      }
+      #info-panel .info-list li { margin-bottom: 4px; }
+
+      /* Composition list with inline % bars */
+      #info-panel .comp-row {
+        display: grid;
+        grid-template-columns: 10px max-content 1fr max-content;
+        gap: 6px;
+        align-items: center;
+        font-size: 11px;
+        padding: 2px 0;
+      }
+      #info-panel .swatch {
+        width: 10px; height: 10px;
+        border-radius: 2px;
+      }
+      #info-panel .comp-name {
+        color: var(--text);
+        white-space: nowrap;
+      }
+      #info-panel .comp-bar {
+        position: relative;
+        height: 6px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      #info-panel .comp-bar-fill {
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        border-radius: 3px;
+        opacity: 0.85;
+      }
+      #info-panel .comp-val {
+        color: var(--text-dim);
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+
+      /* Temperature gauge */
+      #info-panel .temp-gauge {
+        margin: 6px 0 4px 0;
+      }
+      #info-panel .temp-track {
+        position: relative;
+        height: 12px;
+        background: linear-gradient(90deg,
+          #4060c0 0%,    /* very cold blue */
+          #6a8eff 25%,
+          #c0e0ff 40%,
+          #ffe7a0 55%,
+          #ff8c40 75%,
+          #d02020 100%);  /* hot red */
+        border-radius: 6px;
+        margin-bottom: 4px;
+      }
+      #info-panel .temp-range {
+        position: absolute;
+        top: 1px; bottom: 1px;
+        background: rgba(0,0,0,0.45);
+        border-left: 2px solid #fff;
+        border-right: 2px solid #fff;
+        border-radius: 4px;
+        opacity: 0.85;
+      }
+      #info-panel .temp-mean {
+        position: absolute;
+        top: -2px; bottom: -2px;
+        width: 2px;
+        background: #fff;
+        box-shadow: 0 0 4px rgba(255,255,255,0.8);
+      }
+      #info-panel .temp-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: var(--text-dim);
+      }
+
+      #left-panel {
+        top: 80px;
+        left: 16px;
+        width: 200px;
+        max-height: calc(100vh - 96px);
+        overflow-y: auto;
+        /* Hide horizontal overflow — when overflow-y is set, the spec
+         * defaults overflow-x to auto, which can show a horizontal
+         * scrollbar that pushes content (e.g. the last tab in the bar)
+         * off-screen. Force-hide it. */
+        overflow-x: hidden;
+      }
+      /* In observer mode the sky-panel takes the bottom-left corner — shrink
+       * the controls panel so the two stack cleanly instead of overlapping.
+       * sky-panel uses bottom: 36px + max-height: 40vh = takes 40vh + 36px;
+       * we keep ≥ 12px gap above it. */
+      #left-panel.observing {
+        max-height: calc(60vh - 128px);
+      }
+      /* Tab bar — sticks to the top of the panel so users always know which
+       * tab they're on, even after scrolling within a long tab (e.g. Display
+       * with its 16 toggles). */
+      #left-tab-bar {
+        position: sticky;
+        top: -12px;
+        z-index: 5;
+        display: flex;
+        gap: 0;
+        margin: -12px -14px 12px -14px;
+        padding: 8px 4px 0 4px;
+        background: rgba(12, 18, 30, 0.95);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        /* 5 tabs share 192px (200px panel − 8px padding); ~38px each. */
+      }
+      #left-tab-bar .tab-button {
+        flex: 1 1 0;
+        min-width: 0;
+        background: transparent;
+        border: none;
+        color: var(--text-dim);
+        padding: 7px 0 8px 0;
+        font-size: 10px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        white-space: nowrap;
+        font-family: inherit;
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: clip;
+      }
+      #left-tab-bar .tab-button:hover { color: var(--text); }
+      #left-tab-bar .tab-button.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+        font-weight: 600;
+      }
+      .tab-panel { display: none; }
+      .tab-panel.active { display: block; }
+      #left-panel .section {
+        margin-bottom: 14px;
+      }
+      #left-panel .section:last-child { margin-bottom: 0; }
+      #left-panel .label {
+        color: var(--text-dim);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+      }
+      #left-panel select {
+        width: 100%;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: var(--text);
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+      }
+      #left-panel .scale-toggle {
+        display: flex;
+        gap: 4px;
+      }
+      #left-panel .scale-toggle button {
+        flex: 1;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: var(--text);
+        padding: 6px 4px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 11px;
+      }
+      #left-panel .scale-toggle button.active {
+        background: var(--accent);
+        color: #001a33;
+        border-color: var(--accent);
+      }
+
+      #search-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 500;
+        display: flex;
+        justify-content: center;
+        padding-top: 12vh;
+      }
+      #search-box {
+        position: relative;
+        width: clamp(320px, 50vw, 560px);
+        max-width: calc(100vw - 32px);
+      }
+      .search-result {
+        padding: 6px 10px;
+        cursor: pointer;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .search-result:hover, .search-result.selected {
+        background: rgba(93, 177, 255, 0.18);
+      }
+      .search-result .kind {
+        color: var(--text-dim);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+
+      #hint {
+        position: fixed;
+        bottom: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: var(--text-dim);
+        font-size: 11px;
+        z-index: 50;
+        pointer-events: none;
+      }
+
+      /* Observer-mode aiming reticle: center crosshair + FPS-style compass tape. */
+      #observer-reticle {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        pointer-events: none;
+        display: none;
+      }
+      #observer-reticle.visible { display: block; }
+      /* Telrad-style finder rings — 0.5° / 2° / 4° concentric circles.
+       * Sized in JS each frame from the camera FOV. Hidden by default;
+       * #fov-rings.visible toggles. */
+      #fov-rings {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 79;
+        display: none;
+      }
+      #fov-rings.visible { display: block; }
+      #fov-rings .ring {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        border: 1px solid rgba(255, 100, 100, 0.55);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 4px rgba(0,0,0,0.6) inset;
+      }
+      #observer-reticle .crosshair {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 28px;
+        height: 28px;
+        transform: translate(-50%, -50%);
+      }
+      #observer-reticle .crosshair::before,
+      #observer-reticle .crosshair::after {
+        content: '';
+        position: absolute;
+        background: rgba(255,255,255,0.65);
+        box-shadow: 0 0 4px rgba(0,0,0,0.8);
+      }
+      #observer-reticle .crosshair::before {
+        left: 50%;
+        top: 0; bottom: 0;
+        width: 1px;
+        margin-left: -0.5px;
+      }
+      #observer-reticle .crosshair::after {
+        top: 50%;
+        left: 0; right: 0;
+        height: 1px;
+        margin-top: -0.5px;
+      }
+      #observer-reticle .crosshair .dot {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: #ffcc40;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 4px rgba(0,0,0,0.8);
+      }
+      #observer-reticle .compass-strip {
+        position: absolute;
+        top: 64px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 280px;
+        height: 28px;
+        background: rgba(20, 26, 42, 0.85);
+        border: 1px solid rgba(160, 190, 230, 0.45);
+        border-radius: 6px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+      }
+      #observer-reticle .compass-tape {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        white-space: nowrap;
+        will-change: transform;
+      }
+      #observer-reticle .compass-tape .tick {
+        display: inline-block;
+        width: 30px;        /* 1° = 2px → 15° = 30px */
+        height: 100%;
+        text-align: center;
+        line-height: 28px;
+        font-size: 11px;
+        color: rgba(220, 230, 245, 0.65);
+        font-variant-numeric: tabular-nums;
+      }
+      #observer-reticle .compass-tape .tick.cardinal {
+        color: #ffcc40;
+        font-weight: 600;
+        font-size: 13px;
+      }
+      #observer-reticle .compass-tape .tick.intercardinal {
+        color: var(--accent);
+        font-size: 11px;
+      }
+      #observer-reticle .compass-pointer {
+        position: absolute;
+        left: 50%;
+        top: -6px;
+        width: 0;
+        height: 0;
+        margin-left: -5px;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 6px solid #ffcc40;
+      }
+      /* FOV / magnification / equiv. focal length pill, just below the
+         centre crosshair. Hidden until the toggle in the display section
+         turns it on AND we're in observer mode. */
+      #observer-reticle .fov-readout {
+        position: absolute;
+        top: calc(50% + 50px);
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 11px;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+        background: rgba(8, 12, 22, 0.65);
+        padding: 3px 10px;
+        border-radius: 4px;
+        white-space: nowrap;
+        border: 1px solid rgba(160, 190, 230, 0.35);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        display: none;
+        letter-spacing: 0.02em;
+      }
+      #observer-reticle .fov-readout.visible { display: block; }
+      /* Tracking rate overlay — only visible when a body is being tracked
+         via 📌. Sits below the FOV readout. */
+      #observer-reticle .track-readout {
+        position: absolute;
+        top: calc(50% + 78px);
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 10px;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+        background: rgba(8, 12, 22, 0.65);
+        padding: 3px 9px;
+        border-radius: 4px;
+        white-space: nowrap;
+        border: 1px solid rgba(255, 204, 64, 0.35);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        display: none;
+      }
+      #observer-reticle .track-readout.visible { display: block; }
+      #observer-reticle .track-readout .track-rate { color: #ffcc40; font-weight: 600; }
+      #observer-reticle .track-readout .track-pa   { color: var(--accent); }
+      #observer-reticle .track-readout .track-dev  { color: rgba(220, 230, 245, 0.65); margin-left: 4px; }
+      #observer-reticle .fov-readout .sep {
+        color: rgba(160, 190, 230, 0.45);
+        margin: 0 6px;
+      }
+      #observer-reticle .fov-readout .fov-num { color: #ffcc40; }
+      #observer-reticle .fov-readout .mag-num { color: var(--accent); }
+      #observer-reticle .fov-readout .focal-num { color: rgba(220, 230, 245, 0.8); }
+      /* Local-time clock for the observer — sits above the compass strip
+         (which is at top: 64px). Larger, more prominent so users can see
+         current local time at the observation site at a glance. */
+      #observer-reticle .local-time-readout {
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 14px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--text);
+        background: rgba(8, 12, 22, 0.7);
+        padding: 4px 12px;
+        border-radius: 6px;
+        white-space: nowrap;
+        border: 1px solid rgba(160, 190, 230, 0.3);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        text-align: center;
+        line-height: 1.25;
+      }
+      #observer-reticle .local-time-readout .clock {
+        color: #ffcc40;
+      }
+      #observer-reticle .local-time-readout .site {
+        font-size: 10px;
+        font-weight: 400;
+        color: var(--text-dim);
+        display: block;
+      }
+      #observer-reticle .compass-readout {
+        position: absolute;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 11px;
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+        background: rgba(8, 12, 22, 0.55);
+        padding: 2px 8px;
+        border-radius: 4px;
+        white-space: nowrap;
+      }
+
+      /* Stellarium-style selection marker — 4 L-shaped corner brackets
+         around the selected target. Positioned absolutely at the
+         target's screen-projected coords (set per-frame from main.ts).
+         A label sits above the bracket showing the target's name. */
+      #selection-marker {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 60px;
+        height: 60px;
+        margin-left: -30px;
+        margin-top: -30px;
+        pointer-events: none;
+        z-index: 80;
+        display: none;
+        transition: transform 0.05s linear;
+      }
+      #selection-marker.visible { display: block; }
+      #selection-marker .bracket {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border-color: #ffcc40;
+        border-style: solid;
+      }
+      #selection-marker .bracket-tl { top: 0;       left: 0;       border-width: 2px 0 0 2px; }
+      #selection-marker .bracket-tr { top: 0;       right: 0;      border-width: 2px 2px 0 0; }
+      #selection-marker .bracket-bl { bottom: 0;    left: 0;       border-width: 0 0 2px 2px; }
+      #selection-marker .bracket-br { bottom: 0;    right: 0;      border-width: 0 2px 2px 0; }
+      #selection-marker .label {
+        position: absolute;
+        bottom: calc(100% + 4px);
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 11px;
+        font-weight: 600;
+        color: #ffcc40;
+        text-shadow: 0 0 4px rgba(0,0,0,0.95);
+        white-space: nowrap;
+        pointer-events: none;
+      }
+
+      /* Eyepiece-style circular vignette for telescope/binocular preview. */
+      #optics-vignette {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 70;
+        background: radial-gradient(circle at 50% 50%,
+          transparent 0,
+          transparent calc(min(50vw, 50vh) - 12px),
+          rgba(0, 0, 0, 0.96) min(50vw, 50vh));
+      }
+      #optics-vignette.binocular {
+        /* Two overlapping circles — classic binocular field. */
+        background: radial-gradient(circle at 35% 50%,
+            transparent 0,
+            transparent calc(min(50vw, 40vh) - 12px),
+            rgba(0, 0, 0, 0.98) min(50vw, 40vh)),
+          radial-gradient(circle at 65% 50%,
+            transparent 0,
+            transparent calc(min(50vw, 40vh) - 12px),
+            rgba(0, 0, 0, 0.98) min(50vw, 40vh));
+        background-blend-mode: multiply;
+      }
+
+      /* Hamburger toggle for the left panel — only shown on narrow screens. */
+      #panel-toggle {
+        position: fixed;
+        top: 16px;
+        left: 12px;
+        width: 40px;
+        height: 40px;
+        z-index: 200;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 20px;
+        cursor: pointer;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+
+      /* Touch gestures: stop the browser from intercepting pinch / pan / tap. */
+      canvas { touch-action: none; }
+
+      /* ── Mobile: collapse heavy panels behind a hamburger ─────────────── */
+      @media (max-width: 720px) {
+        #panel-toggle { display: flex; }
+
+        #time-controls {
+          top: 8px;
+          left: 60px;
+          right: 8px;
+          transform: none;
+          flex-wrap: wrap;
+          gap: 6px;
+          padding: 8px 10px;
+          font-size: 11px;
+        }
+        #time-controls .date-display { min-width: 0; flex: 1 1 auto; }
+        #time-controls input[type="datetime-local"] { width: 130px; }
+        #time-controls input[type="range"] { display: none; }
+
+        #left-panel {
+          top: 60px;
+          left: 8px;
+          right: 8px;
+          width: auto;
+          max-height: calc(100vh - 80px);
+          transform: translateX(-110vw);
+          transition: transform 0.22s ease;
+        }
+        #left-panel.open { transform: translateX(0); }
+
+        #info-panel {
+          top: auto;
+          bottom: 0;
+          right: 0;
+          left: 0;
+          width: auto;
+          max-width: 100%;
+          max-height: 50vh;
+          border-radius: 12px 12px 0 0;
+        }
+
+        #sky-panel {
+          left: 8px;
+          right: 8px;
+          bottom: 8px;
+          width: auto;
+          max-height: 30vh;
+        }
+        /* In observer mode the sky-panel doubles up — keep its size in check. */
+        #left-panel.observing { max-height: calc(60vh - 40px); }
+
+        #calc-panel, #auto-events-panel, #site-info {
+          left: 8px;
+          right: 8px;
+          width: auto;
+          max-width: 100%;
+        }
+
+        /* Touch-friendly: bigger hit targets for buttons / checkboxes. */
+        #left-panel button,
+        #time-controls button,
+        #left-panel select,
+        #time-controls select { min-height: 36px; }
+        #left-panel input[type="checkbox"] { width: 18px; height: 18px; }
+      }
+
+      #credits-footer {
+        position: fixed;
+        right: 10px;
+        bottom: 8px;
+        z-index: 90;
+        font-size: 10px;
+        color: var(--text-dim);
+        background: rgba(8, 12, 22, 0.45);
+        padding: 3px 8px;
+        border-radius: 5px;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        opacity: 0.7;
+        transition: opacity 0.18s ease;
+        pointer-events: auto;
+        user-select: none;
+        white-space: nowrap;
+      }
+      #credits-footer:hover { opacity: 1; }
+      #credits-footer a {
+        color: var(--text-dim);
+        text-decoration: none;
+        padding: 2px 4px;
+        border-radius: 3px;
+        transition: color 0.15s, background 0.15s;
+      }
+      #credits-footer a:hover { color: var(--accent); background: rgba(93,177,255,0.12); }
+      #credits-footer .sep { color: rgba(160,180,210,0.3); margin: 0 1px; }
+      @media (max-width: 720px) {
+        #credits-footer { font-size: 9px; right: 6px; bottom: 4px; padding: 2px 6px; }
+      }
+
+      /* Onboarding tour overlay — semi-transparent backdrop with cut-out
+         spotlight on the highlighted UI element + tooltip card. Built and
+         destroyed dynamically by src/ui/OnboardingTour.ts. */
+      #onboarding-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        pointer-events: auto;
+      }
+      #onboarding-overlay .ob-spotlight {
+        position: absolute;
+        border: 2px solid #ffcc40;
+        border-radius: 8px;
+        /* The "hole-in-dark" trick: huge outward shadow paints the entire
+           viewport black except for the spotlight rect itself. */
+        box-shadow:
+          0 0 0 9999px rgba(0, 0, 0, 0.62),
+          0 0 24px rgba(255, 204, 64, 0.55);
+        pointer-events: none;
+        transition: left 0.3s ease, top 0.3s ease,
+                    width 0.3s ease, height 0.3s ease;
+        animation: ob-pulse 2.4s ease-in-out infinite;
+      }
+      @keyframes ob-pulse {
+        0%, 100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62), 0 0 24px rgba(255, 204, 64, 0.55); }
+        50%      { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62), 0 0 32px rgba(255, 204, 64, 0.85); }
+      }
+      #onboarding-overlay .ob-card {
+        position: absolute;
+        max-width: 340px;
+        min-width: 240px;
+        background: rgba(15, 22, 38, 0.97);
+        border: 1px solid rgba(160, 190, 230, 0.45);
+        border-radius: 10px;
+        padding: 16px 18px 12px;
+        color: var(--text);
+        box-shadow: 0 6px 28px rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        font-size: 13px;
+        line-height: 1.55;
+        transition: left 0.3s ease, top 0.3s ease;
+      }
+      #onboarding-overlay .ob-step-num {
+        font-size: 10px;
+        color: var(--text-dim);
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+        font-variant-numeric: tabular-nums;
+      }
+      #onboarding-overlay .ob-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #ffcc40;
+        margin-bottom: 6px;
+      }
+      #onboarding-overlay .ob-body {
+        color: var(--text);
+        margin-bottom: 12px;
+      }
+      #onboarding-overlay .ob-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      #onboarding-overlay .ob-spacer { flex: 1; }
+      #onboarding-overlay .ob-btn {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--text);
+        padding: 5px 12px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      #onboarding-overlay .ob-btn:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.25);
+      }
+      #onboarding-overlay .ob-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      #onboarding-overlay .ob-skip {
+        color: var(--text-dim);
+        background: transparent;
+        border-color: transparent;
+        padding: 5px 6px;
+      }
+      #onboarding-overlay .ob-skip:hover {
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.06);
+      }
+      #onboarding-overlay .ob-primary {
+        background: rgba(255, 204, 64, 0.15);
+        border-color: rgba(255, 204, 64, 0.5);
+        color: #ffcc40;
+        font-weight: 600;
+      }
+      #onboarding-overlay .ob-primary:hover {
+        background: rgba(255, 204, 64, 0.25);
+        border-color: #ffcc40;
+      }
+      @media (max-width: 720px) {
+        #onboarding-overlay .ob-card {
+          max-width: calc(100vw - 32px);
+          min-width: 0;
+          font-size: 12.5px;
+          padding: 12px 14px 10px;
+        }
+        #onboarding-overlay .ob-title { font-size: 14px; }
+      }
+
+      /* Precision-info modal — full-screen dim backdrop with a centred
+         scrollable card listing every physics module's source/accuracy.
+         Built dynamically by src/ui/PrecisionInfoPanel.ts. */
+      #precision-info-overlay {
+        position: fixed; inset: 0; z-index: 9000;
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        display: flex; align-items: center; justify-content: center;
+        padding: 16px;
+      }
+      #precision-info-overlay .pi-card {
+        background: rgba(15, 22, 38, 0.97);
+        border: 1px solid rgba(160, 190, 230, 0.4);
+        border-radius: 10px;
+        max-width: 720px;
+        max-height: 88vh;
+        width: 100%;
+        overflow-y: auto;
+        color: var(--text);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+        padding: 0;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      #precision-info-overlay .pi-header {
+        position: sticky; top: 0;
+        background: rgba(15, 22, 38, 0.97);
+        border-bottom: 1px solid rgba(160, 190, 230, 0.2);
+        padding: 12px 18px;
+        display: flex; align-items: center; justify-content: space-between;
+      }
+      #precision-info-overlay .pi-title {
+        font-size: 16px; font-weight: 600; color: #ffcc40;
+      }
+      #precision-info-overlay .pi-close {
+        background: transparent; border: 0; color: var(--text-dim);
+        font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px;
+      }
+      #precision-info-overlay .pi-close:hover { color: var(--text); }
+      #precision-info-overlay .pi-intro,
+      #precision-info-overlay .pi-footer {
+        padding: 12px 18px;
+        font-size: 12px;
+        color: var(--text-dim);
+        line-height: 1.6;
+      }
+      #precision-info-overlay .pi-footer {
+        border-top: 1px solid rgba(160, 190, 230, 0.15);
+      }
+      #precision-info-overlay .pi-list { padding: 0 18px 12px; }
+      #precision-info-overlay .pi-entry {
+        padding: 10px 0;
+        border-bottom: 1px dashed rgba(160, 190, 230, 0.18);
+      }
+      #precision-info-overlay .pi-entry:last-child { border-bottom: 0; }
+      #precision-info-overlay .pi-entry-label {
+        font-weight: 600; color: var(--accent);
+        font-size: 13px; margin-bottom: 4px;
+      }
+      #precision-info-overlay .pi-entry-fields {
+        display: grid;
+        grid-template-columns: minmax(80px, max-content) 1fr;
+        gap: 4px 10px;
+        margin: 0;
+        font-size: 12px;
+      }
+      #precision-info-overlay .pi-entry-fields dt {
+        color: var(--text-dim); font-weight: 500;
+      }
+      #precision-info-overlay .pi-entry-fields dd {
+        margin: 0; color: var(--text);
+      }
+      #precision-info-overlay .pi-not-included {
+        color: rgba(255, 200, 80, 0.85);
+      }
+
+      /* Night-vision (red-light) mode — global filter that hue-shifts the
+         entire page (UI + canvas) to red-only, mimicking the red flashlight
+         astronomers use to preserve dark adaptation. Plus enlarged base
+         font + reduced contrast on harsh whites.
+         Toggled by `body.night-vision` class. The CSS filter compounds
+         monochrome conversion + sepia + hue rotation to land in the
+         dim-red gamut without crushing detail. */
+      body.night-vision {
+        filter: brightness(0.7) saturate(0.6) sepia(1) hue-rotate(-40deg) saturate(3);
+        font-size: 15px;
+      }
+      body.night-vision .panel,
+      body.night-vision #time-controls,
+      body.night-vision #info-panel,
+      body.night-vision #left-panel { font-size: 13px; }
+      body.night-vision #observer-reticle .compass-readout,
+      body.night-vision #observer-reticle .local-time-readout { font-size: 13px; }
+      /* The toggle button itself shouldn't be inside the filter visually —
+         pull it slightly with backdrop so it stays clickable & visible. */
+      #night-vision-toggle {
+        position: fixed;
+        top: 10px;
+        right: 56px;
+        z-index: 1100;
+        background: rgba(15, 22, 38, 0.85);
+        border: 1px solid rgba(255, 100, 80, 0.5);
+        color: #ff8060;
+        font-size: 14px;
+        line-height: 1;
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        transition: background 0.15s, border-color 0.15s;
+      }
+      #night-vision-toggle:hover {
+        background: rgba(255, 100, 80, 0.18);
+        border-color: #ff8060;
+      }
+      body.night-vision #night-vision-toggle {
+        background: rgba(80, 12, 0, 0.85);
+        border-color: #ff7050;
+        color: #ffaa90;
+      }
+
+      /* Observation log panel — list of past observations */
+      #observation-log-panel {
+        position: fixed;
+        top: 70px;
+        right: 16px;
+        width: min(380px, calc(100vw - 32px));
+        max-height: calc(100vh - 90px);
+        z-index: 150;
+        overflow-y: auto;
+      }
+      #observation-log-panel .ol-entry {
+        padding: 6px 8px;
+        margin: 2px 0;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.03);
+        cursor: pointer;
+        transition: background 0.12s;
+      }
+      #observation-log-panel .ol-entry:hover {
+        background: rgba(118, 209, 138, 0.12);
+      }
+      #observation-log-panel .ol-row1 {
+        display: flex; align-items: center; gap: 6px; font-size: 12px;
+      }
+      #observation-log-panel .ol-cat { font-size: 11px; }
+      #observation-log-panel .ol-name {
+        flex: 1; color: var(--text); font-weight: 500;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      #observation-log-panel .ol-date {
+        color: var(--text-dim); font-size: 10px;
+        font-variant-numeric: tabular-nums;
+      }
+      #observation-log-panel .ol-stars {
+        color: #ffcc40; font-size: 11px; margin-top: 2px; letter-spacing: 1px;
+      }
+      #observation-log-panel .ol-notes {
+        color: var(--text-dim); font-size: 10px; margin-top: 2px;
+        line-height: 1.5; font-style: italic;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+
+      /* Tonight-plan panel — ranked observable list */
+      #tonight-plan-panel {
+        position: fixed;
+        top: 70px;
+        right: 16px;
+        width: min(380px, calc(100vw - 32px));
+        max-height: calc(100vh - 90px);
+        z-index: 150;
+        overflow-y: auto;
+      }
+      #tonight-plan-panel .tn-summary {
+        font-size: 11px;
+        color: var(--text-dim);
+        padding: 4px 0 8px;
+        border-bottom: 1px dashed rgba(160, 190, 230, 0.18);
+        margin-bottom: 6px;
+      }
+      #tonight-plan-panel .tn-section { margin-bottom: 10px; }
+      #tonight-plan-panel .tn-section-title {
+        font-size: 11px;
+        color: var(--accent);
+        font-weight: 600;
+        margin: 4px 0 4px;
+      }
+      #tonight-plan-panel .tn-entry {
+        padding: 6px 8px;
+        margin: 2px 0;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.03);
+        cursor: pointer;
+        transition: background 0.12s;
+      }
+      #tonight-plan-panel .tn-entry:hover {
+        background: rgba(93, 177, 255, 0.12);
+      }
+      #tonight-plan-panel .tn-row1 {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+      }
+      #tonight-plan-panel .tn-rating { font-size: 10px; }
+      #tonight-plan-panel .tn-name {
+        flex: 1; color: var(--text); font-weight: 500;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      #tonight-plan-panel .tn-altaz {
+        color: var(--text-dim); font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+      #tonight-plan-panel .tn-row2 {
+        display: flex;
+        gap: 8px;
+        font-size: 10px;
+        color: var(--text-dim);
+        margin-top: 1px;
+        line-height: 1.4;
+      }
+      #tonight-plan-panel .tn-mag {
+        color: rgba(255, 204, 64, 0.85);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      #tonight-plan-panel .tn-reason {
+        flex: 1;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      /* Targets already in the observation log get a ✓ / ★ badge plus dim
+         opacity, so users can scan "what's new" without manual filtering. */
+      #tonight-plan-panel .tn-entry-observed { opacity: 0.55; }
+      #tonight-plan-panel .tn-entry-observed:hover { opacity: 0.95; }
+      #tonight-plan-panel .tn-observed {
+        color: #76d18a;
+        font-size: 10px;
+        font-variant-numeric: tabular-nums;
+        margin-right: 2px;
+      }
+
+      /* N-body diagnostics panel rows */
+      #nbody-diag-panel .nb-row {
+        display: flex; justify-content: space-between;
+        margin-bottom: 2px;
+      }
+      #nbody-diag-panel .nb-key { color: var(--text-dim); }
+      #nbody-diag-panel .nb-val { color: var(--text); }
+      #nbody-diag-panel .nb-good { color: #76d18a; }   /* green: 10⁻⁶ class */
+      #nbody-diag-panel .nb-ok   { color: #ffcc40; }   /* yellow: 10⁻³ class */
+      #nbody-diag-panel .nb-bad  { color: #ff7050; }   /* red: > 10⁻³ */
+    </style>
+  </head>
+  <body>
+    <div id="loading">載入中…</div>
+    <div id="app"></div>
+
+    <button id="panel-toggle" aria-label="Toggle controls">☰</button>
+    <button id="night-vision-toggle" aria-label="Toggle night vision (red light)" title="夜視（紅光）模式 · R">🌙</button>
+
+    <div id="time-controls" class="panel">
+      <button id="btn-pause" data-i18n-attr="title:time.pause">⏸</button>
+      <button id="btn-reverse" data-i18n-attr="title:time.reverse">⏪</button>
+      <select id="speed-select">
+        <option value="0.0001">0.0001×</option>
+        <option value="0.01">0.01×</option>
+        <option value="1" selected data-i18n="speed.realtime">1×（即時）</option>
+        <option value="3600" data-i18n="speed.hourPerSec">1 小時/秒</option>
+        <option value="86400" data-i18n="speed.dayPerSec">1 天/秒</option>
+        <option value="604800" data-i18n="speed.weekPerSec">1 週/秒</option>
+        <option value="2592000" data-i18n="speed.monthPerSec">1 月/秒</option>
+        <option value="31536000" data-i18n="speed.yearPerSec">1 年/秒</option>
+      </select>
+      <span class="date-display" id="date-display">—</span>
+      <span class="delta-t-readout" id="delta-t-readout" title="ΔT = TT − UT1，地球自轉時與地球時的差" style="font-size:10px;color:var(--text-dim);font-variant-numeric:tabular-nums;margin-left:-2px;"></span>
+      <input type="datetime-local" id="date-input" step="1" />
+      <button id="btn-now" data-i18n="time.now">現在</button>
+      <span class="time-step-group" style="display:inline-flex;gap:2px;margin-left:4px;border-left:1px solid rgba(255,255,255,0.12);padding-left:6px;">
+        <button class="time-step" data-step="-31536000" title="−1 年">−1y</button>
+        <button class="time-step" data-step="-2592000"  title="−1 月">−1mo</button>
+        <button class="time-step" data-step="-86400"    title="−1 天">−1d</button>
+        <button class="time-step" data-step="-3600"     title="−1 時">−1h</button>
+        <button class="time-step" data-step="-60"       title="−1 分">−1m</button>
+        <button class="time-step" data-step="60"        title="+1 分">+1m</button>
+        <button class="time-step" data-step="3600"      title="+1 時">+1h</button>
+        <button class="time-step" data-step="86400"     title="+1 天">+1d</button>
+        <button class="time-step" data-step="2592000"   title="+1 月">+1mo</button>
+        <button class="time-step" data-step="31536000"  title="+1 年">+1y</button>
+      </span>
+      <input type="range" id="time-scrubber" min="-365" max="365" step="0.05" value="0"
+             data-i18n-attr="title:time.scrubber"
+             style="width:140px;cursor:ew-resize;" />
+      <select id="lang-select" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;">
+        <option value="zh-Hant">繁中</option>
+        <option value="en">English</option>
+        <option value="ja">日本語</option>
+      </select>
+      <button id="btn-screenshot" data-i18n-attr="title:btn.screenshot" title="儲存當前畫面為 PNG">📷</button>
+      <button id="btn-share" data-i18n-attr="title:btn.share" title="複製分享連結（包含目前視角與時間）">🔗</button>
+    </div>
+
+    <button id="left-panel-toggle" class="panel-toggle" title="收合 / 展開左側面板">◀</button>
+    <button id="info-panel-toggle" class="panel-toggle" title="收合 / 展開資訊面板">▶</button>
+    <button id="sky-panel-toggle" class="panel-toggle" title="收合 / 展開天空面板">◀</button>
+
+    <div id="left-panel" class="panel">
+      <div id="left-tab-bar">
+        <button class="tab-button active" data-tab="scene" data-i18n="tab.scene">🌍 場景</button>
+        <button class="tab-button" data-tab="display" data-i18n="tab.display">👁️ 顯示</button>
+        <button class="tab-button" data-tab="realism" data-i18n="tab.realism">🌌 寫實</button>
+        <button class="tab-button" data-tab="observe" data-i18n="tab.observe">🔭 觀測</button>
+        <button class="tab-button" data-tab="advanced" data-i18n="tab.advanced">⚙️ 進階</button>
+      </div>
+
+      <div class="tab-panel active" data-tab-panel="scene">
+      <div class="section">
+        <div class="label" data-i18n="left.cameraMode">鏡頭模式</div>
+        <select id="camera-mode">
+          <option value="free" selected data-i18n="camera.free">自由飛行</option>
+          <option value="top" data-i18n="camera.top">俯視黃道面</option>
+          <option value="follow" data-i18n="camera.follow">跟隨選定天體</option>
+        </select>
+      </div>
+      <div class="section">
+        <div class="label" data-i18n="left.followBody">跟隨天體</div>
+        <select id="follow-body">
+          <option value="" data-i18n="observer.preset">— 不跟隨 —</option>
+        </select>
+      </div>
+      <div class="section">
+        <div class="label" data-i18n="left.scaleMode">尺度模式</div>
+        <div class="scale-toggle">
+          <button data-scale="schematic" data-i18n="scale.schematic">示意</button>
+          <button data-scale="log" data-i18n="scale.log">對數</button>
+          <button data-scale="real" class="active" data-i18n="scale.real">真實</button>
+        </div>
+      </div>
+      <div class="section">
+        <div class="label" data-i18n="left.frame">參考系</div>
+        <div class="scale-toggle">
+          <button data-frame="heliocentric" class="active" data-i18n="frame.helio">☀️ 日心</button>
+          <button data-frame="geocentric" data-i18n="frame.geo">🌍 地心 (天動說)</button>
+        </div>
+      </div>
+      <div class="section">
+        <div class="label" data-i18n="left.bookmarks">⭐ 書籤</div>
+        <div id="bookmark-list" style="font-size:11px;max-height:140px;overflow-y:auto;"></div>
+        <div id="bookmark-empty" style="color:var(--text-dim);font-size:10px;line-height:1.4;" data-i18n="bookmark.empty">點 ⭐ 將目前選取天體 + 時刻加入書籤，下次一鍵跳回。</div>
+      </div>
+      </div><!-- /tab-panel scene -->
+
+      <div class="tab-panel" data-tab-panel="display">
+      <div class="section">
+        <div class="label" data-i18n="left.display">顯示</div>
+        <label style="display:block;margin:4px 0;"><input type="checkbox" id="toggle-orbits" checked /> <span data-i18n="display.orbits">軌道線</span></label>
+        <label style="display:block;margin:4px 0;"><input type="checkbox" id="toggle-comet-orbits" /> <span data-i18n="display.cometOrbits">彗星 / 小行星軌道</span></label>
+        <label style="display:block;margin:4px 0;"><input type="checkbox" id="toggle-labels" checked /> <span data-i18n="display.labels">名稱標籤</span></label>
+        <label style="display:block;margin:4px 0;"><input type="checkbox" id="toggle-belts" checked /> <span data-i18n="display.belts">小行星帶</span></label>
+        <label style="display:block;margin:4px 0;"><input type="checkbox" id="toggle-constellations" /> <span data-i18n="display.constellations">星座連線</span></label>
+        <label style="display:block;margin:4px 0;"><input type="checkbox" id="toggle-star-labels" /> <span data-i18n="display.starLabels">恆星名稱</span></label>
+        <label style="display:block;margin:4px 0;"><input type="checkbox" id="toggle-spacecraft" /> <span data-i18n="display.spacecraft">太空船軌跡</span></label>
+        <label style="display:block;margin:4px 0;"><input type="checkbox" id="toggle-satellites" checked /> <span data-i18n="display.satellites">近地衛星 (ISS等)</span></label>
+        <label style="display:block;margin:4px 0;"><input type="checkbox" id="toggle-messier" checked /> <span data-i18n="display.messier">深空天體 (Messier)</span></label>
+        <label style="display:block;margin:4px 0 4px 18px;font-size:11px;color:var(--text-dim);"><input type="checkbox" id="toggle-dso-stylized" checked /> <span data-i18n="display.dsoStylized">程序化星雲圖示（關閉=寫實昏暗）</span></label>
+        <label style="display:block;margin:4px 0;"><input type="checkbox" id="toggle-iau-bounds" /> <span data-i18n="display.iauBounds">IAU 88 星座邊界</span></label>
+        <div style="font-size:10px;color:var(--text-dim);margin:6px 0 2px;" data-i18n="display.gridsLabel">天球格線</div>
+        <label style="display:block;margin:2px 0;font-size:11px;"><input type="checkbox" id="grid-equatorial" /> <span data-i18n="display.gridEquatorial">赤道網（RA/Dec）</span></label>
+        <label style="display:block;margin:2px 0;font-size:11px;"><input type="checkbox" id="grid-ecliptic" /> <span data-i18n="display.gridEcliptic">黃道網</span></label>
+        <label style="display:block;margin:2px 0;font-size:11px;"><input type="checkbox" id="grid-galactic" /> <span data-i18n="display.gridGalactic">銀道網</span></label>
+        <label style="display:block;margin:2px 0;font-size:11px;"><input type="checkbox" id="grid-horizontal" /> <span data-i18n="display.gridHorizontal">地平網（觀測模式）</span></label>
+        <label style="display:block;margin:2px 0;font-size:11px;"><input type="checkbox" id="toggle-fov-rings" /> <span data-i18n="display.fovRings">Telrad 視野圈 (0.5°/2°/4°)</span></label>
+        <label style="display:block;margin:2px 0;font-size:11px;"><input type="checkbox" id="toggle-fov-readout" /> <span data-i18n="display.fovReadout">視場資訊（FOV / 倍率 / 等效焦距）</span></label>
+        <label style="display:block;margin:2px 0;font-size:11px;"><input type="checkbox" id="toggle-lunar-mansions" /> <span data-i18n="display.lunarMansions">中華二十八宿</span></label>
+      </div>
+      </div><!-- /tab-panel display -->
+
+      <div class="tab-panel" data-tab-panel="realism">
+      <div class="section">
+        <div class="label" data-i18n="left.realism">寫實 / 視覺</div>
+        <div class="scale-toggle" style="margin-bottom:6px;">
+          <button id="preset-stylized" class="active" data-i18n="realism.preset.stylized">示意</button>
+          <button id="preset-balanced" data-i18n="realism.preset.balanced">平衡</button>
+          <button id="preset-realistic" data-i18n="realism.preset.realistic">寫實</button>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);margin:2px 0 4px 0;" data-i18n="realism.physicsHeader">寫實計算（影響亮度 / 可見性）</div>
+        <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="realism-extinction" /> <span data-i18n="realism.extinction">大氣消光（低空變暗）</span></label>
+        <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="realism-moon-glow" /> <span data-i18n="realism.moonGlow">月光增亮天空</span></label>
+        <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="realism-bv-color" /> <span data-i18n="realism.bvColor">恆星 B-V 真實色</span></label>
+        <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="realism-sat-shadow" /> <span data-i18n="realism.satShadow">衛星地影過濾</span></label>
+        <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="realism-dso-realsize" /> <span data-i18n="realism.dsoRealSize">DSO 真實角直徑</span></label>
+        <div style="font-size:10px;color:var(--text-dim);margin:8px 0 4px 0;" data-i18n="realism.vfxHeader">視覺層（疊加光景）</div>
+        <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="vfx-milkyway" /> <span data-i18n="realism.milkyway">銀河帶</span></label>
+        <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="vfx-belt-of-venus" /> <span data-i18n="realism.beltOfVenus">暮光反日點 (Belt of Venus)</span></label>
+        <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="vfx-zodiacal" /> <span data-i18n="realism.zodiacal">黃道光</span></label>
+        <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="vfx-airglow" /> <span data-i18n="realism.airglow">氣輝 + 光害方向</span></label>
+        <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="vfx-meteors" /> <span data-i18n="realism.meteors">流星雨（依已知 shower）</span></label>
+      </div>
+      </div><!-- /tab-panel realism -->
+
+      <div class="tab-panel" data-tab-panel="advanced">
+      <div class="section">
+        <div class="label" data-i18n="left.events">天文事件</div>
+        <select id="event-select" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:6px 8px;border-radius:6px;font-size:12px;">
+          <option value="" data-i18n="events.historicalSelect">— 歷史 / 預期事件 —</option>
+        </select>
+        <button id="auto-events-toggle" data-i18n="events.autoScan" style="width:100%;margin-top:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:6px;border-radius:6px;cursor:pointer;font-size:11px;">自動偵測未來 2 年事件</button>
+      </div>
+
+      <div class="section">
+        <div class="label" data-i18n="left.calcMode">計算模式</div>
+        <button id="calc-toggle" data-i18n="calc.enable" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:6px;border-radius:6px;cursor:pointer;font-size:12px;">啟用相對量計算</button>
+        <label style="display:block;margin-top:4px;font-size:11px;color:var(--text-dim);">
+          <input type="checkbox" id="calc-show-vectors" checked /> <span data-i18n="calc.showVectors">場景中顯示向量</span>
+        </label>
+      </div>
+
+      <div class="section">
+        <div class="label" data-i18n="left.physicsModel">物理模型</div>
+        <button id="nbody-toggle" data-i18n="nbody.toNbody" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:6px;border-radius:6px;cursor:pointer;font-size:12px;">切到 N-body 重力</button>
+        <div style="color:var(--text-dim);font-size:10px;margin-top:4px;line-height:1.4;">
+          目前：解析 Kepler。<br>切換後可看真實攝動（長時間累積才明顯）
+        </div>
+        <label style="display:block;margin:6px 0 0 0;font-size:11px;"><input type="checkbox" id="nbody-yoshida4" /> <span data-i18n="nbody.yoshida4">Yoshida 4 階積分</span></label>
+        <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="nbody-relativistic" /> <span data-i18n="nbody.relativistic">廣義相對論修正（水星進動）</span></label>
+
+        <!-- N-body conservation diagnostics. Visible only when N-body is enabled.
+             Lets users see how their integrator/GR choice affects energy + |L| drift. -->
+        <div id="nbody-diag-panel" style="display:none;margin-top:8px;padding-top:6px;border-top:1px dashed rgba(160,190,230,0.18);">
+          <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;" data-i18n="diag.title">守恆診斷</div>
+          <div id="nbody-diag-status" style="font-size:11px;line-height:1.5;font-variant-numeric:tabular-nums;"></div>
+          <canvas id="nbody-diag-spark" width="220" height="40" style="width:100%;height:40px;background:rgba(0,0,0,0.25);border-radius:4px;margin-top:4px;display:block;"></canvas>
+          <button id="nbody-diag-reset" data-i18n="diag.resetBaseline" style="width:100%;margin-top:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-dim);padding:4px;border-radius:5px;cursor:pointer;font-size:10px;">重設基準</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="label" data-i18n="left.external">外部整合</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;" data-i18n="external.horizonsLabel">JPL Horizons 軌道</div>
+        <div style="display:flex;gap:4px;">
+          <input id="horizons-input" type="text" placeholder="如 Apophis / 99942" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:5px 7px;border-radius:6px;font-size:11px;" />
+          <button id="horizons-load" data-i18n="external.horizonsLoad" style="background:rgba(93,177,255,0.15);border:1px solid rgba(93,177,255,0.4);color:var(--accent);padding:5px 8px;border-radius:6px;cursor:pointer;font-size:11px;">載入</button>
+        </div>
+        <div id="horizons-status" style="font-size:10px;color:var(--text-dim);margin-top:4px;line-height:1.3;"></div>
+        <div style="font-size:10px;color:var(--text-dim);margin:8px 0 4px 0;" data-i18n="external.telescopeLabel">Stellarium 望遠鏡 (WebSocket)</div>
+        <div style="display:flex;gap:4px;align-items:center;">
+          <input id="telescope-url" type="text" value="ws://localhost:10002" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:5px 7px;border-radius:6px;font-size:11px;" />
+          <button id="telescope-connect" data-i18n="external.telescopeConnect" style="background:rgba(93,177,255,0.15);border:1px solid rgba(93,177,255,0.4);color:var(--accent);padding:5px 8px;border-radius:6px;cursor:pointer;font-size:11px;">連接</button>
+        </div>
+        <div id="telescope-status" style="font-size:10px;color:var(--text-dim);margin-top:4px;">未連接</div>
+      </div>
+
+      <div class="section">
+        <div class="label" data-i18n="left.help">說明</div>
+        <button id="onboarding-replay" data-i18n="tour.replay" style="width:100%;background:rgba(255,204,64,0.12);border:1px solid rgba(255,204,64,0.35);color:#ffcc40;padding:6px;border-radius:6px;cursor:pointer;font-size:12px;">❓ 重看導覽</button>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;line-height:1.4;" data-i18n="tour.replayHint">5 步快速導覽：時間 / 視角 / 點選 / 事件偵測。</div>
+        <button id="precision-info-btn" data-i18n="precision.button" style="width:100%;margin-top:6px;background:rgba(93,177,255,0.1);border:1px solid rgba(93,177,255,0.35);color:var(--accent);padding:6px;border-radius:6px;cursor:pointer;font-size:12px;">ⓘ 模型精度與限制</button>
+      </div>
+      </div><!-- /tab-panel advanced -->
+
+      <div class="tab-panel" data-tab-panel="observe">
+      <div class="section">
+        <div class="label" data-i18n="left.observation">地表觀測</div>
+        <select id="observer-preset" style="margin-bottom:4px;">
+          <option value="" data-i18n="observer.preset">— 選擇地點 —</option>
+        </select>
+        <div style="display:flex;gap:4px;margin-bottom:4px;">
+          <input type="number" id="observer-lat" data-i18n-attr="placeholder:observer.lat" placeholder="緯度" step="0.01" min="-90" max="90"
+                 style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:4px 6px;border-radius:6px;font-size:11px;width:0;" />
+          <input type="number" id="observer-lon" data-i18n-attr="placeholder:observer.lon" placeholder="經度" step="0.01" min="-180" max="180"
+                 style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:4px 6px;border-radius:6px;font-size:11px;width:0;" />
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:4px;align-items:center;">
+          <span data-i18n="observer.elev" style="font-size:11px;color:var(--text-dim);min-width:42px;">海拔</span>
+          <input type="number" id="observer-elev" data-i18n-attr="placeholder:observer.elevPh" placeholder="海拔 m" step="1" min="-500" max="9000" value="0"
+                 style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:4px 6px;border-radius:6px;font-size:11px;width:0;" />
+          <span style="font-size:10px;color:var(--text-dim);">m</span>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:4px;">
+          <button id="observer-gps" data-i18n="observer.gps" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:5px;border-radius:6px;cursor:pointer;font-size:11px;">📡 目前位置</button>
+          <button id="observer-map-pick" data-i18n="observer.mapPick" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:5px;border-radius:6px;cursor:pointer;font-size:11px;">📍 地圖選點</button>
+        </div>
+        <div id="observer-gps-status" style="font-size:10px;color:var(--text-dim);min-height:12px;margin-bottom:4px;line-height:1.3;"></div>
+        <button id="observer-enter" data-i18n="observer.enter" style="width:100%;background:var(--accent);color:#001a33;border:none;padding:6px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">進入觀測</button>
+        <button id="observer-exit" data-i18n="observer.exit" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:6px;border-radius:6px;cursor:pointer;font-size:12px;margin-top:4px;display:none;">離開觀測</button>
+        <div style="display:flex;gap:4px;margin-top:4px;">
+          <button id="tonight-plan-open" data-i18n="tonight.open" style="flex:1;background:rgba(255,204,64,0.15);border:1px solid rgba(255,204,64,0.4);color:#ffcc40;padding:6px;border-radius:6px;cursor:pointer;font-size:12px;">🌟 今晚看什麼</button>
+          <button id="observation-log-open" data-i18n="obslog.open" style="flex:1;background:rgba(118,209,138,0.12);border:1px solid rgba(118,209,138,0.4);color:#76d18a;padding:6px;border-radius:6px;cursor:pointer;font-size:12px;">📔 我的觀測</button>
+        </div>
+        <label style="display:block;margin-top:6px;font-size:11px;color:var(--text-dim);">
+          <input type="checkbox" id="observer-lock-horizon" checked /> <span data-i18n="observer.lockHorizon">鎖定地平線以上</span>
+        </label>
+        <button id="observer-gyro" data-i18n="observer.gyroOn" style="width:100%;margin-top:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:6px;border-radius:6px;cursor:pointer;font-size:11px;display:none;">🧭 啟用陀螺儀 (AR)</button>
+        <button id="observer-gyro-calibrate" data-i18n="observer.gyroCalibrate" style="width:100%;margin-top:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:5px;border-radius:6px;cursor:pointer;font-size:10px;display:none;">校準正北</button>
+      </div>
+
+      <div class="section">
+        <div class="label" data-i18n="left.longExposure">📸 長時間曝光</div>
+        <label style="display:block;margin:4px 0;font-size:11px;">
+          <input type="checkbox" id="long-exposure-toggle" />
+          <span data-i18n="longExposure.enable">啟用累積曝光</span>
+        </label>
+        <div style="font-size:10px;color:var(--text-dim);margin:4px 0 2px;">
+          <span data-i18n="longExposure.decayLabel">衰減（每幀 ×）</span>
+          <span id="long-exposure-decay-val" style="color:var(--accent);">1.000</span>
+        </div>
+        <input type="range" id="long-exposure-decay" min="0.95" max="1.0" step="0.001" value="1.0" style="width:100%;cursor:ew-resize;" />
+        <button id="long-exposure-reset" style="width:100%;margin-top:4px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:5px;border-radius:6px;cursor:pointer;font-size:11px;">
+          <span data-i18n="longExposure.reset">🔄 重置累積</span>
+        </button>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:6px;line-height:1.4;" data-i18n="longExposure.hint">
+          配合 📌 鎖定可拍出星空長尾跡。加快時間倍率 + 衰減 = 1.0 → 純粹星跡。鎖定行星 → 行星不動，背景拖尾。
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="label" data-i18n="left.optics">光學工具</div>
+        <select id="optics-preset" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:6px 8px;border-radius:6px;font-size:12px;margin-bottom:4px;">
+          <option value="naked" selected data-i18n="optics.naked">裸眼 (~50°)</option>
+          <option value="binocular7x50" data-i18n="optics.bin7">7×50 雙筒 (7.5°)</option>
+          <option value="binocular10x50" data-i18n="optics.bin10">10×50 雙筒 (5°)</option>
+          <option value="80mm-25mm" data-i18n="optics.refractor80">80mm 折射 + 25mm 目鏡 (1.56°)</option>
+          <option value="8inch-25mm" data-i18n="optics.sct8_25">8&quot; SCT + 25mm 目鏡 (0.63°)</option>
+          <option value="8inch-10mm" data-i18n="optics.sct8_10">8&quot; SCT + 10mm 目鏡 (0.25°)</option>
+        </select>
+        <div id="optics-info" style="font-size:10px;color:var(--text-dim);line-height:1.5;margin-bottom:8px;"></div>
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:2px;">
+          <span data-i18n="optics.bortle">光害 (Bortle)</span>
+          <span id="bortle-val" style="color:var(--accent);">4</span>
+          <span id="bortle-desc" style="color:var(--text-dim);font-size:9px;"></span>
+        </div>
+        <input type="range" id="bortle-slider" min="1" max="9" step="1" value="4" style="width:100%;cursor:ew-resize;" />
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <label style="flex:1;font-size:10px;color:var(--text-dim);">
+            <span data-i18n="atmo.pressure">氣壓 (mbar)</span>
+            <input type="number" id="atmo-pressure" value="1010" step="5" min="200" max="1100"
+                   style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:3px 5px;border-radius:4px;font-size:11px;" />
+          </label>
+          <label style="flex:1;font-size:10px;color:var(--text-dim);">
+            <span data-i18n="atmo.temperature">氣溫 (°C)</span>
+            <input type="number" id="atmo-temperature" value="10" step="1" min="-50" max="50"
+                   style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:3px 5px;border-radius:4px;font-size:11px;" />
+          </label>
+        </div>
+      </div>
+      </div><!-- /tab-panel observe -->
+    </div>
+
+    <div id="info-panel" class="panel">
+      <span class="close" id="info-close">×</span>
+      <h2 id="info-name">—</h2>
+      <div class="subtitle" id="info-subtitle"></div>
+      <div id="info-action-row" style="display:none;gap:6px;margin:6px 0;">
+        <button id="info-goto" data-i18n="info.goto" title="把鏡頭對準此天體"
+                style="flex:1;background:rgba(93,177,255,0.15);border:1px solid rgba(93,177,255,0.4);color:var(--accent);padding:6px;border-radius:6px;cursor:pointer;font-size:12px;">
+          🔭 鏡頭對準
+        </button>
+        <button id="info-track" data-i18n="info.track" title="持續追蹤（觀測模式）"
+                style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;">
+          📌
+        </button>
+        <button id="info-bookmark" data-i18n="info.bookmark" title="加入書籤（重現此時刻 + 此天體）"
+                style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;">
+          ⭐
+        </button>
+      </div>
+      <!-- Observation log: ✓ mark observed + 1-5 star rating + free-text notes.
+           Hidden when no target loaded. Built dynamically by InfoPanel.ts. -->
+      <div id="info-observation" style="display:none;margin:6px 0;padding:6px 8px;background:rgba(255,255,255,0.03);border:1px solid rgba(160,190,230,0.18);border-radius:6px;font-size:12px;"></div>
+      <dl id="info-data"></dl>
+      <div id="info-planning"></div>
+      <div id="info-extra"></div>
+    </div>
+
+    <div id="sky-panel" class="panel" style="display:none;">
+      <div data-i18n="sky.title" style="color:var(--accent);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">天空中的天體</div>
+      <div id="sky-list" style="font-size:11px;line-height:1.5;"></div>
+      <div data-i18n="sky.altAzNote" style="color:var(--text-dim);font-size:10px;margin-top:6px;">仰角 / 方位角（北 0°、東 90°）</div>
+    </div>
+
+    <div id="auto-events-panel" class="panel" style="display:none;">
+      <span class="close" id="auto-events-close">×</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div data-i18n="events.title" style="color:var(--accent);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">未來事件（自動偵測）</div>
+        <button id="auto-events-rescan" data-i18n="events.rescan" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">重掃</button>
+      </div>
+      <div id="auto-events-list" style="font-size:12px;line-height:1.5;max-height:50vh;overflow-y:auto;"></div>
+      <div data-i18n="events.tapNote" style="color:var(--text-dim);font-size:10px;margin-top:6px;">點選跳轉時間 / 自動跟隨</div>
+    </div>
+
+    <!-- 我的觀測 — observation log listing. Built by src/ui/ObservationLogPanel.ts.
+         Toggled via the 📔 button in the Observe tab. Persisted in localStorage. -->
+    <div id="observation-log-panel" class="panel" style="display:none;">
+      <span class="close" id="observation-log-close">×</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div data-i18n="obslog.title" style="color:#76d18a;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">📔 我的觀測</div>
+        <span id="observation-log-summary" style="color:var(--text-dim);font-size:10px;font-variant-numeric:tabular-nums;"></span>
+      </div>
+      <div id="observation-log-list" style="font-size:12px;line-height:1.5;max-height:55vh;overflow-y:auto;"></div>
+      <div style="display:flex;gap:4px;margin-top:6px;">
+        <button id="observation-log-export" data-i18n="obslog.export" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-dim);padding:4px;border-radius:5px;cursor:pointer;font-size:10px;">💾 匯出</button>
+        <button id="observation-log-import" data-i18n="obslog.import" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-dim);padding:4px;border-radius:5px;cursor:pointer;font-size:10px;">📂 匯入</button>
+        <button id="observation-log-clear" data-i18n="obslog.clear" style="background:rgba(255,100,80,0.1);border:1px solid rgba(255,100,80,0.3);color:#ff8060;padding:4px 8px;border-radius:5px;cursor:pointer;font-size:10px;">🗑️</button>
+      </div>
+      <div data-i18n="obslog.tapHint" style="color:var(--text-dim);font-size:10px;margin-top:4px;">點任一項即跳轉鏡頭 + 編輯筆記</div>
+    </div>
+
+    <!-- "今晚看什麼" — ranked observable list. Built by src/ui/TonightPlanPanel.ts.
+         Toggled via the 🌟 button in the Observe tab (only useful in observer mode). -->
+    <div id="tonight-plan-panel" class="panel" style="display:none;">
+      <span class="close" id="tonight-plan-close">×</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div data-i18n="tonight.title" style="color:#ffcc40;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">🌟 今晚看什麼</div>
+        <button id="tonight-plan-refresh" data-i18n="tonight.refresh" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">重新計算</button>
+      </div>
+      <div id="tonight-plan-list" style="font-size:12px;line-height:1.5;max-height:60vh;overflow-y:auto;"></div>
+      <div data-i18n="tonight.tapHint" style="color:var(--text-dim);font-size:10px;margin-top:6px;">點選即跳轉鏡頭 + 開啟資訊面板</div>
+    </div>
+
+    <div id="eclipse-map" class="panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(900px,92vw);max-height:88vh;z-index:200;">
+      <span class="close" id="eclipse-map-close">×</span>
+      <div id="eclipse-map-title" style="color:var(--accent);font-size:14px;font-weight:600;margin-bottom:8px;">日食食帶</div>
+      <canvas id="eclipse-map-canvas" style="width:100%;height:min(450px,50vh);border:1px solid rgba(120,160,220,0.2);border-radius:6px;background:#0a1020;"></canvas>
+      <div id="eclipse-map-details" style="font-size:11px;line-height:1.6;margin-top:8px;color:var(--text);"></div>
+    </div>
+
+    <div id="lunar-eclipse-map" class="panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(700px,92vw);max-height:88vh;z-index:200;">
+      <span class="close" id="lunar-eclipse-map-close">×</span>
+      <div id="lunar-eclipse-map-title" style="color:var(--accent);font-size:14px;font-weight:600;margin-bottom:8px;">月食</div>
+      <canvas id="lunar-eclipse-map-canvas" style="width:100%;height:min(450px,55vh);border:1px solid rgba(120,160,220,0.2);border-radius:6px;background:#0a1020;"></canvas>
+      <div id="lunar-eclipse-map-details" style="font-size:11px;line-height:1.6;margin-top:8px;color:var(--text);"></div>
+    </div>
+
+    <div id="calc-panel" class="panel" style="display:none;">
+      <span class="close" id="calc-close">×</span>
+      <div data-i18n="calc.title" style="color:var(--accent);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">計算模式 · 相對量</div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span data-i18n="calc.reference" style="font-size:11px;color:var(--text-dim);">參考點</span>
+        <select id="calc-ref" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:4px 6px;border-radius:6px;font-size:12px;"></select>
+      </div>
+      <div id="calc-list" style="font-size:11px;line-height:1.4;"></div>
+      <div data-i18n="calc.losNote" style="color:var(--text-dim);font-size:10px;margin-top:6px;">視線 v：+ = 遠離參考點，- = 接近</div>
+    </div>
+
+    <div id="site-info" class="panel" style="display:none;">
+      <span class="close" id="site-info-close">×</span>
+      <h3 id="site-name" style="margin:0 0 2px 0;color:var(--accent);font-size:15px;"></h3>
+      <div id="site-subtitle" class="subtitle"></div>
+      <div id="site-meta" style="font-size:11px;color:var(--text-dim);margin:6px 0;"></div>
+      <img id="site-image" style="display:none;width:100%;max-height:160px;object-fit:cover;border-radius:6px;margin:4px 0 8px 0;" alt="" />
+      <div id="site-description" style="font-size:12px;line-height:1.6;color:var(--text);"></div>
+      <a id="site-link" target="_blank" rel="noopener noreferrer"
+         style="display:none;margin-top:8px;font-size:11px;color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent);"></a>
+    </div>
+
+    <div id="hint" data-i18n="hint.usage">滑鼠左鍵旋轉、滾輪縮放、右鍵平移 · 點選天體查看資訊 · ⌘/Ctrl+F 搜尋</div>
+
+    <!-- Stellarium-style selection marker: 4 corner brackets that follow
+         the currently-selected target (body or star) on screen. Visible
+         only when InfoPanel has a target. Position updated each frame
+         from main.ts via projection of the target's world direction. -->
+    <div id="selection-marker">
+      <div class="bracket bracket-tl"></div>
+      <div class="bracket bracket-tr"></div>
+      <div class="bracket bracket-bl"></div>
+      <div class="bracket bracket-br"></div>
+      <div class="label" id="selection-marker-label"></div>
+    </div>
+
+    <div id="observer-reticle">
+      <div class="crosshair"><div class="dot"></div></div>
+      <div class="compass-strip">
+        <div class="compass-tape" id="compass-tape"></div>
+        <div class="compass-pointer"></div>
+      </div>
+      <div class="compass-readout" id="compass-readout">N · 方位 0° · 仰角 0°</div>
+      <!-- Observer's local clock — shows when in observer mode. Reads
+           simulation JD + observer longitude → local solar-mean time;
+           location label comes from the preset name (or "自訂位置"). -->
+      <div class="local-time-readout" id="local-time-readout"></div>
+      <div class="fov-readout" id="fov-readout"></div>
+      <div class="track-readout" id="track-readout"></div>
+    </div>
+
+    <div id="fov-rings">
+      <div class="ring" data-deg="0.5"></div>
+      <div class="ring" data-deg="2"></div>
+      <div class="ring" data-deg="4"></div>
+    </div>
+
+    <div id="measure-readout" style="display:none;position:fixed;top:120px;left:50%;transform:translateX(-50%);
+         background:var(--panel-bg);border:1px solid rgba(93,177,255,0.4);color:var(--accent);
+         padding:6px 12px;border-radius:8px;font-size:13px;font-variant-numeric:tabular-nums;
+         z-index:90;pointer-events:auto;cursor:pointer;backdrop-filter:blur(8px);">
+      <span id="measure-content">— ° —</span>
+      <span style="color:var(--text-dim);margin-left:6px;font-size:11px;">點此關閉</span>
+    </div>
+
+    <!-- Eyepiece-style vignette: circle mask shown when a telescope/binocular
+         preset is active, hiding the canvas corners to mimic the tube view. -->
+    <div id="optics-vignette" style="display:none;"></div>
+
+    <div id="map-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:600;justify-content:center;align-items:center;">
+      <div style="background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:10px;padding:12px;width:min(720px, 90vw);height:min(560px, 80vh);display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="color:var(--accent);font-weight:600;">點擊地圖選擇觀測點</span>
+          <span id="map-close" style="cursor:pointer;color:var(--text-dim);font-size:18px;">×</span>
+        </div>
+        <div id="map-container" style="flex:1;border-radius:6px;overflow:hidden;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:var(--text-dim);">
+          <span id="map-coords">—</span>
+          <button id="map-confirm" style="background:var(--accent);color:#001a33;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">使用此地點</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="search-overlay" style="display:none;">
+      <div id="search-box" class="panel">
+        <input type="text" id="search-input" data-i18n-attr="placeholder:search.placeholder" placeholder="搜尋天體、恆星、觀測站、星座..."
+               style="width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--accent);color:var(--text);padding:8px 10px;border-radius:6px;font-size:14px;outline:none;" />
+        <div id="search-results" style="margin-top:8px;max-height:300px;overflow-y:auto;font-size:12px;"></div>
+        <div style="color:var(--text-dim);font-size:10px;margin-top:6px;" data-i18n="search.usage">↑↓ 選擇 · Enter 跳轉 · Esc 取消</div>
+      </div>
+    </div>
+
+    <div id="credits-footer" aria-label="Credits">
+      <a href="https://github.com/kevin-lin-49361128/solar-system-3d" target="_blank" rel="noopener noreferrer" title="GitHub repo (Star ⭐ to support)">
+        ⭐ Star
+      </a>
+      <span class="sep">·</span>
+      <a href="https://buymeacoffee.com/" target="_blank" rel="noopener noreferrer" title="Buy me a coffee — 自由小額贊助">
+        ☕ Coffee
+      </a>
+      <span class="sep">·</span>
+      <a href="https://github.com/kevin-lin-49361128/solar-system-3d/blob/main/SUPPORT.md" target="_blank" rel="noopener noreferrer" title="支持這個專案 / Support this project">
+        Support
+      </a>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
