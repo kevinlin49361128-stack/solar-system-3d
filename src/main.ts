@@ -313,7 +313,24 @@ window.addEventListener('sim:mode-change', (e) => {
   if (ev.detail?.mode === 'observer') {
     void solarSystem.ensureSatellites();
   }
+  // Esri / AWS attribution is required while LocalTerrain tiles are visible
+  // (observer mode). Hidden in heliocentric / free mode where no third-party
+  // map tiles are on screen. See CSS / HTML comment in index.html.
+  const attribEl = document.getElementById('map-attribution');
+  if (attribEl) {
+    attribEl.classList.toggle('visible', ev.detail?.mode === 'observer');
+  }
 });
+
+// Initial attribution visibility — covers the case where the page loads
+// directly into observer mode via URL params (mode-change event already
+// fired before our listener attached).
+{
+  const attribEl = document.getElementById('map-attribution');
+  if (attribEl && cameraCtl.getMode() === 'observer') {
+    attribEl.classList.add('visible');
+  }
+}
 
 // Debug hook — exposed in dev so console probes can inspect scene state
 // without re-shipping a separate inspector. Kept (rather than gated on

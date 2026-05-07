@@ -1386,6 +1386,39 @@
       #nbody-diag-panel .nb-good { color: #76d18a; }   /* green: 10⁻⁶ class */
       #nbody-diag-panel .nb-ok   { color: #ffcc40; }   /* yellow: 10⁻³ class */
       #nbody-diag-panel .nb-bad  { color: #ff7050; }   /* red: > 10⁻³ */
+
+      /*
+       * Map attribution overlay — bottom-right corner, only visible in
+       * observer mode while the LocalTerrain layer is fetching tiles from
+       * Esri / AWS. Displaying these credits is required by:
+       *   - Esri ToS: "must visibly attribute Esri and the World Imagery
+       *     basemap"   (https://www.esri.com/en-us/legal/terms/data-attributions)
+       *   - AWS Open Terrain (Joerd dataset, attribution required to NASA SRTM,
+       *     USGS NED, GMTED2010, ETOPO1)
+       * If we ever swap the imagery / DEM sources, this string must change too.
+       */
+      #map-attribution {
+        position: fixed;
+        bottom: 4px;
+        right: 6px;
+        z-index: 95;
+        padding: 2px 8px;
+        font: 10px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        color: rgba(255, 255, 255, 0.62);
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 3px;
+        pointer-events: auto;
+        user-select: text;
+        opacity: 0;
+        transition: opacity 200ms ease;
+        max-width: 60vw;
+      }
+      #map-attribution.visible { opacity: 1; }
+      #map-attribution a {
+        color: rgba(255, 255, 255, 0.78);
+        text-decoration: none;
+      }
+      #map-attribution a:hover { text-decoration: underline; }
     </style>
   </head>
   <body>
@@ -1394,6 +1427,17 @@
 
     <button id="panel-toggle" aria-label="Toggle controls">☰</button>
     <button id="night-vision-toggle" aria-label="Toggle night vision (red light)" title="夜視（紅光）模式 · R">🌙</button>
+
+    <!--
+      Map attribution overlay. Toggled visible by main.ts when entering
+      observer mode (LocalTerrain begins fetching). Required by Esri /
+      AWS ToS — see CSS comment above.
+    -->
+    <div id="map-attribution" aria-live="polite">
+      Imagery © <a href="https://www.esri.com/en-us/legal/terms/full-master-agreement" target="_blank" rel="noopener">Esri</a>, World Imagery
+      · DEM <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">AWS Open Terrain</a>
+      (NASA SRTM / USGS / GMTED)
+    </div>
 
     <div id="time-controls" class="panel">
       <button id="btn-pause" data-i18n-attr="title:time.pause">⏸</button>
