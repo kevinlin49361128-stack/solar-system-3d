@@ -5,12 +5,24 @@
 **設計理念**：每個顯示的數字都該可以追溯到使用的模型與其精度範圍。專案內建「ⓘ 模型精度」表 + N-body 守恆診斷 + 多維可觀測性評分，讓用戶能驗證、教學、規劃觀測。
 
 > **🌐 Live demo**: <https://solar-system-3d-kappa.vercel.app/>
-> **📸 Screenshots**: _下方 Screenshots 區即將補上_
 > **🇹🇼 中文 · 🇺🇸 English · 🇯🇵 日本語**
 
 ## Screenshots
 
-_截圖即將補上 — 包含太陽系全景、地表觀測模式、月食 / 日食食帶圖、計算面板、行動裝置版面。_
+### 太陽系全景（heliocentric）
+![太陽系全景：八大行星軌道、彗星、小行星帶與古柏帶](public/screenshots/heliocentric-overview.jpg)
+
+### 地表觀測模式（observer）
+站在地球任意點，看真實大氣染色的天空 + 今晚天象資訊板。
+![觀測者視角：高雄黃昏天空、羅盤、行星方位與航海／天文昏曙時刻](public/screenshots/observer-mode.jpg)
+
+### 互動 UI
+左側面板控制鏡頭模式、尺度（真實／對數／示意）、參考系（日心／地心）、書籤與光學工具。
+![太陽系視角搭配左側互動控制面板](public/screenshots/with-ui.jpg)
+
+> 想看實際運作？[**開啟 live demo**](https://solar-system-3d-kappa.vercel.app/)。
+
+> 截圖由 `npm run screenshots` 自動生成（puppeteer-core + 系統 Chrome），有更新時可重跑。
 
 ## 主要功能
 

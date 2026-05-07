@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "og:capture": "node scripts/og-capture.mjs"
+    "og:capture": "node scripts/og-capture.mjs",
+    "screenshots": "node scripts/readme-screenshots.mjs"
   },
   "dependencies": {
     "lil-gui": "^0.20.0",
