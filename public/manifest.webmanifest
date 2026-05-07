@@ -1,0 +1,52 @@
+{
+  "name": "太陽系 3D 模擬 / Solar System 3D",
+  "short_name": "太陽系 3D",
+  "description": "可解釋的天文模擬器：互動式 3D 太陽系 + 地表觀星雙視角，Kepler / N-body 物理可切換，每個顯示的數字都可追溯到模型與精度範圍。",
+  "lang": "zh-Hant",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "theme_color": "#0a0e16",
+  "background_color": "#000000",
+  "categories": ["education", "utilities", "entertainment"],
+  "icons": [
+    { "src": "/icons/icon-48.png",   "sizes": "48x48",   "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-64.png",   "sizes": "64x64",   "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-128.png",  "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-180.png",  "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-192.png",  "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-256.png",  "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-384.png",  "sizes": "384x384", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png",  "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-192.png",  "sizes": "192x192",   "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon-maskable-512.png",  "sizes": "512x512",   "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon-maskable-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/heliocentric-overview.jpg",
+      "sizes": "1600x1000",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "太陽系全景：八大行星軌道與彗星"
+    },
+    {
+      "src": "/screenshots/observer-mode.jpg",
+      "sizes": "1600x1000",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "觀測模式：高雄黃昏天空與羅盤"
+    },
+    {
+      "src": "/screenshots/with-ui.jpg",
+      "sizes": "1600x1000",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "互動 UI：左側控制面板與場景"
+    }
+  ]
+}

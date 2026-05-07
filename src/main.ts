@@ -340,6 +340,18 @@ window.addEventListener('sim:mode-change', (e) => {
   solarSystem, cameraCtl, clock, scaleCtl, renderer,
 };
 
+// PWA service worker registration. Skipped in dev (Vite serves modules at
+// untransformed paths the worker doesn't know about, and HMR fights the
+// cache layer). In production the SW does shell pre-cache + same-origin
+// stale-while-revalidate; cross-origin requests pass through untouched.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.warn('SW registration failed:', err);
+    });
+  });
+}
+
 // Screenshot: snapshot the canvas + label overlays into a PNG. Note this
 // captures only the WebGL canvas (sky / planets / orbits / terrain). HTML
 // overlays like info panels are intentionally excluded so the picture is
