@@ -4,7 +4,7 @@
 
 **設計理念**：每個顯示的數字都該可以追溯到使用的模型與其精度範圍。專案內建「ⓘ 模型精度」表 + N-body 守恆診斷 + 多維可觀測性評分，讓用戶能驗證、教學、規劃觀測。
 
-> **🌐 Live demo**: _即將上線（部署中）_
+> **🌐 Live demo**: <https://solar-system-3d-kappa.vercel.app/>
 > **📸 Screenshots**: _下方 Screenshots 區即將補上_
 > **🇹🇼 中文 · 🇺🇸 English · 🇯🇵 日本語**
 

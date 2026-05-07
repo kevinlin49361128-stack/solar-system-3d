@@ -3,7 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>太陽系 3D 模擬</title>
+    <title>太陽系 3D 模擬 / Solar System 3D — 可解釋的天文模擬器</title>
+    <meta name="description" content="互動式 3D 太陽系 + 地表觀星雙視角模擬器。Three.js + Kepler/N-body + Meeus 月球太陽位置 + 8400 顆 BSC 恆星 + Messier 深空 + 天象事件偵測。NASA JPL J2000 根數，每個數字皆可追溯到模型與精度範圍。" />
+
+    <!-- Open Graph (Facebook / LINE / Threads / Slack / Discord link previews) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta property="og:title" content="太陽系 3D 模擬 / Solar System 3D" />
+    <meta property="og:description" content="可解釋的天文模擬器：互動式 3D 太陽系 + 地表觀星雙視角，Kepler / N-body 物理可切換，每個數字皆可追溯模型與精度。" />
+    <meta property="og:url" content="https://solar-system-3d-kappa.vercel.app/" />
+    <meta property="og:site_name" content="Solar System 3D" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="太陽系 3D 模擬 / Solar System 3D" />
+    <meta name="twitter:description" content="互動式 3D 太陽系 + 地表觀星雙視角。Kepler / N-body 物理可切換，每個數字皆可追溯到模型與精度範圍。" />
+
+    <!-- Theme color for mobile browser chrome -->
+    <meta name="theme-color" content="#0a0e16" />
+
     <!-- Leaflet (CDN) is now loaded on demand by src/ui/MapPicker.ts on
          first "select on map" click. Inlining a synchronous <script> tag
          here used to block first paint by ~42 KB gz for every visitor,
