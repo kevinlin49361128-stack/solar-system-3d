@@ -166,4 +166,95 @@ export const ASTEROIDS: BodyDescriptor[] = [
     'NASA DART 任務 2022 年衝撞其衛星 Dimorphos 的目標；史上首次行星防禦動能測試。',
     0xff6a6a,
   ),
+
+  // ── Jupiter Trojans: L4 (Greek camp, leading) ─────────────────────────
+  // These live ~60° ahead of Jupiter in its orbit, exactly at Sun–Jupiter L4.
+  // Toggle the Lagrange point overlay to see them clustered around that marker.
+  makeAsteroid(
+    'achilles', '阿基里斯', '588 Achilles',
+    {
+      epoch: J2000_JD,
+      q: 4.4214, e: 0.14752, iDeg: 10.32,
+      omegaDeg: 132.78, OmegaDeg: 316.40,
+      M0Deg: 213.44, periodDays: 4324.95,
+    },
+    67.5,
+    '1906 年發現，史上第一顆木星特洛伊小行星，居於太陽–木星 L4（希臘群）。',
+    0x66c2a5,
+  ),
+  makeAsteroid(
+    'hektor', '赫克特', '624 Hektor',
+    {
+      epoch: J2000_JD,
+      q: 5.0058, e: 0.02371, iDeg: 18.16,
+      omegaDeg: 184.69, OmegaDeg: 342.61,
+      M0Deg: 196.13, periodDays: 4317.15,
+    },
+    112,
+    '最大的木星特洛伊（約 250×125 km 雙葉狀），居 L4 希臘群；NASA Lucy 任務 2027 年將造訪。',
+    0x66c2a5,
+  ),
+  // ── Jupiter Trojans: L5 (Trojan camp, trailing) ───────────────────────
+  makeAsteroid(
+    'patroclus', '巴特羅克勒斯', '617 Patroclus',
+    {
+      epoch: J2000_JD,
+      q: 4.5097, e: 0.13986, iDeg: 22.05,
+      omegaDeg: 306.86, OmegaDeg: 44.36,
+      M0Deg: 24.87, periodDays: 4338.72,
+    },
+    113,
+    '少見的雙小行星系統 (Patroclus + Menoetius)，居 L5 特洛伊群；NASA Lucy 2033 年將造訪。',
+    0xfc8d62,
+  ),
+  makeAsteroid(
+    'eurybates', '尤里巴提斯', '3548 Eurybates',
+    {
+      epoch: J2000_JD,
+      q: 4.7782, e: 0.09028, iDeg: 8.06,
+      omegaDeg: 28.83, OmegaDeg: 43.57,
+      M0Deg: 15.23, periodDays: 4337.45,
+    },
+    32,
+    'NASA Lucy 任務 2027 年首站，碳質 C 型小行星家族成員；揭示特洛伊群早期分裂歷史。',
+    0xfc8d62,
+  ),
+
+  // ── Other named NEOs / interesting bodies ─────────────────────────────
+  makeAsteroid(
+    'phaethon', '法厄同', '3200 Phaethon',
+    {
+      epoch: J2000_JD,
+      q: 0.13988, e: 0.88983, iDeg: 22.26,
+      omegaDeg: 322.18, OmegaDeg: 265.27,
+      M0Deg: 156.94, periodDays: 523.59,
+    },
+    2.9,
+    '雙子座流星雨母體；近日點 0.14 AU 比水星還靠太陽，疑似「岩質彗星」。JAXA DESTINY+ 將於 2028 年造訪。',
+    0xff9d54,
+  ),
+  makeAsteroid(
+    'icarus', '伊卡魯斯', '1566 Icarus',
+    {
+      epoch: J2000_JD,
+      q: 0.18661, e: 0.82687, iDeg: 22.83,
+      omegaDeg: 31.34, OmegaDeg: 88.04,
+      M0Deg: 122.17, periodDays: 408.78,
+    },
+    0.5,
+    '1949 年發現，第一顆編號的近日小行星 (q < 1 AU)；高離心率、近日點接近水星軌道。',
+    0xff6a6a,
+  ),
+  makeAsteroid(
+    'ganymed', '蓋尼米德', '1036 Ganymed',
+    {
+      epoch: J2000_JD,
+      q: 1.2440, e: 0.53354, iDeg: 26.69,
+      omegaDeg: 132.30, OmegaDeg: 215.51,
+      M0Deg: 314.82, periodDays: 1585.23,
+    },
+    19.5,
+    '已知最大近地小行星（直徑約 38 km），不會撞地球，但體積之大若撞擊將造成全球性災難。',
+    0xff6a6a,
+  ),
 ];
