@@ -1,6 +1,6 @@
 import { Vector3 } from 'three';
 import { J2000_JD } from '../physics/constants';
-import type { OrbitPropagator, StateVector } from '../physics/types';
+import type { OrbitPropagator, PropagatorKind, PropagatorSource, StateVector } from '../physics/types';
 
 /**
  * 簡化的太空船航跡資料：每艘船給一組 (jd, position_AU) 取樣點，
@@ -191,6 +191,12 @@ export const SPACECRAFT: SpacecraftDescriptor[] = [
  * Outside the sample range we hold the endpoint position with zero velocity.
  */
 export class SampledPropagator implements OrbitPropagator {
+  readonly kind: PropagatorKind = 'sampled';
+  readonly source: PropagatorSource = {
+    label: 'NASA JPL Horizons (sampled)',
+    url: 'https://ssd.jpl.nasa.gov/horizons/',
+    note: 'Mission trajectory sampled then linearly interpolated',
+  };
   constructor(private samples: SpacecraftDescriptor['samples']) {}
 
   stateAt(jd: number): StateVector {

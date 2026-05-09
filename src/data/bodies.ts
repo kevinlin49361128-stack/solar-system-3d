@@ -1,5 +1,5 @@
 import { KeplerPropagator } from '../physics/keplerPropagator';
-import type { BodyDescriptor } from '../physics/types';
+import type { BodyDescriptor, PropagatorSource } from '../physics/types';
 import { DETAILS } from './body-details';
 
 /**
@@ -12,6 +12,11 @@ import { DETAILS } from './body-details';
  * Period (days) is computed from L̇ when present; we set it explicitly so
  * mean motion in the propagator is correct without assumptions.
  */
+const JPL_APPROX_POS: PropagatorSource = {
+  label: 'NASA JPL Approximate Positions of the Planets',
+  url: 'https://ssd.jpl.nasa.gov/planets/approx_pos.html',
+  note: 'J2000 elements + linear rates (1800–2050, error < 600 km)',
+};
 
 export const SUN: BodyDescriptor = {
   id: 'sun',
@@ -48,7 +53,7 @@ export const MERCURY: BodyDescriptor = {
     varpiDeg: 77.45779628, varpiDotDeg: 0.16047689,
     OmegaDeg: 48.33076593, OmegaDotDeg: -0.12534081,
     periodDays: 87.9691,
-  }),
+  }, JPL_APPROX_POS),
   appearance: { color: 0x8c8275, textureUrl: '/textures/mercury.jpg' },
   details: DETAILS.mercury,
 };
@@ -69,7 +74,7 @@ export const VENUS: BodyDescriptor = {
     varpiDeg: 131.60246718, varpiDotDeg: 0.00268329,
     OmegaDeg: 76.67984255, OmegaDotDeg: -0.27769418,
     periodDays: 224.701,
-  }),
+  }, JPL_APPROX_POS),
   appearance: {
     color: 0xe4c186,
     textureUrl: '/textures/venus.jpg',
@@ -94,7 +99,7 @@ export const EARTH: BodyDescriptor = {
     varpiDeg: 102.93768193, varpiDotDeg: 0.32327364,
     OmegaDeg: 0.0, OmegaDotDeg: 0.0,
     periodDays: 365.256,
-  }),
+  }, JPL_APPROX_POS),
   appearance: {
     color: 0x3d7ec9,
     textureUrl: '/textures/earth.jpg',
@@ -121,7 +126,7 @@ export const MARS: BodyDescriptor = {
     varpiDeg: -23.94362959, varpiDotDeg: 0.44441088,
     OmegaDeg: 49.55953891, OmegaDotDeg: -0.29257343,
     periodDays: 686.971,
-  }),
+  }, JPL_APPROX_POS),
   appearance: {
     color: 0xc1542d,
     textureUrl: '/textures/mars.jpg',
@@ -146,7 +151,7 @@ export const JUPITER: BodyDescriptor = {
     varpiDeg: 14.72847983, varpiDotDeg: 0.21252668,
     OmegaDeg: 100.47390909, OmegaDotDeg: 0.20469106,
     periodDays: 4332.589,
-  }),
+  }, JPL_APPROX_POS),
   appearance: {
     color: 0xd5b48a,
     textureUrl: '/textures/jupiter.jpg',
@@ -171,7 +176,7 @@ export const SATURN: BodyDescriptor = {
     varpiDeg: 92.59887831, varpiDotDeg: -0.41897216,
     OmegaDeg: 113.66242448, OmegaDotDeg: -0.28867794,
     periodDays: 10759.22,
-  }),
+  }, JPL_APPROX_POS),
   appearance: {
     color: 0xe6c87a,
     textureUrl: '/textures/saturn.jpg',
@@ -196,7 +201,7 @@ export const URANUS: BodyDescriptor = {
     varpiDeg: 170.95427630, varpiDotDeg: 0.40805281,
     OmegaDeg: 74.01692503, OmegaDotDeg: 0.04240589,
     periodDays: 30688.5,
-  }),
+  }, JPL_APPROX_POS),
   appearance: {
     color: 0x9fd6e2,
     textureUrl: '/textures/uranus.jpg',
@@ -221,7 +226,7 @@ export const NEPTUNE: BodyDescriptor = {
     varpiDeg: 44.96476227, varpiDotDeg: -0.32241464,
     OmegaDeg: 131.78422574, OmegaDotDeg: -0.00508664,
     periodDays: 60182.0,
-  }),
+  }, JPL_APPROX_POS),
   appearance: {
     color: 0x4166f5,
     textureUrl: '/textures/neptune.jpg',

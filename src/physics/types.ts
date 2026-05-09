@@ -14,6 +14,31 @@ export interface OrbitPropagator {
    * a simple Keplerian description (e.g. an N-body propagator).
    */
   readonly elements?: StaticOrbitalElements;
+
+  /**
+   * Optional metadata used by the InfoPanel to make the underlying physics
+   * transparent to the user — what kind of propagator is being used and
+   * where the orbital data originally came from.
+   */
+  readonly kind?: PropagatorKind;
+  readonly source?: PropagatorSource;
+}
+
+export type PropagatorKind =
+  | 'kepler'         // analytic two-body Kepler
+  | 'kepler-perturbed' // Kepler with secular drift terms
+  | 'sampled'        // table of (jd, state) samples interpolated
+  | 'horizons'       // queried from JPL Horizons
+  | 'nbody'          // member of an N-body simulation
+  | 'lunar-elp';     // lunar series (ELP / Meeus)
+
+export interface PropagatorSource {
+  /** Short human label, e.g. "NASA JPL Approx. Positions". */
+  label: string;
+  /** Optional URL pointing to the data origin / publication / dataset. */
+  url?: string;
+  /** Optional short note, e.g. epoch or accuracy claim. */
+  note?: string;
 }
 
 export interface StaticOrbitalElements {

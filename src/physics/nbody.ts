@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import type { OrbitPropagator, StateVector, BodyDescriptor } from './types';
+import type { OrbitPropagator, PropagatorKind, PropagatorSource, StateVector, BodyDescriptor } from './types';
 import { AU_KM, DAY_SECONDS, J2000_JD, SUN_GM } from './constants';
 
 // Speed of light in scene-physics units (AU / day).
@@ -280,6 +280,11 @@ export class NBodySimulation {
  */
 export class NBodyAdapter implements OrbitPropagator {
   readonly elements = undefined;
+  readonly kind: PropagatorKind = 'nbody';
+  readonly source: PropagatorSource = {
+    label: 'N-body simulation (Yoshida 4th-order symplectic)',
+    note: 'Initialised from Kepler state at simulation start',
+  };
   constructor(
     private sim: NBodySimulation,
     private id: string,

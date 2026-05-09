@@ -1,5 +1,5 @@
 import { Vector3 } from 'three';
-import type { OrbitPropagator, StateVector } from './types';
+import type { OrbitPropagator, PropagatorKind, PropagatorSource, StateVector } from './types';
 import type { HorizonsStateVector } from './horizonsClient';
 
 /**
@@ -14,6 +14,11 @@ import type { HorizonsStateVector } from './horizonsClient';
  */
 export class HorizonsPropagator implements OrbitPropagator {
   readonly elements = undefined;
+  readonly kind: PropagatorKind = 'horizons';
+  readonly source: PropagatorSource = {
+    label: 'NASA JPL Horizons (Hermite-interpolated state vectors)',
+    url: 'https://ssd.jpl.nasa.gov/horizons/',
+  };
   /** Sorted ascending by jd; safe to mutate carefully (keep order). */
   readonly samples: HorizonsStateVector[];
 

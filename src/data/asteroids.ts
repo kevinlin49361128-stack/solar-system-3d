@@ -1,6 +1,12 @@
 import { J2000_JD } from '../physics/constants';
 import { KeplerPropagator, type KeplerElements } from '../physics/keplerPropagator';
-import type { BodyDescriptor } from '../physics/types';
+import type { BodyDescriptor, PropagatorSource } from '../physics/types';
+
+const JPL_SBDB: PropagatorSource = {
+  label: 'JPL Small-Body Database',
+  url: 'https://ssd.jpl.nasa.gov/sbdb.cgi',
+  note: 'Osculating elements at J2000 epoch',
+};
 
 /**
  * Famous near-Earth asteroids (NEAs) and main-belt asteroids visited by
@@ -53,7 +59,7 @@ function makeAsteroid(
       rotationPeriodDays: 0.5,
       axialTiltDeg: 0,
     },
-    propagator: new KeplerPropagator(rawToKepler(raw)),
+    propagator: new KeplerPropagator(rawToKepler(raw), JPL_SBDB),
     appearance: { color },
     description: { 'zh-Hant': description, en: description, ja: description },
   };

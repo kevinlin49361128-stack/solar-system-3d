@@ -1,7 +1,7 @@
 import { Vector3 } from 'three';
 import { DEG2RAD, J2000_JD, TWO_PI } from './constants';
 import { solveKepler } from './kepler';
-import type { OrbitPropagator, StateVector, StaticOrbitalElements } from './types';
+import type { OrbitPropagator, PropagatorKind, PropagatorSource, StateVector, StaticOrbitalElements } from './types';
 
 export interface KeplerElements {
   /** Reference epoch (Julian Date). Defaults to J2000. */
@@ -45,9 +45,20 @@ export interface KeplerElements {
  */
 export class KeplerPropagator implements OrbitPropagator {
   readonly elements: StaticOrbitalElements;
+  readonly kind: PropagatorKind;
+  readonly source?: PropagatorSource;
   private readonly el: Required<Omit<KeplerElements, 'periodDays'>> & { periodDays: number };
 
-  constructor(input: KeplerElements) {
+  constructor(input: KeplerElements, source?: PropagatorSource) {
+    this.source = source;
+    // If any *Dot field is non-zero we expose ourselves as a perturbed
+    // Kepler — useful for the InfoPanel to communicate that the elements
+    // drift secularly, not just steady-state.
+    this.kind =
+      (input.aDot || input.eDot || input.iDotDeg || input.varpiDotDeg || input.OmegaDotDeg)
+        ? 'kepler-perturbed'
+        : 'kepler';
+
     const epoch = input.epoch ?? J2000_JD;
     const periodDays = input.periodDays ?? (input.LDotDeg ? 360 / (input.LDotDeg / 36525) : 365.25);
 

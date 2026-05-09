@@ -683,9 +683,108 @@ export class InfoPanel {
     this.dataEl.innerHTML = rows
       .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`)
       .join('');
-    this.extraEl.innerHTML = this.renderDetailSections(d.details, langPick(d.description));
+    this.extraEl.innerHTML =
+      this.renderDetailSections(d.details, langPick(d.description)) +
+      this.renderPhysicsSection(d);
 
     this.renderDynamic();
+  }
+
+  /**
+   * "Physics transparency" — exposes which propagator is being used to
+   * compute this body's position, where the orbital data originally came
+   * from, and the current state vector at the simulation's clock time.
+   *
+   * Hidden behind a collapsed <details> so it doesn't dominate the panel.
+   */
+  private renderPhysicsSection(d: BodyDescriptor): string {
+    const prop = d.propagator;
+    if (!prop) return ''; // Sun has no propagator
+
+    const KIND_LABEL: Record<string, string> = {
+      'kepler': 'Kepler 兩體解析解 (J2000)',
+      'kepler-perturbed': 'Kepler + 線性攝動率 (J2000)',
+      'sampled': '取樣軌跡 + 線性內插',
+      'horizons': 'JPL Horizons + Hermite 內插',
+      'nbody': 'N-body 數值積分 (Yoshida4)',
+      'lunar-elp': 'Meeus / ELP-2000 月球理論',
+    };
+    const kindLabel = prop.kind ? (KIND_LABEL[prop.kind] ?? prop.kind) : '未指定';
+
+    // Current state vector — read at the clock's current jd. Fallback to
+    // J2000 if no clock is wired in (shouldn't happen for visible bodies).
+    const jd = this.clock?.getJd?.() ?? 2451545.0;
+    let stateHtml = '';
+    try {
+      const sv = prop.stateAt(jd);
+      const px = sv.position.x, py = sv.position.y, pz = sv.position.z;
+      const r = Math.hypot(px, py, pz);
+      const v = Math.hypot(sv.velocity.x, sv.velocity.y, sv.velocity.z);
+      // For moons, the position is geocentric — annotate accordingly.
+      const frameLabel = d.parentId
+        ? `相對 ${this.bodyShort(d.parentId)} 位置`
+        : '日心位置 (J2000 黃道)';
+      stateHtml = `
+        <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.55;font-family:ui-monospace,monospace;">
+          <div style="color:var(--accent);margin-bottom:2px;">▸ 目前狀態向量 (JD ${jd.toFixed(3)})</div>
+          <div>${frameLabel}：(${px.toFixed(4)}, ${py.toFixed(4)}, ${pz.toFixed(4)}) AU</div>
+          <div>距離：${r.toFixed(4)} AU = ${(r * AU_KM).toExponential(3)} km</div>
+          <div>速度大小：${v.toFixed(4)} AU/d = ${(v * AU_KM / 86400).toFixed(2)} km/s</div>
+        </div>
+      `;
+    } catch {
+      stateHtml = '';
+    }
+
+    // Orbital elements (if Keplerian)
+    let elementsHtml = '';
+    if (prop.elements) {
+      const el = prop.elements;
+      elementsHtml = `
+        <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.55;font-family:ui-monospace,monospace;">
+          <div style="color:var(--accent);margin-bottom:2px;">▸ J2000 軌道根數</div>
+          <div>a = ${el.a.toFixed(6)} AU</div>
+          <div>e = ${el.e.toFixed(6)}</div>
+          <div>i = ${el.iDeg.toFixed(4)}°</div>
+          <div>Ω = ${el.ΩDeg.toFixed(4)}°</div>
+          <div>ω = ${el.ωDeg.toFixed(4)}°</div>
+        </div>
+      `;
+    }
+
+    // Source attribution
+    let sourceHtml = '';
+    if (prop.source) {
+      const s = prop.source;
+      const linkLabel = s.url
+        ? `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent);">${escapeHtml(s.label)} ↗</a>`
+        : escapeHtml(s.label);
+      sourceHtml = `
+        <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.55;">
+          <div style="color:var(--accent);margin-bottom:2px;">▸ 資料來源</div>
+          <div>${linkLabel}</div>
+          ${s.note ? `<div style="opacity:0.8;font-style:italic;">${escapeHtml(s.note)}</div>` : ''}
+        </div>
+      `;
+    }
+
+    return `
+      <details class="info-section" style="margin-top:8px;">
+        <summary style="cursor:pointer;color:var(--accent);font-size:11px;font-weight:600;list-style:none;user-select:none;">
+          🔬 物理計算詳情（${kindLabel}）
+        </summary>
+        <div style="padding:4px 8px 4px 8px;border-left:2px solid var(--panel-border);margin-top:4px;">
+          ${elementsHtml}
+          ${stateHtml}
+          ${sourceHtml}
+        </div>
+      </details>
+    `;
+  }
+
+  private bodyShort(id: string): string {
+    const b = this.solarSystem.getBody(id)?.descriptor;
+    return b ? bodyName(b) : id;
   }
 
   private renderDetailSections(details: BodyDescriptor['details'], description?: string): string {

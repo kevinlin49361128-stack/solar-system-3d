@@ -1,6 +1,6 @@
 import { Vector3 } from 'three';
 import { J2000_JD, DEG2RAD, AU_KM } from './constants';
-import type { OrbitPropagator, StateVector, StaticOrbitalElements } from './types';
+import type { OrbitPropagator, PropagatorKind, PropagatorSource, StateVector, StaticOrbitalElements } from './types';
 
 /**
  * Moon geocentric position via Meeus 1998 ch. 47 (Brown's lunar theory,
@@ -151,6 +151,12 @@ export function moonPositionEcliptic(jd: number): Vector3 {
  */
 export class LunarPropagator implements OrbitPropagator {
   readonly elements: StaticOrbitalElements;
+  readonly kind: PropagatorKind = 'lunar-elp';
+  readonly source: PropagatorSource = {
+    label: 'Meeus, Astronomical Algorithms (truncated ELP-2000/82)',
+    url: 'https://en.wikipedia.org/wiki/Lunar_theory',
+    note: 'Geocentric ecliptic position; ~30″ accuracy over centuries',
+  };
 
   constructor() {
     // Average elements — used only by OrbitLine for the dashed orbit visualisation.

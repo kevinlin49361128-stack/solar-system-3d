@@ -1,6 +1,12 @@
 import { J2000_JD } from '../physics/constants';
 import { KeplerPropagator, type KeplerElements } from '../physics/keplerPropagator';
-import type { BodyDescriptor } from '../physics/types';
+import type { BodyDescriptor, PropagatorSource } from '../physics/types';
+
+const JPL_SBDB: PropagatorSource = {
+  label: 'JPL Small-Body Database',
+  url: 'https://ssd.jpl.nasa.gov/sbdb.cgi',
+  note: 'Comet elements (q, e, i, ω, Ω, Tp) converted to mean-longitude form',
+};
 
 /**
  * Famous periodic comets. Orbital elements adapted from JPL Small-Body
@@ -106,7 +112,7 @@ function makeComet(
       rotationPeriodDays: 0.5,
       axialTiltDeg: 0,
     },
-    propagator: new KeplerPropagator(cometToKepler(raw)),
+    propagator: new KeplerPropagator(cometToKepler(raw), JPL_SBDB),
     appearance: {
       color: 0xb6dcff,
     },
