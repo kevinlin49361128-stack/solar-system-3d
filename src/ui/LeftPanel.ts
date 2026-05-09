@@ -128,6 +128,13 @@ export class LeftPanel {
       solarSystem.setSpacecraftVisible((e.target as HTMLInputElement).checked);
     });
 
+    const lagrangeToggle = document.getElementById('toggle-lagrange') as HTMLInputElement | null;
+    if (lagrangeToggle) {
+      lagrangeToggle.addEventListener('change', (e) => {
+        solarSystem.setLagrangePointsVisible((e.target as HTMLInputElement).checked);
+      });
+    }
+
     (document.getElementById('toggle-satellites') as HTMLInputElement).addEventListener('change', (e) => {
       solarSystem.setSatellitesVisible((e.target as HTMLInputElement).checked);
     });
@@ -209,6 +216,10 @@ export class LeftPanel {
     solarSystem.setConstellationsVisible((document.getElementById('toggle-constellations') as HTMLInputElement).checked);
     solarSystem.setStarLabelsVisible((document.getElementById('toggle-star-labels') as HTMLInputElement).checked);
     solarSystem.setSpacecraftVisible((document.getElementById('toggle-spacecraft') as HTMLInputElement).checked);
+    {
+      const lg = document.getElementById('toggle-lagrange') as HTMLInputElement | null;
+      if (lg) solarSystem.setLagrangePointsVisible(lg.checked);
+    }
     solarSystem.setIAUBoundariesVisible((document.getElementById('toggle-iau-bounds') as HTMLInputElement).checked);
 
     this.wireObserverPanel(cameraCtl, scaleCtl, cameraMode, followBody, skyPanel, infoPanel, solarSystem);

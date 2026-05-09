@@ -113,6 +113,7 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'display.belts': { 'zh-Hant': '小行星帶', 'en': 'Belts', 'ja': '小惑星帯' },
   'display.constellations': { 'zh-Hant': '星座連線', 'en': 'Constellations', 'ja': '星座線' },
   'display.spacecraft': { 'zh-Hant': '太空船軌跡', 'en': 'Spacecraft', 'ja': '探査機軌道' },
+  'display.lagrange': { 'zh-Hant': '拉格朗日點 L1–L5', 'en': 'Lagrange points L1–L5', 'ja': 'ラグランジュ点 L1–L5' },
   'display.starLabels': { 'zh-Hant': '恆星名稱', 'en': 'Star names', 'ja': '恒星名' },
   'display.messier': { 'zh-Hant': '深空天體 (Messier)', 'en': 'Deep-sky (Messier)', 'ja': '深宇宙天体 (Messier)' },
   'display.dsoStylized': { 'zh-Hant': '程序化星雲圖示（關閉=寫實昏暗）', 'en': 'Stylised DSO icons (off = realistic faint)', 'ja': 'DSO スタイライズ（OFF=リアル微弱）' },

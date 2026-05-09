@@ -26,6 +26,7 @@ import { MessierLayer } from './MessierLayer';
 import { IAUBoundaries } from './IAUBoundaries';
 import { LocalTerrain } from './LocalTerrain';
 import { SpacecraftLayer } from './Spacecraft';
+import { LagrangePointsLayer } from './LagrangePoints';
 import type { ScaleController } from '../controls/ScaleController';
 import type { SimulationClock } from '../time/SimulationClock';
 import { gmstRad } from '../physics/topocentric';
@@ -80,6 +81,7 @@ export class SolarSystem {
   private iauBoundaries: IAUBoundaries | null = null;
   private localTerrain: LocalTerrain | null = null;
   private spacecraft: SpacecraftLayer | null = null;
+  private lagrangePoints: LagrangePointsLayer | null = null;
   private satellites: SatelliteLayer | null = null;
   private nbodySim: NBodySimulation | null = null;
   private atmosphereOverlay: AtmosphereOverlay | null = null;
@@ -190,6 +192,14 @@ export class SolarSystem {
 
     this.spacecraft = new SpacecraftLayer(this.scaler);
     this.heliocentric.add(this.spacecraft.group);
+
+    // Lagrange points (L1–L5) for Sun–Earth, Sun–Jupiter, Earth–Moon.
+    // Built from the live body registry so positions track each frame.
+    const descriptorMap = new Map<string, BodyDescriptor>();
+    for (const [id, entry] of this.bodies) descriptorMap.set(id, entry.descriptor);
+    this.lagrangePoints = new LagrangePointsLayer(this.scaler, descriptorMap);
+    this.lagrangePoints.setVisible(false); // off by default — opt-in
+    this.heliocentric.add(this.lagrangePoints.group);
 
     // Earth-orbiting satellites are NOT constructed here — see
     // ensureSatellites(). At heliocentric scale the LEO constellation is
@@ -436,6 +446,7 @@ export class SolarSystem {
     }
 
     if (this.spacecraft) this.spacecraft.update(jd);
+    if (this.lagrangePoints) this.lagrangePoints.update(jd);
     if (this.cometTails) this.cometTails.update(jd, this.scaler);
     if (this.satellites) {
       // Sun direction in ecliptic frame, as seen from Earth (for shadow test).
@@ -472,6 +483,7 @@ export class SolarSystem {
     // Geocentric trajectory lines depend on scale → rebuild them too.
     if (this.scaler.getFrame() === 'geocentric') this.buildGeocentricOrbitLines();
     if (this.spacecraft) this.spacecraft.rebuild();
+    if (this.lagrangePoints) this.lagrangePoints.rebuild(this.lastJd);
     this.refreshLocationPin();
   }
 
@@ -706,6 +718,18 @@ export class SolarSystem {
 
   setSpacecraftVisible(visible: boolean): void {
     if (this.spacecraft) this.spacecraft.setVisible(visible);
+  }
+
+  setLagrangePointsVisible(visible: boolean): void {
+    if (this.lagrangePoints) {
+      this.lagrangePoints.setVisible(visible);
+      // Force one update so markers snap to current positions when shown.
+      if (visible) this.lagrangePoints.update(this.lastJd);
+    }
+  }
+
+  getLagrangePoints(): LagrangePointsLayer | null {
+    return this.lagrangePoints;
   }
 
   setSatellitesVisible(visible: boolean): void {
