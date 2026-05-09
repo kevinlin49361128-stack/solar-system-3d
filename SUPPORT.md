@@ -15,9 +15,7 @@
 
 如果想用實際金錢支持作者繼續打磨這個專案：
 
-- [**Buy Me a Coffee**](https://buymeacoffee.com/) — 一杯咖啡的金額
-- [**GitHub Sponsors**](https://github.com/sponsors/) — 月贊助 / 一次性
-- *（連結會在公開部署後正式啟用）*
+- [**Buy Me a Coffee**](https://buymeacoffee.com/kevinlin49a) — 一杯咖啡的金額
 
 完全自願，沒有任何付費功能、沒有廣告、沒有 freemium 限制。
 
