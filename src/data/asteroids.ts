@@ -1,6 +1,7 @@
 import { J2000_JD } from '../physics/constants';
 import { KeplerPropagator, type KeplerElements } from '../physics/keplerPropagator';
 import type { BodyDescriptor, PropagatorSource } from '../physics/types';
+import type { LangText } from '../i18n';
 
 const JPL_SBDB: PropagatorSource = {
   label: 'JPL Small-Body Database',
@@ -44,9 +45,14 @@ function rawToKepler(c: RawAsteroidElements): KeplerElements {
 
 function makeAsteroid(
   id: string, name: string, nameEn: string,
-  raw: RawAsteroidElements, radiusKm: number, description: string,
+  raw: RawAsteroidElements, radiusKm: number, description: string | LangText,
   color = 0xc6a978,
 ): BodyDescriptor {
+  // Description can be either a single string (legacy zh-Hant only) or a
+  // proper LangText. Normalise so InfoPanel always gets a LangText.
+  const desc: LangText = typeof description === 'string'
+    ? { 'zh-Hant': description, en: description, ja: description }
+    : description;
   return {
     id,
     name,
@@ -61,7 +67,7 @@ function makeAsteroid(
     },
     propagator: new KeplerPropagator(rawToKepler(raw), JPL_SBDB),
     appearance: { color },
-    description: { 'zh-Hant': description, en: description, ja: description },
+    description: desc,
   };
 }
 
@@ -185,7 +191,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 213.44, periodDays: 4324.95,
     },
     67.5,
-    '1906 年發現，史上第一顆木星特洛伊小行星，居於太陽–木星 L4（希臘群）。',
+    {
+      'zh-Hant': '1906 年發現，史上第一顆木星特洛伊小行星，居於太陽–木星 L4（希臘群）。',
+      'en': 'Discovered 1906 — the first known Jupiter Trojan, parked at the Sun–Jupiter L4 (Greek camp).',
+      'ja': '1906 年発見、史上初の木星トロヤ群小惑星。太陽–木星 L4（ギリシア群）に位置。',
+    },
     0x66c2a5,
   ),
   makeAsteroid(
@@ -197,7 +207,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 196.13, periodDays: 4317.15,
     },
     112,
-    '最大的木星特洛伊（約 250×125 km 雙葉狀），居 L4 希臘群；NASA Lucy 任務 2027 年將造訪。',
+    {
+      'zh-Hant': '最大的木星特洛伊（約 250×125 km 雙葉狀），居 L4 希臘群；NASA Lucy 任務 2027 年將造訪。',
+      'en': 'Largest Jupiter Trojan (~250×125 km, bilobed), in the L4 Greek camp; NASA Lucy will visit in 2027.',
+      'ja': '最大の木星トロヤ群小惑星（約 250×125 km、二葉状）。L4 ギリシア群所属。NASA Lucy が 2027 年訪問予定。',
+    },
     0x66c2a5,
   ),
   // ── Jupiter Trojans: L5 (Trojan camp, trailing) ───────────────────────
@@ -210,7 +224,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 24.87, periodDays: 4338.72,
     },
     113,
-    '少見的雙小行星系統 (Patroclus + Menoetius)，居 L5 特洛伊群；NASA Lucy 2033 年將造訪。',
+    {
+      'zh-Hant': '少見的雙小行星系統 (Patroclus + Menoetius)，居 L5 特洛伊群；NASA Lucy 2033 年將造訪。',
+      'en': 'Rare binary asteroid (Patroclus + Menoetius) in the L5 Trojan camp; NASA Lucy arrives in 2033.',
+      'ja': '珍しい二重小惑星系（パトロクロス + メノイティオス）。L5 トロヤ群所属。NASA Lucy が 2033 年到達予定。',
+    },
     0xfc8d62,
   ),
   makeAsteroid(
@@ -222,7 +240,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 15.23, periodDays: 4337.45,
     },
     32,
-    'NASA Lucy 任務 2027 年首站，碳質 C 型小行星家族成員；揭示特洛伊群早期分裂歷史。',
+    {
+      'zh-Hant': 'NASA Lucy 任務 2027 年首站，碳質 C 型小行星家族成員；揭示特洛伊群早期分裂歷史。',
+      'en': 'First target of NASA Lucy (2027); C-type carbonaceous family member that reveals early Trojan-group fragmentation history.',
+      'ja': 'NASA Lucy ミッションの 2027 年初訪問先。炭素質 C 型小惑星ファミリー、トロヤ群の初期分裂史を解明。',
+    },
     0xfc8d62,
   ),
 
@@ -236,7 +258,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 156.94, periodDays: 523.59,
     },
     2.9,
-    '雙子座流星雨母體；近日點 0.14 AU 比水星還靠太陽，疑似「岩質彗星」。JAXA DESTINY+ 將於 2028 年造訪。',
+    {
+      'zh-Hant': '雙子座流星雨母體；近日點 0.14 AU 比水星還靠太陽，疑似「岩質彗星」。JAXA DESTINY+ 將於 2028 年造訪。',
+      'en': 'Parent body of the Geminids meteor shower. Perihelion 0.14 AU — closer to the Sun than Mercury — and suspected "rock comet". JAXA DESTINY+ visits in 2028.',
+      'ja': 'ふたご座流星群の母天体。近日点 0.14 AU は水星よりも太陽寄りで、「岩石彗星」の疑い。JAXA DESTINY+ が 2028 年訪問予定。',
+    },
     0xff9d54,
   ),
   makeAsteroid(
@@ -248,7 +274,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 122.17, periodDays: 408.78,
     },
     0.5,
-    '1949 年發現，第一顆編號的近日小行星 (q < 1 AU)；高離心率、近日點接近水星軌道。',
+    {
+      'zh-Hant': '1949 年發現，第一顆編號的近日小行星 (q < 1 AU)；高離心率、近日點接近水星軌道。',
+      'en': 'Discovered 1949 — the first numbered Apollo-class near-Earth asteroid (q < 1 AU). High eccentricity; perihelion close to Mercury\'s orbit.',
+      'ja': '1949 年発見、最初に番号付けされた近日点 q<1 AU の近地球小惑星。高離心率で、近日点は水星軌道に接近。',
+    },
     0xff6a6a,
   ),
   makeAsteroid(
@@ -260,7 +290,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 314.82, periodDays: 1585.23,
     },
     19.5,
-    '已知最大近地小行星（直徑約 38 km），不會撞地球，但體積之大若撞擊將造成全球性災難。',
+    {
+      'zh-Hant': '已知最大近地小行星（直徑約 38 km），不會撞地球，但體積之大若撞擊將造成全球性災難。',
+      'en': 'Largest known near-Earth asteroid (~38 km diameter). Not on a collision course, but its sheer size means an impact would be globally catastrophic.',
+      'ja': '既知最大の近地球小惑星（直径約 38 km）。地球に衝突する軌道ではないが、その規模ゆえに衝突すれば地球規模の壊滅的影響をもたらす。',
+    },
     0xff6a6a,
   ),
 ];

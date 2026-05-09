@@ -5,7 +5,7 @@ import type { CameraController } from '../controls/CameraController';
 import type { EventsPanel } from './EventsPanel';
 import { AU_KM } from '../physics/constants';
 import { pieChartSvg, compositionListHtml, tempGaugeHtml } from './charts';
-import { langPick, bodyName, onLanguageChange } from '../i18n';
+import { langPick, bodyName, onLanguageChange, t } from '../i18n';
 import {
   bodyObservables, moonObservables,
   synodicPeriod, hillSphereAU,
@@ -711,15 +711,7 @@ export class InfoPanel {
     const prop = d.propagator;
     if (!prop) return ''; // Sun has no propagator
 
-    const KIND_LABEL: Record<string, string> = {
-      'kepler': 'Kepler 兩體解析解 (J2000)',
-      'kepler-perturbed': 'Kepler + 線性攝動率 (J2000)',
-      'sampled': '取樣軌跡 + 線性內插',
-      'horizons': 'JPL Horizons + Hermite 內插',
-      'nbody': 'N-body 數值積分 (Yoshida4)',
-      'lunar-elp': 'Meeus / ELP-2000 月球理論',
-    };
-    const kindLabel = prop.kind ? (KIND_LABEL[prop.kind] ?? prop.kind) : '未指定';
+    const kindLabel = prop.kind ? t(`physics.kind.${prop.kind}`) : prop.kind ?? '';
 
     // Current state vector — read at the clock's current jd. Fallback to
     // J2000 if no clock is wired in (shouldn't happen for visible bodies).
@@ -732,14 +724,14 @@ export class InfoPanel {
       const v = Math.hypot(sv.velocity.x, sv.velocity.y, sv.velocity.z);
       // For moons, the position is geocentric — annotate accordingly.
       const frameLabel = d.parentId
-        ? `相對 ${this.bodyShort(d.parentId)} 位置`
-        : '日心位置 (J2000 黃道)';
+        ? `${t('physics.relativePos')} ${this.bodyShort(d.parentId)}`
+        : t('physics.heliocentricPos');
       stateHtml = `
         <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.55;font-family:ui-monospace,monospace;">
-          <div style="color:var(--accent);margin-bottom:2px;">▸ 目前狀態向量 (JD ${jd.toFixed(3)})</div>
-          <div>${frameLabel}：(${px.toFixed(4)}, ${py.toFixed(4)}, ${pz.toFixed(4)}) AU</div>
-          <div>距離：${r.toFixed(4)} AU = ${(r * AU_KM).toExponential(3)} km</div>
-          <div>速度大小：${v.toFixed(4)} AU/d = ${(v * AU_KM / 86400).toFixed(2)} km/s</div>
+          <div style="color:var(--accent);margin-bottom:2px;">${t('physics.state')} (JD ${jd.toFixed(3)})</div>
+          <div>${frameLabel}: (${px.toFixed(4)}, ${py.toFixed(4)}, ${pz.toFixed(4)}) AU</div>
+          <div>${t('physics.distance')}: ${r.toFixed(4)} AU = ${(r * AU_KM).toExponential(3)} km</div>
+          <div>${t('physics.speed')}: ${v.toFixed(4)} AU/d = ${(v * AU_KM / 86400).toFixed(2)} km/s</div>
         </div>
       `;
     } catch {
@@ -752,7 +744,7 @@ export class InfoPanel {
       const el = prop.elements;
       elementsHtml = `
         <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.55;font-family:ui-monospace,monospace;">
-          <div style="color:var(--accent);margin-bottom:2px;">▸ J2000 軌道根數</div>
+          <div style="color:var(--accent);margin-bottom:2px;">${t('physics.elements')}</div>
           <div>a = ${el.a.toFixed(6)} AU</div>
           <div>e = ${el.e.toFixed(6)}</div>
           <div>i = ${el.iDeg.toFixed(4)}°</div>
@@ -771,7 +763,7 @@ export class InfoPanel {
         : escapeHtml(s.label);
       sourceHtml = `
         <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.55;">
-          <div style="color:var(--accent);margin-bottom:2px;">▸ 資料來源</div>
+          <div style="color:var(--accent);margin-bottom:2px;">${t('physics.source')}</div>
           <div>${linkLabel}</div>
           ${s.note ? `<div style="opacity:0.8;font-style:italic;">${escapeHtml(s.note)}</div>` : ''}
         </div>
@@ -781,7 +773,7 @@ export class InfoPanel {
     return `
       <details class="info-section physics-details" style="margin-top:6px;background:rgba(93,177,255,0.05);border:1px solid rgba(93,177,255,0.18);border-radius:6px;padding:6px 10px;">
         <summary style="cursor:pointer;color:var(--accent);font-size:12px;font-weight:600;list-style:none;user-select:none;">
-          🔬 物理計算詳情（${kindLabel}）
+          ${t('physics.title')}（${kindLabel}）
         </summary>
         <div style="padding:4px 0 2px 0;margin-top:4px;border-top:1px dashed rgba(93,177,255,0.18);">
           ${elementsHtml}

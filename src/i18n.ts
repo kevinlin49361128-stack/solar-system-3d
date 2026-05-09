@@ -363,6 +363,22 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
     'en': 'This button (in the Advanced tab) scans 2 years of upcoming eclipses, oppositions, conjunctions, perihelia, etc. Click any row to jump there.',
     'ja': '「上級」タブのこのボタンが2年分の食・衝・合・近日点など13種を自動検出。クリックでその日へジャンプ。',
   },
+
+  // Physics-transparency section in InfoPanel
+  'physics.title':            { 'zh-Hant': '🔬 物理計算詳情', 'en': '🔬 Physics under the hood', 'ja': '🔬 物理計算の中身' },
+  'physics.elements':         { 'zh-Hant': '▸ J2000 軌道根數', 'en': '▸ J2000 orbital elements', 'ja': '▸ J2000 軌道要素' },
+  'physics.state':            { 'zh-Hant': '▸ 目前狀態向量', 'en': '▸ Current state vector', 'ja': '▸ 現在の状態ベクトル' },
+  'physics.distance':         { 'zh-Hant': '距離', 'en': 'Distance', 'ja': '距離' },
+  'physics.speed':            { 'zh-Hant': '速度大小', 'en': 'Speed', 'ja': '速度' },
+  'physics.source':           { 'zh-Hant': '▸ 資料來源', 'en': '▸ Data source', 'ja': '▸ データソース' },
+  'physics.heliocentricPos':  { 'zh-Hant': '日心位置 (J2000 黃道)', 'en': 'Heliocentric position (J2000 ecliptic)', 'ja': '太陽中心位置 (J2000 黄道)' },
+  'physics.relativePos':      { 'zh-Hant': '相對位置', 'en': 'Position relative to', 'ja': '相対位置' },
+  'physics.kind.kepler':           { 'zh-Hant': 'Kepler 兩體解析解 (J2000)', 'en': 'Two-body analytic Kepler (J2000)', 'ja': 'ケプラー二体解析解 (J2000)' },
+  'physics.kind.kepler-perturbed': { 'zh-Hant': 'Kepler + 線性攝動率 (J2000)', 'en': 'Kepler with secular drift rates (J2000)', 'ja': 'ケプラー + 線形摂動率 (J2000)' },
+  'physics.kind.sampled':          { 'zh-Hant': '取樣軌跡 + 線性內插', 'en': 'Sampled trajectory + linear interpolation', 'ja': 'サンプル軌跡 + 線形補間' },
+  'physics.kind.horizons':         { 'zh-Hant': 'JPL Horizons + Hermite 內插', 'en': 'JPL Horizons + Hermite interpolation', 'ja': 'JPL Horizons + エルミート補間' },
+  'physics.kind.nbody':            { 'zh-Hant': 'N-body 數值積分 (Yoshida4)', 'en': 'N-body integration (Yoshida 4th-order symplectic)', 'ja': 'N体数値積分 (Yoshida 4次)' },
+  'physics.kind.lunar-elp':        { 'zh-Hant': 'Meeus / ELP-2000 月球理論', 'en': 'Meeus / ELP-2000 lunar theory', 'ja': 'Meeus / ELP-2000 月理論' },
 };
 
 let currentLang: Lang = (localStorage.getItem('solarSysLang') as Lang) || 'zh-Hant';
