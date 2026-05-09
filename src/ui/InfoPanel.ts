@@ -683,9 +683,19 @@ export class InfoPanel {
     this.dataEl.innerHTML = rows
       .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`)
       .join('');
+
+    // Order: description → physics transparency → rest of detail sections.
+    // Physics goes high up so it's discoverable without having to scroll
+    // past atmospheric composition / internal structure / etc. on rich
+    // bodies like Mars.
+    const descText = d.description ? langPick(d.description) : '';
+    const descHtml = descText
+      ? `<div class="info-section"><div class="info-text">${escapeHtml(descText)}</div></div>`
+      : '';
     this.extraEl.innerHTML =
-      this.renderDetailSections(d.details, langPick(d.description)) +
-      this.renderPhysicsSection(d);
+      descHtml +
+      this.renderPhysicsSection(d) +
+      this.renderDetailSections(d.details, undefined);
 
     this.renderDynamic();
   }
@@ -769,11 +779,11 @@ export class InfoPanel {
     }
 
     return `
-      <details class="info-section" style="margin-top:8px;">
-        <summary style="cursor:pointer;color:var(--accent);font-size:11px;font-weight:600;list-style:none;user-select:none;">
+      <details class="info-section physics-details" style="margin-top:6px;background:rgba(93,177,255,0.05);border:1px solid rgba(93,177,255,0.18);border-radius:6px;padding:6px 10px;">
+        <summary style="cursor:pointer;color:var(--accent);font-size:12px;font-weight:600;list-style:none;user-select:none;">
           🔬 物理計算詳情（${kindLabel}）
         </summary>
-        <div style="padding:4px 8px 4px 8px;border-left:2px solid var(--panel-border);margin-top:4px;">
+        <div style="padding:4px 0 2px 0;margin-top:4px;border-top:1px dashed rgba(93,177,255,0.18);">
           ${elementsHtml}
           ${stateHtml}
           ${sourceHtml}
