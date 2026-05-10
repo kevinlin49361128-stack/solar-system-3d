@@ -1147,9 +1147,9 @@ function tick(now: number): void {
       cameraCtl.camera.fov = state.cameraFov;
       cameraCtl.camera.updateProjectionMatrix();
     }
-    // Apply layer weights — solar-system + galactic disk wired today;
-    // HYG cloud hook lands once that layer exists.
+    // Apply layer weights — solar system, HYG cloud, galactic disk.
     solarSystem.setSolarSystemOpacity(state.layerWeights.solarSystem);
+    solarSystem.setHygCloudOpacity(state.layerWeights.hygCloud);
     solarSystem.setGalacticDiskOpacity(state.layerWeights.milkyWayDisk);
   } else {
     // Always advance internal state even when not driving the camera, so

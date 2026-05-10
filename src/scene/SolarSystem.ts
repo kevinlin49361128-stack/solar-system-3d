@@ -51,6 +51,7 @@ import { CometTails } from './CometTails';
 import { CelestialGrids } from './CelestialGrids';
 import { LunarMansionsLayer } from './LunarMansionsLayer';
 import { GalacticDisk } from './GalacticDisk';
+import { HygCloud } from './HygCloud';
 
 interface BodyEntry {
   descriptor: BodyDescriptor;
@@ -93,6 +94,7 @@ export class SolarSystem {
   private celestialGrids: CelestialGrids | null = null;
   private lunarMansions: LunarMansionsLayer | null = null;
   private galacticDisk: GalacticDisk | null = null;
+  private hygCloud: HygCloud | null = null;
   readonly realism = new RealismState();
   private originalPropagators = new Map<string, import('../physics/types').OrbitPropagator | null>();
 
@@ -180,6 +182,10 @@ export class SolarSystem {
     // doesn't burn ~30k vertex-buffer entries on first paint.
     this.galacticDisk = new GalacticDisk();
     this.scene.add(this.galacticDisk.group);
+    // HYG 3D point cloud — created here but data is lazy-loaded the
+    // first time the neighbourhood tier is requested (~600 KB JSON).
+    this.hygCloud = new HygCloud();
+    this.scene.add(this.hygCloud.group);
     // Ambient kept low so the day/night terminator on textured planets is
     // visible, but high enough to make the night side faintly readable.
     this.scene.add(new AmbientLight(0x6878a0, 0.55));
@@ -747,6 +753,19 @@ export class SolarSystem {
   /** Galactic-tier 3D Milky Way disk visibility. */
   setGalacticDiskOpacity(opacity: number): void {
     this.galacticDisk?.setOpacity(opacity);
+  }
+
+  /**
+   * Neighbourhood-tier HYG point cloud visibility. Triggers lazy data
+   * fetch on first non-zero opacity (idempotent) so the ~600 KB JSON
+   * isn't paid by users who never zoom out.
+   */
+  setHygCloudOpacity(opacity: number): void {
+    if (!this.hygCloud) return;
+    if (opacity > 0 && !this.hygCloud.isLoaded()) {
+      void this.hygCloud.load();
+    }
+    this.hygCloud.setOpacity(opacity);
   }
 
   setLagrangePointsVisible(visible: boolean): void {
