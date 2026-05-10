@@ -27,6 +27,7 @@ this repository and have their own licenses:
 |--------|---------|-------|
 | NASA JPL orbital elements, Hipparcos, Yale BSC, IAU constellations, Messier | Public domain | Numerical values redistributed in `src/data/` |
 | Solar System Scope planet textures | CC BY 4.0 | Attribution required (see README) |
+| ESO / S. Brunier Milky Way panorama (eso0932a) | CC BY 4.0 | Attribution required; ©ESO/S. Brunier |
 | AWS Open Terrain (Terrarium DEM) | Open data, attribution required | Loaded from `s3.amazonaws.com/elevation-tiles-prod` |
 | Esri World Imagery satellite tiles | **Non-commercial / dev use only** | Public commercial deployment needs ArcGIS Developer account |
 | OpenStreetMap via Leaflet | ODbL | © OpenStreetMap contributors |

@@ -4,33 +4,74 @@ import {
   CanvasTexture,
   ClampToEdgeWrapping,
   LinearFilter,
+  Matrix4,
   Mesh,
   ShaderMaterial,
   SphereGeometry,
   SRGBColorSpace,
+  Texture,
+  TextureLoader,
+  Vector3,
 } from 'three';
+import {
+  GALACTIC_CENTRE_SCENE,
+  GALACTIC_NP_SCENE,
+} from '../physics/galacticFrame';
 
 const DOME_RADIUS = 4200; // just outside DSO/star sphere (4000)
 
 /**
- * Faint procedural Milky Way band. Drawn as the inside of a dome that's
- * additively blended with the background stars. Texture is generated in a
- * canvas using galactic-coordinate Gaussian bands, with random noisy knots
- * representing dark dust lanes (Cygnus rift, Aquila rift) and bright bulges
- * (galactic centre in Sagittarius).
+ * Quaternion that rotates the Milky Way mesh's local frame
+ *   (mesh +X = galactic centre, mesh +Y = galactic NP, mesh +Z = l=90°)
+ * into scene coordinates.
  *
- * Galactic plane orientation: galactic north pole is at RA 12h51m, Dec +27°,
- * so we rotate the dome so its band aligns with the galactic equator.
+ * We build it from the IAU-derived galactic-centre and galactic-NP unit
+ * vectors (in scene frame) instead of guessing Euler angles. The mesh's
+ * local +Z is then determined by mesh +X × mesh +Y (right-hand rule).
  *
- * Toggleable via `setVisible`; opacity scales with Bortle so light pollution
- * fades the Milky Way to invisibility (matching real urban observation).
+ * Replaces the old `mesh.rotation.set(0.515, 1.082, 0.345) // empirically
+ * aligned` magic numbers with a derivation that's traceable back to the
+ * Hipparcos catalogue (ESA SP-1200 vol. 1 §1.5.3).
+ */
+function buildGalacticToSceneBasis(): Matrix4 {
+  const xAxis = GALACTIC_CENTRE_SCENE.clone();
+  const yAxis = GALACTIC_NP_SCENE.clone();
+  const zAxis = new Vector3().crossVectors(xAxis, yAxis).normalize();
+  return new Matrix4().makeBasis(xAxis, yAxis, zAxis);
+}
+
+/**
+ * Faint Milky Way band. Drawn as the inside of a dome that's additively
+ * blended with the background stars.
+ *
+ * Texture: ESO Brunier 360° panorama (CC BY 4.0), 4K equirectangular in
+ * galactic coordinates with l=0 at u=0.5 and b=0 at v=0.5. Replaces the
+ * earlier procedural Gaussian-noise approximation — real Cygnus rift,
+ * Coalsack, Carina nebula, and galactic-centre bulge are now visible at
+ * scientifically correct positions.
+ *
+ * Procedural fallback (`buildMilkyWayTexture`) is kept for offline /
+ * texture-failed cases; it loads instantly while the photo fetches and
+ * is replaced once the JPG resolves.
+ *
+ * Galactic plane orientation derived from the IAU galactic-NP / galactic-
+ * centre unit vectors (see `physics/galacticFrame.ts`).
+ *
+ * Toggleable via `setVisible`; opacity scales with Bortle so light
+ * pollution fades the Milky Way to invisibility (matching real urban
+ * observation).
  */
 export class MilkyWay {
   readonly mesh: Mesh;
   private mat: ShaderMaterial;
+  private fallbackTex: Texture;
 
   constructor() {
-    const tex = buildMilkyWayTexture();
+    // Show procedural fallback immediately so first paint isn't empty,
+    // then swap in the high-quality ESO panorama once it's loaded.
+    this.fallbackTex = buildMilkyWayTexture();
+    const tex: Texture = this.fallbackTex;
+    this.loadPhotographicTexture();
 
     const geom = new SphereGeometry(DOME_RADIUS, 96, 64);
 
@@ -39,6 +80,7 @@ export class MilkyWay {
         uTex:     { value: tex },
         uOpacity: { value: 1.0 },
         uBortle:  { value: 4.0 },
+        uIsPhoto: { value: 0.0 }, // 1.0 once ESO photo loaded
       },
       transparent: true,
       depthWrite: false,
@@ -55,18 +97,27 @@ export class MilkyWay {
         uniform sampler2D uTex;
         uniform float uOpacity;
         uniform float uBortle;
+        uniform float uIsPhoto;
         varying vec3 vDir;
 
         void main() {
-          // Equirectangular UV from direction. The CanvasTexture is laid out
-          // already in galactic l/b — we rotated the *mesh* below so vDir
-          // is effectively galactic coords.
+          // Equirectangular UV from direction. The texture is laid out in
+          // galactic l/b — the mesh quaternion rotates so vDir is in the
+          // galactic frame.
           float u = atan(vDir.z, vDir.x) / 6.28318530718 + 0.5;
           float v = asin(clamp(vDir.y, -1.0, 1.0)) / 3.14159265359 + 0.5;
           vec4 c = texture2D(uTex, vec2(u, v));
           // Light pollution kills the Milky Way visually; fade with Bortle.
           float bortleFade = clamp(1.0 - (uBortle - 1.0) / 6.0, 0.0, 1.0);
-          gl_FragColor = vec4(c.rgb, c.a * uOpacity * bortleFade);
+          // Photographic textures are opaque (a=1). Convert luminance to
+          // alpha so dark off-band regions don't add to the night sky and
+          // bright Sgr A / Cygnus regions stand out. Squaring brings the
+          // mid-band into a more naturalistic apparent brightness.
+          // Procedural fallback already has alpha — pass it through.
+          float lum = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+          float photoA = lum * lum * 0.55;
+          float a = mix(c.a, photoA, uIsPhoto) * uOpacity * bortleFade;
+          gl_FragColor = vec4(c.rgb, a);
         }
       `,
     });
@@ -74,11 +125,11 @@ export class MilkyWay {
     this.mesh.frustumCulled = false;
     this.mesh.renderOrder = -200; // behind stars
     this.mesh.visible = false;
-    // Rotate dome so the band aligns with the galactic equator in scene
-    // (ecliptic) frame. Galactic north pole RA 12h51m, Dec +27° → in
-    // ecliptic frame this maps to a known pre-computed rotation.
-    // Approximation: galactic plane is inclined ~63° from ecliptic.
-    this.mesh.rotation.set(0.515, 1.082, 0.345); // empirically aligned
+    // Orient the dome so the band aligns with the *real* galactic equator in
+    // scene coordinates. Built from the IAU galactic-centre and galactic-NP
+    // unit vectors — fixes the previous magic-Euler rotation that was off
+    // by a couple of degrees and didn't match real Milky Way photographs.
+    this.mesh.quaternion.setFromRotationMatrix(buildGalacticToSceneBasis());
   }
 
   setOpacity(o: number): void {
@@ -89,6 +140,35 @@ export class MilkyWay {
   }
   setVisible(v: boolean): void {
     this.mesh.visible = v;
+  }
+
+  /**
+   * Asynchronously fetch the ESO photographic panorama and swap it in.
+   * The procedural texture is shown until this resolves (typically <300 ms
+   * over a fast connection, ~1 s on cellular). On failure we silently
+   * keep the procedural fallback — visually similar enough that the user
+   * shouldn't notice.
+   */
+  private loadPhotographicTexture(): void {
+    new TextureLoader().load(
+      '/textures/milkyway-eso-4k.jpg',
+      (loaded) => {
+        loaded.colorSpace = SRGBColorSpace;
+        loaded.wrapS = ClampToEdgeWrapping;
+        loaded.wrapT = ClampToEdgeWrapping;
+        loaded.minFilter = LinearFilter;
+        loaded.magFilter = LinearFilter;
+        // Swap the uniform; the old procedural texture is no longer needed.
+        this.mat.uniforms.uTex.value = loaded;
+        this.mat.uniforms.uIsPhoto.value = 1.0;
+        this.mat.uniformsNeedUpdate = true;
+        this.fallbackTex.dispose();
+      },
+      undefined,
+      () => {
+        // Silently keep procedural fallback on failure.
+      },
+    );
   }
 }
 

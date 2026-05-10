@@ -135,6 +135,7 @@ UI / 整合測試還沒做（成本較高，物理回歸測試已經是 high-bug
 | 衛星貼圖 | Esri World Imagery | **個人 / 開發用免費；公開部署需 ArcGIS Developer 帳號** |
 | 地圖底圖 | OpenStreetMap via Leaflet | ODbL, © OpenStreetMap contributors |
 | 行星紋理 | [Solar System Scope](https://www.solarsystemscope.com/textures/) | CC BY 4.0 |
+| 銀河系全景 | [ESO / S. Brunier — GigaGalaxy Zoom (eso0932a)](https://www.eso.org/public/images/eso0932a/) | CC BY 4.0 |
 
 如果要公開部署（不只私人用），務必看 [docs/future-mobile-gyroscope.md](docs/future-mobile-gyroscope.md) 旁的注意事項，特別是 Esri 與 OSM tile 服務的條款。
 
