@@ -4,6 +4,60 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions roughly follow [SemVer](https://semver.org/) once we hit 1.0.
 
+## [0.3.0] – 2026-05-10
+
+Galactic flythrough release. Adds a smooth zoom-out from the solar
+system through the local stellar neighbourhood to a 3D Milky Way disk
+model, with 12 curated exoplanet host stars surfacing as clickable
+halos along the way and a "land on TRAPPIST-1" scene-swap that drops
+you into a real exoplanet system rendered with the same Kepler
+mechanics as our own.
+
+### Added
+- **Scale-tier camera dolly** (`src/controls/ScaleTierController.ts`)
+  with three nested distance scales (system / neighbourhood /
+  galactic), logarithmic-time interpolation, mid-flight
+  reparameterisation, and `G` / `Shift+G` / `H` keyboard shortcuts.
+- **3D Milky Way disk** (`src/scene/GalacticDisk.ts`) — procedural
+  4-arm logarithmic spiral + central bulge, ~38k point sprites,
+  oriented from the IAU galactic-NP / galactic-centre vectors, the
+  Sun placed at the actual 26 700 ly galactic radius.
+- **HYG 3D point cloud** (`src/scene/HygCloud.ts`) — 15 167 stars
+  within 10 000 ly and brighter than mag 7, in real 3D positions
+  computed from HYG v4.1 parallax data. Lazy-loaded (~600 KB JSON).
+- **12 curated exoplanet systems** (`src/data/exoplanetSystems.ts`) —
+  Trappist-1, Proxima, α Centauri, Kepler-186/-90/-452, TOI-700,
+  51 Pegasi, HD 209458, WASP-12, LHS 1140, GJ 1214 — full Kepler
+  elements from NASA Exoplanet Archive + tri-lingual descriptions
+  for every host and planet.
+- **Exoplanet host halos** (`src/scene/ExoplanetHosts.ts`) —
+  distance-tinted ring sprites + name labels, billboarded to the
+  camera, clickable via the existing raycast pipeline.
+- **Exoplanet scene swap** (`src/scene/ExoplanetSystemView.ts`) —
+  click-to-land: hides the solar system and renders the chosen host
+  + planets with real Kepler orbits using the moon-distance scale.
+  Floating banner with "↩ Return to galaxy" reverses the swap.
+- **ESO photographic Milky Way** — replaced the procedural
+  Gaussian-noise dome with the ESO Brunier 4K panorama (CC BY 4.0).
+  Procedural fallback retained for offline / texture-failed cases.
+- **Real galactic frame math** (`src/physics/galacticFrame.ts`) —
+  standard IAU rotation matrix replacing the previous
+  empirically-tuned Euler triple. 8 unit tests.
+
+### Changed
+- OrbitControls maxDistance bumped 50 000 → 200 000 to support
+  galactic-tier camera distance.
+- Panel transparency: `--panel-bg` 0.82 → 0.55 with 20 px backdrop
+  blur + saturate(140 %); panels lift back to 0.78 on hover for
+  legibility.
+- InfoPanel gains a "🔬 Physics under the hood" collapsible section
+  showing each body's propagator type, J2000 elements, current
+  state vector, and a link to the original NASA / JPL data source.
+
+### Tests
+- 236 passing (previously 221). New unit tests for galactic-frame
+  rotations and scale-tier transitions.
+
 ## [0.2.0] – 2026-05-10
 
 ### Added
