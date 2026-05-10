@@ -20,6 +20,7 @@ import {
 import type { BodyDescriptor } from '../physics/types';
 import { DEG2RAD } from '../physics/constants';
 import { TextureConfig } from './textureConfig';
+import { bodyName, onLanguageChange } from '../i18n';
 
 /**
  * A celestial body in the scene: a sphere mesh with axial tilt + rotation,
@@ -29,7 +30,7 @@ export class BodyMesh {
   readonly group: Group;
   readonly mesh: Mesh;
   readonly descriptor: BodyDescriptor;
-  readonly label: Sprite;
+  label: Sprite;
   private readonly tilt: Group;
   private rotationRate: number;
   private rings: Mesh | null = null;
@@ -405,9 +406,14 @@ export class BodyMesh {
     this.pickable.userData.bodyId = descriptor.id;
     this.group.add(this.pickable);
 
-    this.label = this.createLabel(descriptor.name);
+    this.label = this.createLabel(bodyName(descriptor));
     this.label.position.set(0, sceneRadius * 1.6 + 0.2, 0);
     this.group.add(this.label);
+    // Re-bake the label sprite when the user switches language so the
+    // name on the planet updates without a page reload.
+    onLanguageChange(() => {
+      this.relabel(bodyName(descriptor), sceneRadius);
+    });
 
     // rotation rate: radians per simulated day. Negative period = retrograde.
     const period = descriptor.physical.rotationPeriodDays;
@@ -467,6 +473,24 @@ export class BodyMesh {
     sprite.scale.set(0.001 * aspect, 0.001, 1);
     sprite.renderOrder = 999;
     return sprite;
+  }
+
+  /**
+   * Replace the label sprite's texture with one rendered for the given
+   * text. Used by the language-switch hook so planet names update from
+   * "太陽" → "Sun" → "太陽" without rebuilding the whole BodyMesh.
+   */
+  private relabel(text: string, sceneRadius: number): void {
+    // Dispose the old map so we don't leak GPU textures on every switch.
+    const oldMat = this.label.material as SpriteMaterial;
+    oldMat.map?.dispose();
+    oldMat.dispose();
+    // Re-create using the same constructor logic, then move the geometry.
+    this.group.remove(this.label);
+    this.label = this.createLabel(text);
+    this.label.position.set(0, sceneRadius * 1.6 + 0.2, 0);
+    this.label.visible = true;
+    this.group.add(this.label);
   }
 
   setPosition(scenePos: Vector3): void {

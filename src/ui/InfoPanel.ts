@@ -161,13 +161,14 @@ function fieldDataRows(
   return rows;
 }
 
-const CATEGORY_LABEL: Record<BodyDescriptor['category'], string> = {
-  star: t('info.cat.star'),
-  planet: t('info.cat.planet'),
-  dwarf: t('info.cat.dwarf'),
-  moon: t('info.cat.moon'),
-  comet: t('info.cat.comet'),
-};
+/**
+ * Localised category label. Resolved at call-time (not module-load time),
+ * because if we cache the map at module init, switching language later
+ * leaves the panel's subtitle stuck on the language at first import.
+ */
+function categoryLabel(cat: BodyDescriptor['category']): string {
+  return t(`info.cat.${cat}`);
+}
 
 export class InfoPanel {
   private readonly el: HTMLElement;
@@ -265,7 +266,7 @@ export class InfoPanel {
     document.getElementById('info-bookmark')?.addEventListener('click', () => {
       if (!this.currentId) return;
       const entry = this.solarSystem.getBody(this.currentId);
-      const label = entry ? entry.descriptor.name : this.currentId;
+      const label = entry ? bodyName(entry.descriptor) : this.currentId;
       const bookmark = { id: this.currentId, jd: this.clock.getJd(), label, ts: Date.now() };
       const raw = localStorage.getItem('bookmarks') ?? '[]';
       let list: typeof bookmark[] = [];
@@ -721,8 +722,8 @@ export class InfoPanel {
     const parentDesc = d.parentId ? this.solarSystem.getBody(d.parentId)?.descriptor : undefined;
     const parentName = parentDesc ? bodyName(parentDesc) : '';
     this.subtitleEl.textContent = parentName
-      ? `${CATEGORY_LABEL[d.category]} · ${d.nameEn} · ${parentName}`
-      : `${CATEGORY_LABEL[d.category]} · ${d.nameEn}`;
+      ? `${categoryLabel(d.category)} · ${d.nameEn} · ${parentName}`
+      : `${categoryLabel(d.category)} · ${d.nameEn}`;
 
     const rows: [string, string][] = [];
     rows.push([t('info.row.radius'), `${formatNumber(d.physical.radiusKm, 1)} km`]);
@@ -955,7 +956,8 @@ export class InfoPanel {
     const speed = sv.velocity.length();
     const speedKmS = speed * AU_KM / 86400;
 
-    const parentName = d.parentId ? this.solarSystem.getBody(d.parentId)?.descriptor.name : t('info.parent.sun');
+    const parentDesc = d.parentId ? this.solarSystem.getBody(d.parentId)?.descriptor : undefined;
+    const parentName = parentDesc ? bodyName(parentDesc) : t('info.parent.sun');
     const dynRows: [string, string][] = [
       [`${t('info.row.distToParent')}${parentName}`, `${formatNumber(dist, 4)} AU`],
       [t('info.row.orbitalSpeed'), `${formatNumber(speedKmS, 2)} km/s`],

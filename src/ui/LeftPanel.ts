@@ -10,7 +10,7 @@ import { OBSERVER_CITIES, OBSERVER_OBSERVATORIES, OBSERVER_PRESETS } from '../ph
 import { toast } from './toast';
 import { ASTRO_EVENTS } from '../data/events';
 import type { SimulationClock } from '../time/SimulationClock';
-import { t, onLanguageChange } from '../i18n';
+import { t, onLanguageChange, bodyName } from '../i18n';
 import type { RealismPreset, RealismSettings } from '../scene/RealismSettings';
 
 /**
@@ -68,12 +68,24 @@ export class LeftPanel {
     });
 
     const followBody = document.getElementById('follow-body') as HTMLSelectElement;
-    for (const entry of solarSystem.getAllBodies()) {
-      const opt = document.createElement('option');
-      opt.value = entry.descriptor.id;
-      opt.textContent = entry.descriptor.name;
-      followBody.appendChild(opt);
-    }
+    const buildBodyOptions = () => {
+      // Preserve selection across rebuilds (e.g. after a language switch).
+      const prev = followBody.value;
+      followBody.innerHTML = '';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = '—';
+      followBody.appendChild(placeholder);
+      for (const entry of solarSystem.getAllBodies()) {
+        const opt = document.createElement('option');
+        opt.value = entry.descriptor.id;
+        opt.textContent = bodyName(entry.descriptor);
+        followBody.appendChild(opt);
+      }
+      followBody.value = prev;
+    };
+    buildBodyOptions();
+    onLanguageChange(buildBodyOptions);
     followBody.value = '';
     followBody.addEventListener('change', () => {
       const v = followBody.value || null;

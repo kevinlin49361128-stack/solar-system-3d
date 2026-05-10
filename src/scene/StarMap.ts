@@ -15,6 +15,7 @@ import { NAMED_STARS, type NamedStar } from '../data/stars';
 import { CONSTELLATIONS } from '../data/constellations';
 import { raDecToEcliptic } from '../physics/topocentric';
 import { eclipticToScene } from '../physics/frame';
+import { getLang, onLanguageChange } from '../i18n';
 
 const STAR_DOME_RADIUS = 4000;
 const STAR_LABEL_SCALE = 60; // sprite size in dome units; tuned for ~12 px on screen
@@ -105,13 +106,33 @@ export class StarMap {
     this.labels = new Group();
     this.labels.frustumCulled = false;
     this.labels.visible = this.labelsUserVisible;
-    NAMED_STARS.forEach((s) => {
-      const dirEcl = raDecToEcliptic(s.raHours, s.decDeg);
-      const dirScene = eclipticToScene(dirEcl).multiplyScalar(STAR_DOME_RADIUS * 0.99);
-      const sprite = makeStarLabelSprite(s.name);
-      sprite.position.copy(dirScene);
-      this.labels.add(sprite);
-    });
+    const buildLabels = () => {
+      // Clear existing children before rebuilding (called both at
+      // construction and after a language switch).
+      while (this.labels.children.length > 0) {
+        const child = this.labels.children[0];
+        this.labels.remove(child);
+        // dispose sprite material + texture if present
+        const mat = (child as unknown as { material?: { map?: { dispose: () => void }; dispose: () => void } }).material;
+        if (mat) {
+          mat.map?.dispose();
+          mat.dispose();
+        }
+      }
+      const lang = getLang();
+      NAMED_STARS.forEach((s) => {
+        const dirEcl = raDecToEcliptic(s.raHours, s.decDeg);
+        const dirScene = eclipticToScene(dirEcl).multiplyScalar(STAR_DOME_RADIUS * 0.99);
+        const labelText = lang === 'en' ? s.nameEn
+                        : lang === 'ja' ? (s.nameJa ?? s.nameEn)
+                        : s.name;
+        const sprite = makeStarLabelSprite(labelText);
+        sprite.position.copy(dirScene);
+        this.labels.add(sprite);
+      });
+    };
+    buildLabels();
+    onLanguageChange(buildLabels);
   }
 
   setOpacity(opacity: number): void {
