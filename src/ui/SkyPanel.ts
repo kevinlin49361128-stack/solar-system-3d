@@ -5,6 +5,9 @@ import type { InfoPanel } from './InfoPanel';
 import { NAMED_STARS } from '../data/stars';
 import { t, onLanguageChange, bodyName, maybeJa } from '../i18n';
 import { computeDailyEvents, localSiderealDeg, jdToDate } from '../physics/dailyEvents';
+import { bodyObservables, moonObservables } from '../physics/bodyObservables';
+import { eclipticDirToRaDec } from '../physics/topocentric';
+import { constellationFor, loadConstellationData } from '../physics/constellationLookup';
 
 const PRIORITY_IDS = [
   'sun', 'moon',
@@ -64,6 +67,10 @@ export class SkyPanel {
 
   show(): void {
     this.el.style.display = '';
+    // Kick off constellation-boundaries fetch on first show. Until it
+    // resolves, the lookup just returns null and we render no constellation
+    // chip — better than blocking the whole panel on a 150 KB JSON.
+    void loadConstellationData('/iau-boundaries.json').catch(() => { /* fail silently */ });
     if (this.rafId == null) this.tick();
   }
 
@@ -85,15 +92,46 @@ export class SkyPanel {
   };
 
   private render(): void {
-    const bodyRows: { id: string; name: string; alt: number; az: number }[] = [];
-    const starRows: { ra: number; dec: number; pmRA?: number; pmDec?: number; name: string; bayer: string; mag: number; alt: number; az: number }[] = [];
+    const bodyRows: { id: string; name: string; alt: number; az: number; mag: number; constellation: string | null }[] = [];
+    const starRows: { ra: number; dec: number; pmRA?: number; pmDec?: number; name: string; bayer: string; mag: number; alt: number; az: number; constellation: string | null }[] = [];
+
+    // Earth's heliocentric position is needed for every body's apparent
+    // magnitude calculation (and to compute body→Earth direction for
+    // constellation lookup). Fetch it once per render.
+    const jd = this.clock.getJd();
+    const earth = this.solarSystem.getBody('earth');
+    const earthHelio = earth?.descriptor.propagator?.stateAt(jd).position;
 
     for (const id of PRIORITY_IDS) {
       const entry = this.solarSystem.getBody(id);
       if (!entry) continue;
       const aa = this.cameraCtl.getBodyAltAz(id);
       if (!aa) continue;
-      bodyRows.push({ id, name: bodyName(entry.descriptor), alt: aa.altDeg, az: aa.azDeg });
+
+      // Apparent magnitude. Sun has no propagator and a fixed mag.
+      // Other bodies use phase-corrected Pogson formula.
+      let mag = NaN;
+      let constellation: string | null = null;
+      if (id === 'sun') {
+        mag = -26.7;
+      } else if (entry.descriptor.propagator && earthHelio) {
+        const sv = entry.descriptor.propagator.stateAt(jd);
+        const obs = entry.descriptor.parentId === 'earth'
+          ? moonObservables(sv.position, earthHelio, entry.descriptor.physical.radiusKm)
+          : bodyObservables(id, sv.position, earthHelio, entry.descriptor.physical.radiusKm);
+        mag = obs.apparentMagnitude;
+
+        // Constellation: geocentric apparent direction in ecliptic frame.
+        // For the Moon the propagator already returns geocentric coords;
+        // for everyone else, subtract Earth's heliocentric position.
+        const geoDir = entry.descriptor.parentId === 'earth'
+          ? sv.position
+          : sv.position.clone().sub(earthHelio);
+        const { raHours, decDeg } = eclipticDirToRaDec(geoDir.x, geoDir.y, geoDir.z);
+        constellation = constellationFor(raHours, decDeg);
+      }
+
+      bodyRows.push({ id, name: bodyName(entry.descriptor), alt: aa.altDeg, az: aa.azDeg, mag, constellation });
     }
 
     for (const star of NAMED_STARS) {
@@ -109,24 +147,42 @@ export class SkyPanel {
         mag: star.magnitude,
         alt: aa.altDeg,
         az: aa.azDeg,
+        constellation: constellationFor(star.raHours, star.decDeg),
       });
     }
 
-    const altSort = (a: { alt: number }, b: { alt: number }) => {
-      const av = a.alt > 0 ? 1 : 0;
-      const bv = b.alt > 0 ? 1 : 0;
-      if (av !== bv) return bv - av;
+    // Sort: above-horizon AND naked-eye visible (mag ≤ 6.0) first,
+    // then by magnitude ascending (brightest → dimmest), with altitude
+    // as the tiebreaker. Below-horizon and dim entries sort to the
+    // bottom but stay listed (faded) so the user can see what'll come
+    // up later.
+    //
+    // Why this order: the original alt-only sort hid the climax of any
+    // sky — Jupiter at +2° alt (mag −1.8, naked-eye obvious) sat below
+    // Makemake at +84° alt (mag 17, needs a 14-inch telescope). Users
+    // asking "what should I look at" want bright and visible first.
+    const visibilitySort = (a: { alt: number; mag: number }, b: { alt: number; mag: number }) => {
+      const aVisible = a.alt > 0 && a.mag <= 6.0 ? 1 : 0;
+      const bVisible = b.alt > 0 && b.mag <= 6.0 ? 1 : 0;
+      if (aVisible !== bVisible) return bVisible - aVisible;
+      const aUp = a.alt > 0 ? 1 : 0;
+      const bUp = b.alt > 0 ? 1 : 0;
+      if (aUp !== bUp) return bUp - aUp;
+      // Both visible (or both not) — magnitude wins, NaN sorts last.
+      const aMag = Number.isFinite(a.mag) ? a.mag : 99;
+      const bMag = Number.isFinite(b.mag) ? b.mag : 99;
+      if (Math.abs(aMag - bMag) > 0.05) return aMag - bMag;
       return b.alt - a.alt;
     };
-    bodyRows.sort(altSort);
-    starRows.sort(altSort);
+    bodyRows.sort(visibilitySort);
+    starRows.sort(visibilitySort);
 
     let html = this.renderTonightSection();
     html += `<div class="sky-section-title">${t('sky.solarSystem')}</div>`;
-    html += bodyRows.map(r => this.bodyRowHtml(r.id, r.name, r.alt, r.az)).join('');
+    html += bodyRows.map(r => this.bodyRowHtml(r.id, r.name, r.alt, r.az, r.mag, r.constellation)).join('');
     html += `<div class="sky-section-title" style="margin-top:8px;">${t('sky.stars')}</div>`;
     html += starRows.map(r =>
-      this.starRowHtml(r.ra, r.dec, r.pmRA, r.pmDec, r.name, r.bayer, r.mag, r.alt, r.az)
+      this.starRowHtml(r.ra, r.dec, r.pmRA, r.pmDec, r.name, r.bayer, r.mag, r.alt, r.az, r.constellation)
     ).join('');
 
     this.listEl.innerHTML = html;
@@ -180,26 +236,35 @@ export class SkyPanel {
     `;
   }
 
-  private bodyRowHtml(id: string, name: string, alt: number, az: number): string {
+  private bodyRowHtml(id: string, name: string, alt: number, az: number, mag: number, constellation: string | null): string {
     const altStr = `${alt >= 0 ? '+' : ''}${alt.toFixed(1)}°`;
     const azStr = `${az.toFixed(0)}°`;
     const opacity = alt > 0 ? 1 : 0.35;
+    const magStr = Number.isFinite(mag)
+      ? `<span style="color:var(--text-dim);font-size:10px;">m=${mag >= 0 ? '+' : ''}${mag.toFixed(1)}</span>`
+      : '';
+    const constStr = constellation
+      ? `<span style="color:var(--text-dim);font-size:10px;margin-left:4px;">${constellation}</span>`
+      : '';
     return `<div class="sky-row" data-body-id="${id}" style="opacity:${opacity};cursor:pointer;" title="${t('sky.dblClickCenter')}">` +
-      `<span class="name">${name}</span>` +
+      `<span class="name">${name} ${magStr}${constStr}</span>` +
       `<span class="alt">${altStr}</span>` +
       `<span class="az">${azStr}</span>` +
       `</div>`;
   }
 
   // (pad2 lives in this module — see end of file.)
-  private starRowHtml(ra: number, dec: number, pmRA: number | undefined, pmDec: number | undefined, name: string, bayer: string, mag: number, alt: number, az: number): string {
+  private starRowHtml(ra: number, dec: number, pmRA: number | undefined, pmDec: number | undefined, name: string, bayer: string, mag: number, alt: number, az: number, constellation: string | null): string {
     const altStr = `${alt >= 0 ? '+' : ''}${alt.toFixed(1)}°`;
     const azStr = `${az.toFixed(0)}°`;
     const opacity = alt > 0 ? 1 : 0.3;
     const sub = bayer ? ` <span style="color:var(--text-dim);font-size:10px;">${bayer}</span>` : '';
+    const constStr = constellation
+      ? `<span style="color:var(--text-dim);font-size:10px;margin-left:4px;">${constellation}</span>`
+      : '';
     const pmAttr = pmRA !== undefined && pmDec !== undefined ? ` data-pm-ra="${pmRA}" data-pm-dec="${pmDec}"` : '';
     return `<div class="sky-row" data-ra="${ra}" data-dec="${dec}"${pmAttr} style="opacity:${opacity};cursor:pointer;" title="${t('sky.dblClickCenter')}">` +
-      `<span class="name">${name}${sub} <span style="color:var(--text-dim);font-size:10px;">m=${mag.toFixed(1)}</span></span>` +
+      `<span class="name">${name}${sub} <span style="color:var(--text-dim);font-size:10px;">m=${mag.toFixed(1)}</span>${constStr}</span>` +
       `<span class="alt">${altStr}</span>` +
       `<span class="az">${azStr}</span>` +
       `</div>`;

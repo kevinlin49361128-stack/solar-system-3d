@@ -147,6 +147,34 @@ export function applyAberration(
   return starDirEcl.clone().addScaledVector(perp, kappa).normalize();
 }
 
+/**
+ * Inverse of `raDecToEcliptic` for J2000: takes a 3D direction in the
+ * ecliptic-J2000 frame (any non-zero magnitude OK; we only use the
+ * direction) and returns its equatorial RA in hours [0, 24) and Dec in
+ * degrees [-90, +90]. Used by SkyPanel to look up which constellation
+ * a planet currently occupies.
+ *
+ * No precession or nutation — fine for "what constellation" since the
+ * IAU 88 boundaries are large enough that J2000-vs-mean-of-date drift
+ * (≤ 1.4° by 2100) doesn't change the answer except for points right
+ * on a boundary.
+ */
+export function eclipticDirToRaDec(eclX: number, eclY: number, eclZ: number): { raHours: number; decDeg: number } {
+  // Ecliptic → equatorial: rotate +ε around X (inverse of the rotation
+  // baked into raDecToEcliptic, which goes equatorial → ecliptic via −ε).
+  const ce = Math.cos(EARTH_TILT_RAD);
+  const se = Math.sin(EARTH_TILT_RAD);
+  const eqX = eclX;
+  const eqY = ce * eclY - se * eclZ;
+  const eqZ = se * eclY + ce * eclZ;
+  const len = Math.hypot(eqX, eqY, eqZ);
+  if (len === 0) return { raHours: 0, decDeg: 0 };
+  const decRad = Math.asin(Math.max(-1, Math.min(1, eqZ / len)));
+  let raRad = Math.atan2(eqY, eqX);
+  if (raRad < 0) raRad += 2 * Math.PI;
+  return { raHours: raRad * 12 / Math.PI, decDeg: decRad * 180 / Math.PI };
+}
+
 export function raDecToEcliptic(raHours: number, decDeg: number, jd?: number): Vector3 {
   let ra = raHours * Math.PI / 12;
   let dec = decDeg * DEG2RAD;
