@@ -1,7 +1,7 @@
 import type { CameraController } from '../controls/CameraController';
 import type { SolarSystem } from '../scene/SolarSystem';
 import type { InfoPanel } from './InfoPanel';
-import { t } from '../i18n';
+import { t, onLanguageChange, bodyName, getLang } from '../i18n';
 import { NAMED_STARS } from '../data/stars';
 import { OBSERVER_PRESETS } from '../physics/topocentric';
 import { CONSTELLATIONS } from '../data/constellations';
@@ -80,6 +80,14 @@ export class SearchBar {
     // Stash for the RA/Dec parsing path which can't see this scope.
     (window as { __cameraCtl?: CameraController }).__cameraCtl = cameraCtl;
     this.buildEntries(solarSystem, cameraCtl, infoPanel);
+    // Rebuild entries when the user switches language so labels (body
+    // names, observer-preset names, named stars, constellations) are
+    // shown in the active language. Re-render if the overlay is visible.
+    onLanguageChange(() => {
+      this.entries = [];
+      this.buildEntries(solarSystem, cameraCtl, infoPanel);
+      if (this.isOpen()) this.render();
+    });
 
     window.addEventListener('keydown', (e) => {
       if ((e.metaKey || e.ctrlKey) && (e.key === 'f' || e.key === 'F')) {
@@ -110,12 +118,16 @@ export class SearchBar {
     cameraCtl: CameraController,
     infoPanel: InfoPanel,
   ): void {
-    // Bodies
+    const lang = getLang();
+    // Bodies — pick name in the active language; keep the haystack
+    // multilingual so a Japanese user can still find a body by typing
+    // its English name.
     for (const entry of solarSystem.getAllBodies()) {
       const d = entry.descriptor;
+      const label = bodyName(d);
       this.entries.push({
         id: `body:${d.id}`,
-        label: d.name,
+        label,
         sub: `${d.nameEn} · ${d.category}`,
         kind: 'body',
         search: `${d.name} ${d.nameEn} ${d.id}`.toLowerCase(),
@@ -127,11 +139,12 @@ export class SearchBar {
         },
       });
     }
-    // Stars
+    // Stars — NAMED_STARS items have name (zh) + nameEn; pick by lang.
     for (const s of NAMED_STARS) {
+      const label = lang === 'en' ? s.nameEn : s.name;
       this.entries.push({
         id: `star:${s.id}`,
-        label: s.name,
+        label,
         sub: `${s.nameEn}${s.bayer ? ' · ' + s.bayer : ''} · m=${s.magnitude.toFixed(1)}`,
         kind: 'star',
         search: `${s.name} ${s.nameEn} ${s.bayer ?? ''} ${s.id}`.toLowerCase(),
@@ -145,30 +158,36 @@ export class SearchBar {
         },
       });
     }
-    // Observation sites
+    // Observation sites — ObserverLocation has nameEn + nameJa.
     for (const p of OBSERVER_PRESETS) {
+      const label = lang === 'en'
+        ? (p.nameEn ?? p.name)
+        : lang === 'ja'
+          ? (p.nameJa ?? p.nameEn ?? p.name)
+          : p.name;
       this.entries.push({
         id: `site:${p.id}`,
-        label: p.name,
+        label,
         sub: `${p.nameEn ?? ''} · ${p.lat.toFixed(2)}, ${p.lon.toFixed(2)}`,
         kind: 'site',
-        search: `${p.name} ${p.nameEn ?? ''} ${p.id}`.toLowerCase(),
+        search: `${p.name} ${p.nameEn ?? ''} ${p.nameJa ?? ''} ${p.id}`.toLowerCase(),
         action: () => {
           (document.getElementById('observer-preset') as HTMLSelectElement).value = p.id;
           (document.getElementById('observer-preset') as HTMLSelectElement).dispatchEvent(new Event('change'));
         },
       });
     }
-    // Constellations
+    // Constellations — CONSTELLATIONS items have name (zh) + nameEn.
     for (const c of CONSTELLATIONS) {
+      const label = lang === 'en' ? c.nameEn : c.name;
       this.entries.push({
         id: `con:${c.id}`,
-        label: c.name,
+        label,
         sub: c.nameEn,
         kind: 'constellation',
         search: `${c.name} ${c.nameEn} ${c.id}`.toLowerCase(),
         action: () => {
-          alert(`${c.name} (${c.nameEn})\n${t('search.constellationLines')} ${c.lines.length} ${t('search.constellationLines2')}.\n${t('search.observerHint')}`);
+          alert(`${label} (${c.nameEn})\n${t('search.constellationLines')} ${c.lines.length} ${t('search.constellationLines2')}.\n${t('search.observerHint')}`);
         },
       });
     }

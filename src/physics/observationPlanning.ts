@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 /**
  * Per-body observation planning helpers — answer "when is X visible?"
  * questions for the user's current location and time. All inputs are
@@ -37,16 +39,16 @@ export function currentVisibility(altDeg: number, sunAltDeg: number): BodyVisibi
   let statusLabel: string;
   if (!aboveHorizon) {
     status = 'below-horizon';
-    statusLabel = '🌑 地平線下';
+    statusLabel = t('plan.status.belowHorizon');
   } else if (sunAltDeg > -0.833) {
     status = 'sun-up';
-    statusLabel = '☀️ 太陽未沉，難觀測';
+    statusLabel = t('plan.status.sunUp');
   } else if (!darkSky) {
     status = 'twilight';
-    statusLabel = '🌆 暮光中（−18° < 太陽 < −6°）';
+    statusLabel = t('plan.status.twilight');
   } else {
     status = 'observable';
-    statusLabel = '🌙 適合觀測';
+    statusLabel = t('plan.status.observable');
   }
   return { altDeg, sunAltDeg, aboveHorizon, darkSky, status, statusLabel };
 }

@@ -608,6 +608,83 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'obslog.imported':         { 'zh-Hant': '已匯入 N 筆觀測紀錄', 'en': 'Imported N observation entries', 'ja': '観測記録を N 件読み込みました' },
   'obslog.importFail':       { 'zh-Hant': '匯入失敗', 'en': 'Import failed', 'ja': '読み込み失敗' },
   'obslog.clearConfirmCount':{ 'zh-Hant': '筆',       'en': 'entries',       'ja': '件' },
+
+  // Horizons external integration (main.ts dynamic status)
+  'horizons.loading':  { 'zh-Hant': '查詢中…',                       'en': 'Loading…',                              'ja': '読み込み中…' },
+  'horizons.noOrbit':  { 'zh-Hant': '查無軌道（檢查名稱 / SPK）',     'en': 'No orbit found (check name / SPK ID)',  'ja': '軌道が見つかりません（名称 / SPK を確認）' },
+  'horizons.added':    { 'zh-Hant': '已加入：{name}（{n} 點）',       'en': 'Added: {name} ({n} samples)',           'ja': '追加しました：{name}（{n} 点）' },
+  'horizons.dupName':  { 'zh-Hant': '已存在同名物體',                 'en': 'Object with that name already exists',  'ja': '同名の天体がすでに存在します' },
+  'horizons.error':    { 'zh-Hant': '錯誤：{err}',                    'en': 'Error: {err}',                          'ja': 'エラー：{err}' },
+
+  // Stellarium telescope status (main.ts)
+  'telescope.connected':     { 'zh-Hant': '已連接 ✓', 'en': 'Connected ✓',     'ja': '接続済 ✓' },
+  'telescope.disconnect':    { 'zh-Hant': '中斷',     'en': 'Disconnect',      'ja': '切断' },
+  'telescope.connectFailed': { 'zh-Hant': '連接失敗', 'en': 'Connection failed','ja': '接続失敗' },
+  'telescope.idle':          { 'zh-Hant': '未連接',   'en': 'Not connected',   'ja': '未接続' },
+  'telescope.connect':       { 'zh-Hant': '連接',     'en': 'Connect',         'ja': '接続' },
+
+  // Measure tool / observer overlays (main.ts)
+  'measure.pickNext':        { 'zh-Hant': '點下一個',  'en': 'pick next',       'ja': '次を選択' },
+  'compass.az':              { 'zh-Hant': '方位',      'en': 'Az',              'ja': '方位' },
+  'compass.alt':             { 'zh-Hant': '仰角',      'en': 'Alt',             'ja': '仰角' },
+  'observer.customLocation': { 'zh-Hant': '自訂位置',  'en': 'Custom location', 'ja': 'カスタム位置' },
+  'track.sidereal':          { 'zh-Hant': '≈ 恆星時',                'en': '≈ sidereal',                  'ja': '≈ 恒星時' },
+  'track.vsSidereal':        { 'zh-Hant': '″/s vs 恆星時',           'en': '″/s vs sidereal',             'ja': '″/s 対 恒星時' },
+
+  // Observability reason codes (physics/observability.ts)
+  'obs.reason.belowHorizon':       { 'zh-Hant': '目標位於地平線下',                                  'en': 'Target is below the horizon',                              'ja': '目標は地平線下にあります' },
+  'obs.reason.belowHorizonDetail': { 'zh-Hant': '目標位於地平線下（仰角 ≤ 0°）',                      'en': 'Target is below the horizon (altitude ≤ 0°)',              'ja': '目標は地平線下（仰角 ≤ 0°）' },
+  'obs.reason.altVeryLow':         { 'zh-Hant': '仰角僅 {alt}°，極低（受地形遮蔽 + 大量大氣消光）',    'en': 'Altitude only {alt}° — very low (terrain + heavy atmospheric extinction)', 'ja': '仰角はわずか {alt}°（地形遮蔽 + 大気減光）' },
+  'obs.reason.altLow':             { 'zh-Hant': '仰角偏低 {alt}°（airmass > 4，星光顯著減弱）',        'en': 'Low altitude {alt}° (airmass > 4, significant dimming)',   'ja': '仰角が低い {alt}°（airmass > 4、減光が顕著）' },
+  'obs.reason.altMid':             { 'zh-Hant': '仰角中等 {alt}°（airmass ~2，可觀但非最佳）',         'en': 'Moderate altitude {alt}° (airmass ~2, observable but not optimal)', 'ja': '中程度の仰角 {alt}°（airmass ~2、観測可能だが最適ではない）' },
+  'obs.reason.twilightCivil':      { 'zh-Hant': '尚未天文夜（太陽仰角 > -6°，市民/航海曙暮光）',       'en': 'Not yet astronomical night (sun > -6°, civil/nautical twilight)', 'ja': '天文夜になっていません（太陽 > -6°、市民/航海薄明）' },
+  'obs.reason.twilightNautical':   { 'zh-Hant': '航海曙暮光中（太陽 -12° 以上，背景仍亮）',            'en': 'Nautical twilight (sun above -12°, sky still bright)',     'ja': '航海薄明中（太陽 -12° 以上、空はまだ明るい）' },
+  'obs.reason.twilightAstro':      { 'zh-Hant': '天文曙暮光（太陽 -18° 以上，背景輕微泛光）',          'en': 'Astronomical twilight (sun above -18°, slight skyglow)',   'ja': '天文薄明（太陽 -18° 以上、わずかな空の明るさ）' },
+  'obs.reason.moonHeavy':          { 'zh-Hant': '月光嚴重影響（{pct}% 月相，距目標 {dist}°）',         'en': 'Severe moonlight impact ({pct}% phase, {dist}° from target)','ja': '月光の影響大（月相 {pct}%、目標から {dist}°）' },
+  'obs.reason.moonStrong':         { 'zh-Hant': '月光影響（{pct}% 月相，距目標 {dist}°）',             'en': 'Moonlight impact ({pct}% phase, {dist}° from target)',     'ja': '月光の影響あり（月相 {pct}%、目標から {dist}°）' },
+  'obs.reason.moonBrightFar':      { 'zh-Hant': '亮月（{pct}%）在天空，但距目標 {dist}° 較遠',          'en': 'Bright moon ({pct}%) up, but {dist}° from target',         'ja': '明るい月（{pct}%）が出ているが、目標から {dist}° 離れている' },
+  'obs.reason.moonMildClose':      { 'zh-Hant': '月光輕度影響（{pct}% 月相，距目標 {dist}°）',          'en': 'Mild moonlight ({pct}% phase, {dist}° from target)',       'ja': '月光わずかに影響（月相 {pct}%、目標から {dist}°）' },
+  'obs.reason.moonMild':           { 'zh-Hant': '月光輕度影響（{pct}% 月相）',                          'en': 'Mild moonlight ({pct}% phase)',                            'ja': '月光わずかに影響（月相 {pct}%）' },
+  'obs.reason.magBelowLimit':      { 'zh-Hant': '亮度低於可見極限 {amount} mag（目標 {tmag} vs 可見 {limit}）', 'en': 'Brightness below limit by {amount} mag (target {tmag} vs limit {limit})', 'ja': '輝度が可視限界より {amount} mag 下回る（目標 {tmag} vs 限界 {limit}）' },
+  'obs.reason.magNearLimit':       { 'zh-Hant': '接近可見極限（餘量僅 {margin} mag，需要好條件 + 適應暗）', 'en': 'Near visibility limit (margin only {margin} mag — needs good conditions + dark adaptation)', 'ja': '可視限界に近い（余裕は {margin} mag のみ、好条件 + 暗順応が必要）' },
+  'obs.reason.magMargin':          { 'zh-Hant': '亮度餘量 {margin} mag（可見但不顯眼）',                'en': 'Brightness margin {margin} mag (visible but inconspicuous)','ja': '輝度余裕 {margin} mag（可視だが目立たない）' },
+  'obs.reason.goodConditions':     { 'zh-Hant': '條件良好',                                            'en': 'Good conditions',                                          'ja': '条件良好' },
+
+  // Observation planning status (physics/observationPlanning.ts)
+  'plan.status.belowHorizon':  { 'zh-Hant': '🌑 地平線下',               'en': '🌑 Below horizon',                'ja': '🌑 地平線下' },
+  'plan.status.sunUp':         { 'zh-Hant': '☀️ 太陽未沉，難觀測',        'en': '☀️ Sun still up — hard to observe','ja': '☀️ 太陽が沈んでおらず観測困難' },
+  'plan.status.twilight':      { 'zh-Hant': '🌆 暮光中（−18° < 太陽 < −6°）','en': '🌆 In twilight (−18° < sun < −6°)','ja': '🌆 薄明中（−18° < 太陽 < −6°）' },
+  'plan.status.observable':    { 'zh-Hant': '🌙 適合觀測',                 'en': '🌙 Good for observing',           'ja': '🌙 観測に適しています' },
+
+  // Event kind names (physics/eventScanner.ts)
+  'event.kind.opposition':         { 'zh-Hant': '衝',          'en': 'Opposition',            'ja': '衝' },
+  'event.kind.conjunction-sup':    { 'zh-Hant': '上合',        'en': 'Superior conjunction',  'ja': '外合' },
+  'event.kind.conjunction-inf':    { 'zh-Hant': '下合',        'en': 'Inferior conjunction',  'ja': '内合' },
+  'event.kind.elongation-east':    { 'zh-Hant': '東大距',      'en': 'Greatest eastern elongation', 'ja': '東方最大離角' },
+  'event.kind.elongation-west':    { 'zh-Hant': '西大距',      'en': 'Greatest western elongation', 'ja': '西方最大離角' },
+  'event.kind.new-moon':           { 'zh-Hant': '新月',        'en': 'New moon',              'ja': '新月' },
+  'event.kind.full-moon':          { 'zh-Hant': '滿月',        'en': 'Full moon',             'ja': '満月' },
+  'event.kind.solar-eclipse':      { 'zh-Hant': '日食（可能）','en': 'Solar eclipse (possible)','ja': '日食（可能性）' },
+  'event.kind.lunar-eclipse':      { 'zh-Hant': '月食（可能）','en': 'Lunar eclipse (possible)','ja': '月食（可能性）' },
+  'event.kind.transit':            { 'zh-Hant': '凌日',        'en': 'Transit',               'ja': '太陽面通過' },
+  'event.kind.occultation':        { 'zh-Hant': '月掩星',      'en': 'Lunar occultation',     'ja': '月の掩蔽' },
+  'event.kind.equinox':            { 'zh-Hant': '分點',        'en': 'Equinox',               'ja': '分点' },
+  'event.kind.solstice':           { 'zh-Hant': '至點',        'en': 'Solstice',              'ja': '至点' },
+  'event.kind.perihelion':         { 'zh-Hant': '近日點',      'en': 'Perihelion',            'ja': '近日点' },
+  'event.kind.aphelion':           { 'zh-Hant': '遠日點',      'en': 'Aphelion',              'ja': '遠日点' },
+  'event.kind.planet-conjunction': { 'zh-Hant': '行星合',      'en': 'Planetary conjunction', 'ja': '惑星の合' },
+
+  // EclipseMap details (ui/EclipseMap.ts footer)
+  'em.maxWidth':   { 'zh-Hant': '食帶最寬',           'en': 'Max path width',     'ja': '食帯最大幅' },
+  'em.peak':       { 'zh-Hant': '食甚：',              'en': 'Greatest:',          'ja': '食の最大：' },
+  'em.location':   { 'zh-Hant': '位置：',              'en': 'Location:',          'ja': '位置：' },
+  'em.bandStart':  { 'zh-Hant': '影帶起點：',          'en': 'Path start:',        'ja': '食帯開始：' },
+  'em.bandEnd':    { 'zh-Hant': '影帶終點：',          'en': 'Path end:',          'ja': '食帯終了：' },
+  'em.legend':     { 'zh-Hant': '紅色中心線 = 全食/環食帶；金色 ★ = 食甚位置；標示為距食甚的時間（分鐘）。', 'en': 'Red centerline = totality/annularity path; gold ★ = greatest-eclipse spot; labels are minutes from greatest.', 'ja': '赤線 = 皆既/金環帯；金色 ★ = 食最大の位置；ラベルは食最大からの分単位。' },
+
+  // LunarEclipseMap details (ui/LunarEclipseMap.ts)
+  'lecl.date':            { 'zh-Hant': '日期：',                                                'en': 'Date:',                                                       'ja': '日付：' },
+  'lecl.danjonFootnote':  { 'zh-Hant': '包含 Danjon 大氣修正（影錐 +2%）；食甚時刻 < 1 分鐘誤差，接觸時刻 ±1-2 分鐘。', 'en': 'Includes Danjon atmospheric correction (umbra +2%); greatest-eclipse time < 1 min error, contact times ±1–2 min.', 'ja': 'Danjon 大気補正を含む（影錐 +2%）。食最大は誤差 <1 分、接触は ±1〜2 分。' },
 };
 
 let currentLang: Lang = (localStorage.getItem('solarSysLang') as Lang) || 'zh-Hant';

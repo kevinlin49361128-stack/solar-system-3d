@@ -182,7 +182,7 @@ export class LunarEclipseMap {
       : '—';
     this.detailsEl.innerHTML = `
       <div><b>${kindLabel}</b>${r.kind !== 'none' ? ` · ${t('lecl.magnitude')} ${r.umbraMagnitude.toFixed(3)}` : ''}</div>
-      <div style="margin-top:6px;">日期：${date}</div>
+      <div style="margin-top:6px;">${t('lecl.date')}${date}</div>
       <table style="font-size:11px;margin-top:6px;width:100%;border-collapse:collapse;">
         <tr><td style="color:rgba(180,200,230,0.85);">${t('lecl.p1')}</td><td style="text-align:right;">${fmtTime(r.p1Jd)}</td></tr>
         <tr><td style="color:#ff7050;">${t('lecl.u1')}</td><td style="text-align:right;">${fmtTime(r.u1Jd)}</td></tr>
@@ -200,7 +200,7 @@ export class LunarEclipseMap {
           : r.kind === 'penumbral'
           ? t('lecl.note.penumbral')
           : ''}
-        <br>包含 Danjon 大氣修正（影錐 +2%）；食甚時刻 < 1 分鐘誤差，接觸時刻 ±1-2 分鐘。
+        <br>${t('lecl.danjonFootnote')}
       </div>
     `;
   }

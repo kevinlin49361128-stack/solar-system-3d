@@ -665,14 +665,14 @@ import type { BodyDescriptor } from './physics/types';
     const target = input.value.trim();
     if (!target) return;
     btn.disabled = true;
-    status.textContent = '查詢中…';
+    status.textContent = t('horizons.loading');
     try {
       // Fetch ±1 year around current sim time at 5-day resolution; Hermite
       // interpolation makes that smooth for visualisation purposes.
       const jd = clock.getJd();
       const result = await fetchHorizonsVectors(target, jd - 365, jd + 365, 5);
       if (!result.states.length) {
-        status.textContent = '查無軌道（檢查名稱 / SPK）';
+        status.textContent = t('horizons.noOrbit');
         return;
       }
       const propagator = new HorizonsPropagator(result.states);
@@ -686,19 +686,21 @@ import type { BodyDescriptor } from './physics/types';
         physical: { radiusKm: 5, massKg: 1e13, rotationPeriodDays: 1, axialTiltDeg: 0 },
         propagator,
         appearance: { color: 0xffd060 },
-        description: { 'zh-Hant': `Horizons 載入：${result.name}`, en: `Horizons: ${result.name}`, ja: `Horizons: ${result.name}` },
+        description: { 'zh-Hant': `Horizons 載入：${result.name}`, en: `Horizons: ${result.name}`, ja: `Horizons 読み込み：${result.name}` },
       };
       const ok = solarSystem.addRuntimeBody(desc);
       if (ok) {
         runtimeIds.push(id);
-        status.textContent = `已加入：${result.name}（${result.states.length} 點）`;
+        status.textContent = t('horizons.added')
+          .replace('{name}', result.name)
+          .replace('{n}', String(result.states.length));
         // Force a render update so the new body appears immediately.
         solarSystem.update(jd);
       } else {
-        status.textContent = '已存在同名物體';
+        status.textContent = t('horizons.dupName');
       }
     } catch (e) {
-      status.textContent = '錯誤：' + String(e);
+      status.textContent = t('horizons.error').replace('{err}', String(e));
     } finally {
       btn.disabled = false;
     }
@@ -712,11 +714,27 @@ const stellariumScope = new StellariumTelescope();
   const btn = document.getElementById('telescope-connect') as HTMLButtonElement | null;
   const status = document.getElementById('telescope-status');
   if (!urlInput || !btn || !status) return;
+  // Track current state so we can re-render on language change without
+  // waiting for the next StellariumTelescope state event.
+  let currentState: 'connected' | 'error' | 'idle' = 'idle';
+  const renderState = (): void => {
+    if (currentState === 'connected') {
+      status.textContent = t('telescope.connected');
+      btn.textContent = t('telescope.disconnect');
+    } else if (currentState === 'error') {
+      status.textContent = t('telescope.connectFailed');
+      btn.textContent = t('telescope.connect');
+    } else {
+      status.textContent = t('telescope.idle');
+      btn.textContent = t('telescope.connect');
+    }
+  };
   stellariumScope.onStateChange((s) => {
-    if (s === 'connected') { status.textContent = '已連接 ✓'; btn.textContent = '中斷'; }
-    else if (s === 'error')  { status.textContent = '連接失敗'; btn.textContent = '連接'; }
-    else                     { status.textContent = '未連接';   btn.textContent = '連接'; }
+    currentState = s === 'connected' ? 'connected' : s === 'error' ? 'error' : 'idle';
+    renderState();
   });
+  onLanguageChange(renderState);
+  renderState();
   btn.addEventListener('click', async () => {
     if (stellariumScope.isConnected()) {
       stellariumScope.disconnect();
@@ -878,7 +896,9 @@ setupUiPersistence();
     if (!id) return;
     if (!firstId) {
       firstId = id;
-      content.textContent = `${solarSystem.getBody(id)?.descriptor.name ?? id} → 點下一個`;
+      const entry = solarSystem.getBody(id);
+      const nm = entry ? bodyName(entry.descriptor) : id;
+      content.textContent = `${nm} → ${t('measure.pickNext')}`;
       readout.style.display = '';
       return;
     }
@@ -894,8 +914,10 @@ setupUiPersistence();
     const dot = Math.max(-1, Math.min(1, da.dot(db)));
     const cross = da.clone().cross(db).length();
     const angDeg = Math.atan2(cross, dot) * 180 / Math.PI;
-    const aName = solarSystem.getBody(firstId)?.descriptor.name ?? firstId;
-    const bName = solarSystem.getBody(id)?.descriptor.name ?? id;
+    const aEntry = solarSystem.getBody(firstId);
+    const bEntry = solarSystem.getBody(id);
+    const aName = aEntry ? bodyName(aEntry.descriptor) : firstId;
+    const bName = bEntry ? bodyName(bEntry.descriptor) : id;
     content.textContent = `${aName} ↔ ${bName}: ${angDeg.toFixed(3)}°` +
       (angDeg < 1 ? ` (${(angDeg * 60).toFixed(2)}′)` : '');
     firstId = null;
@@ -1086,7 +1108,7 @@ function updateObserverReticle(): void {
   // readout couldn't.
   const cardinal = cardinalLabel(azDeg);
   compassReadout.textContent =
-    `${cardinal} · 方位 ${formatDMS(azDeg)} · 仰角 ${formatDMS(altDeg, true)}`;
+    `${cardinal} · ${t('compass.az')} ${formatDMS(azDeg)} · ${t('compass.alt')} ${formatDMS(altDeg, true)}`;
   updateLocalTimeReadout();
   updateFovReadout();
   updateTrackReadout();
@@ -1117,7 +1139,7 @@ function updateLocalTimeReadout(): void {
   // Site label: prefer the matched preset's name; fall back to manual lat/lon.
   const presetSel = document.getElementById('observer-preset') as HTMLSelectElement | null;
   const presetVal = presetSel?.value;
-  let siteLabel = '自訂位置';
+  let siteLabel = t('observer.customLocation');
   if (presetVal) {
     const opt = presetSel?.querySelector(`option[value="${presetVal}"]`);
     if (opt?.textContent) siteLabel = opt.textContent.trim();
@@ -1158,8 +1180,8 @@ function updateTrackReadout(): void {
   const arrow = paCardinal(v.paDeg);
   const dev = v.sideralOffsetArcsecPerSec;
   const devStr = Math.abs(dev) < 0.05
-    ? '≈ 恆星時'
-    : `${dev > 0 ? '+' : ''}${dev.toFixed(2)}″/s vs 恆星時`;
+    ? t('track.sidereal')
+    : `${dev > 0 ? '+' : ''}${dev.toFixed(2)}${t('track.vsSidereal')}`;
   trackReadoutEl.innerHTML =
     `<span class="track-rate">📌 ${formatRate(v.rateArcsecPerSec)}</span> ` +
     `<span class="track-pa">${arrow} ${v.paDeg.toFixed(1)}°</span>` +

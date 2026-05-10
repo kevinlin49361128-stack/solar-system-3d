@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 /**
  * "今晚可見性" — composite observability scorer for stars and DSOs.
  *
@@ -73,49 +75,51 @@ export function scoreObservability(f: ObservabilityFactors): ObservabilityResult
     return {
       rating: 'invisible',
       effectiveLimitMag: 0,
-      primaryReason: '目標位於地平線下',
-      reasons: ['目標位於地平線下（仰角 ≤ 0°）'],
+      primaryReason: t('obs.reason.belowHorizon'),
+      reasons: [t('obs.reason.belowHorizonDetail')],
     };
   }
 
   // 2. Altitude penalty (airmass = 1/sin(alt) approx)
   // Below 15° atmospheric extinction is significant.
+  const altStr = f.targetAltDeg.toFixed(1);
   if (f.targetAltDeg < 5) {
-    reasons.push({ weight: 4, text: `仰角僅 ${f.targetAltDeg.toFixed(1)}°，極低（受地形遮蔽 + 大量大氣消光）` });
+    reasons.push({ weight: 4, text: t('obs.reason.altVeryLow').replace('{alt}', altStr) });
   } else if (f.targetAltDeg < 15) {
-    reasons.push({ weight: 2, text: `仰角偏低 ${f.targetAltDeg.toFixed(1)}°（airmass > 4，星光顯著減弱）` });
+    reasons.push({ weight: 2, text: t('obs.reason.altLow').replace('{alt}', altStr) });
   } else if (f.targetAltDeg < 30) {
-    reasons.push({ weight: 1, text: `仰角中等 ${f.targetAltDeg.toFixed(1)}°（airmass ~2，可觀但非最佳）` });
+    reasons.push({ weight: 1, text: t('obs.reason.altMid').replace('{alt}', altStr) });
   }
 
   // 3. Twilight: sun > -18° = astronomical twilight or brighter
   if (f.sunAltDeg > -6) {
-    reasons.push({ weight: 5, text: '尚未天文夜（太陽仰角 > -6°，市民/航海曙暮光）' });
+    reasons.push({ weight: 5, text: t('obs.reason.twilightCivil') });
   } else if (f.sunAltDeg > -12) {
-    reasons.push({ weight: 3, text: '航海曙暮光中（太陽 -12° 以上，背景仍亮）' });
+    reasons.push({ weight: 3, text: t('obs.reason.twilightNautical') });
   } else if (f.sunAltDeg > -18) {
-    reasons.push({ weight: 1, text: '天文曙暮光（太陽 -18° 以上，背景輕微泛光）' });
+    reasons.push({ weight: 1, text: t('obs.reason.twilightAstro') });
   }
 
   // 4. Moonlight: only matters if moon is up
   if (f.moonAltDeg > 0 && f.moonPhase > 0.05) {
     // Moon dims dramatically with distance from target. Within 30° = bad,
     // 30-60° = noticeable, > 60° = minor.
-    const phasePct = Math.round(f.moonPhase * 100);
+    const phasePct = String(Math.round(f.moonPhase * 100));
+    const distStr = f.moonAngularDistanceDeg.toFixed(0);
     if (f.moonPhase > 0.7) {
       // Bright moon
       if (f.moonAngularDistanceDeg < 30) {
-        reasons.push({ weight: 4, text: `月光嚴重影響（${phasePct}% 月相，距目標 ${f.moonAngularDistanceDeg.toFixed(0)}°）` });
+        reasons.push({ weight: 4, text: t('obs.reason.moonHeavy').replace('{pct}', phasePct).replace('{dist}', distStr) });
       } else if (f.moonAngularDistanceDeg < 60) {
-        reasons.push({ weight: 2, text: `月光影響（${phasePct}% 月相，距目標 ${f.moonAngularDistanceDeg.toFixed(0)}°）` });
+        reasons.push({ weight: 2, text: t('obs.reason.moonStrong').replace('{pct}', phasePct).replace('{dist}', distStr) });
       } else {
-        reasons.push({ weight: 1, text: `亮月（${phasePct}%）在天空，但距目標 ${f.moonAngularDistanceDeg.toFixed(0)}° 較遠` });
+        reasons.push({ weight: 1, text: t('obs.reason.moonBrightFar').replace('{pct}', phasePct).replace('{dist}', distStr) });
       }
     } else if (f.moonPhase > 0.3) {
       if (f.moonAngularDistanceDeg < 30) {
-        reasons.push({ weight: 2, text: `月光輕度影響（${phasePct}% 月相，距目標 ${f.moonAngularDistanceDeg.toFixed(0)}°）` });
+        reasons.push({ weight: 2, text: t('obs.reason.moonMildClose').replace('{pct}', phasePct).replace('{dist}', distStr) });
       } else if (f.moonAngularDistanceDeg < 60) {
-        reasons.push({ weight: 1, text: `月光輕度影響（${phasePct}% 月相）` });
+        reasons.push({ weight: 1, text: t('obs.reason.moonMild').replace('{pct}', phasePct) });
       }
     }
   }
@@ -142,11 +146,17 @@ export function scoreObservability(f: ObservabilityFactors): ObservabilityResult
   const effectiveLimit = zenithLimit - extinction - moonDim - twilightDim;
   const margin = effectiveLimit - f.targetMag;
   if (margin < 0) {
-    reasons.push({ weight: 5, text: `亮度低於可見極限 ${(-margin).toFixed(1)} mag（目標 ${f.targetMag.toFixed(1)} vs 可見 ${effectiveLimit.toFixed(1)}）` });
+    reasons.push({
+      weight: 5,
+      text: t('obs.reason.magBelowLimit')
+        .replace('{amount}', (-margin).toFixed(1))
+        .replace('{tmag}', f.targetMag.toFixed(1))
+        .replace('{limit}', effectiveLimit.toFixed(1)),
+    });
   } else if (margin < 1) {
-    reasons.push({ weight: 3, text: `接近可見極限（餘量僅 ${margin.toFixed(1)} mag，需要好條件 + 適應暗）` });
+    reasons.push({ weight: 3, text: t('obs.reason.magNearLimit').replace('{margin}', margin.toFixed(1)) });
   } else if (margin < 2) {
-    reasons.push({ weight: 1, text: `亮度餘量 ${margin.toFixed(1)} mag（可見但不顯眼）` });
+    reasons.push({ weight: 1, text: t('obs.reason.magMargin').replace('{margin}', margin.toFixed(1)) });
   }
 
   // Aggregate weights → rating
@@ -160,7 +170,7 @@ export function scoreObservability(f: ObservabilityFactors): ObservabilityResult
 
   // Sort by weight (desc) for primary-reason selection
   reasons.sort((a, b) => b.weight - a.weight);
-  const primary = reasons[0]?.text ?? '條件良好';
+  const primary = reasons[0]?.text ?? t('obs.reason.goodConditions');
 
   return {
     rating,

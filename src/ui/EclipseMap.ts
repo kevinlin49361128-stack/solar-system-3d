@@ -187,12 +187,12 @@ export class EclipseMap {
                     : t('em.kind.partial');
 
     this.detailsEl.innerHTML = `
-      <div><b>${typeLabel}</b> · 食帶最寬 ${path.maxWidthKm.toFixed(0)} km</div>
-      <div style="margin-top:4px;">食甚：${fmt(peak)}<br>位置：${fmtLatLon(peak)}</div>
-      <div style="margin-top:4px;">影帶起點：${fmt(firstHit)} @ ${fmtLatLon(firstHit)}</div>
-      <div>影帶終點：${fmt(lastHit)} @ ${fmtLatLon(lastHit)}</div>
+      <div><b>${typeLabel}</b> · ${t('em.maxWidth')} ${path.maxWidthKm.toFixed(0)} km</div>
+      <div style="margin-top:4px;">${t('em.peak')}${fmt(peak)}<br>${t('em.location')}${fmtLatLon(peak)}</div>
+      <div style="margin-top:4px;">${t('em.bandStart')}${fmt(firstHit)} @ ${fmtLatLon(firstHit)}</div>
+      <div>${t('em.bandEnd')}${fmt(lastHit)} @ ${fmtLatLon(lastHit)}</div>
       <div style="margin-top:6px;color:var(--text-dim);font-size:10px;">
-        紅色中心線 = 全食/環食帶；金色 ★ = 食甚位置；標示為距食甚的時間（分鐘）。
+        ${t('em.legend')}
       </div>
     `;
   }

@@ -2,6 +2,7 @@ import { MESSIER } from '../data/messier';
 import { NAMED_STARS } from '../data/stars';
 import { STARS_AND_PLANETS } from '../data/bodies';
 import { scoreObservability, type ObservabilityRating } from './observability';
+import type { LangText } from '../i18n';
 
 /**
  * "Tonight's plan" — given the current observer state, returns a ranked
@@ -26,8 +27,10 @@ export interface TonightEntry {
   category: TonightCategory;
   /** Stable id used for jump-to-target (e.g. 'mars', 'M31', 'sirius'). */
   id: string;
-  /** Display name (zh by default; caller can swap to nameEn / nameJa). */
-  name: string;
+  /** Display name. May be a plain string (zh) or a LangText for entries that
+   * carry their own per-language label (e.g. the moon). Consumers should use
+   * `langPick(e.name)` from the i18n module to render. */
+  name: LangText;
   nameEn: string;
   /** Current altitude (degrees, > 0 since we filter out below-horizon). */
   altDeg: number;
@@ -37,7 +40,7 @@ export interface TonightEntry {
   magnitude: number;
   /** Observability rating. */
   rating: ObservabilityRating;
-  /** Most-significant limiting reason (or "條件良好" if none). */
+  /** Most-significant limiting reason (already localized via i18n). */
   primaryReason: string;
   /** Optional rendering hint: 'rising' / 'setting' / 'transiting' / 'high'. */
   trend?: 'rising' | 'setting' | 'high' | 'low';
@@ -155,7 +158,7 @@ export function computeTonightPlan(input: TonightPlanInput): TonightPlan {
       planets.push({
         category: 'planet',
         id: 'moon',
-        name: '月球',
+        name: { 'zh-Hant': '月球', en: 'Moon', ja: '月' },
         nameEn: 'Moon',
         altDeg: ev.altDeg,
         azDeg: ev.azDeg,

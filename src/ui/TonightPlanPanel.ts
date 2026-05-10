@@ -4,7 +4,7 @@ import { computeTonightPlan, type TonightEntry } from '../physics/tonightPlan';
 import { MESSIER } from '../data/messier';
 import { NAMED_STARS } from '../data/stars';
 import { isObserved, getEntry as getObsEntry } from '../data/observationLog';
-import { t } from '../i18n';
+import { t, langPick } from '../i18n';
 
 /**
  * "今晚看什麼" — ranked observable list, generated from the current observer
@@ -140,7 +140,7 @@ export class TonightPlanPanel {
     return `<div class="tn-entry${dimClass}" data-cat="${e.category}" data-id="${escape(e.id)}">` +
       `<div class="tn-row1">` +
         `<span class="tn-rating">${ratingDot}</span>` +
-        `<span class="tn-name">${escape(e.name)}</span>` +
+        `<span class="tn-name">${escape(langPick(e.name))}</span>` +
         observedBadge +
         `<span class="tn-altaz">${altText} ${azText}</span>` +
       `</div>` +

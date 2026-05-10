@@ -1,5 +1,5 @@
 import type { SolarSystem } from '../scene/SolarSystem';
-import { t } from '../i18n';
+import { t, langPick, onLanguageChange } from '../i18n';
 import type { SimulationClock } from '../time/SimulationClock';
 import type { CameraController } from '../controls/CameraController';
 import type { InfoPanel } from './InfoPanel';
@@ -32,6 +32,13 @@ export class EventsPanel {
     this.listEl = document.getElementById('auto-events-list')!;
     document.getElementById('auto-events-close')!.addEventListener('click', () => this.hide());
     document.getElementById('auto-events-rescan')!.addEventListener('click', () => this.rescan());
+
+    // Re-render the visible list when the language switches so kind labels
+    // and description LangText are picked in the new language without
+    // forcing a full rescan.
+    onLanguageChange(() => {
+      if (this.isOpen() && this.events.length > 0) this.render();
+    });
 
     void this.solarSystem;
   }
@@ -91,7 +98,7 @@ export class EventsPanel {
       return `<div class="event-row" data-i="${i}">` +
         `<div><span style="color:var(--accent);font-size:11px;">${dateStr}</span> ` +
         `<b>${eventKindLabel(e.kind)}</b></div>` +
-        `<div style="color:var(--text-dim);font-size:11px;line-height:1.5;">${e.description}</div>` +
+        `<div style="color:var(--text-dim);font-size:11px;line-height:1.5;">${langPick(e.description)}</div>` +
         mapBtn +
         `</div>`;
     }).join('');
@@ -120,7 +127,12 @@ export class EventsPanel {
         // positions match the map.
         this.clock.setDate(e.date);
         const dateStr = e.date.toISOString().slice(0, 10);
-        const label = `${t('events.eclipsePathLabel')} — ${dateStr} (${e.description.split('：')[0] ?? t('events.maybeEclipse')})`;
+        const desc = langPick(e.description);
+        // Strip the leading "label：rest" segment so the title is short. The
+        // separator differs by language (zh/ja use 「：」, en uses ":"), so
+        // try both before falling back to the maybe-eclipse generic label.
+        const head = desc.split('：')[0] || desc.split(':')[0];
+        const label = `${t('events.eclipsePathLabel')} — ${dateStr} (${head || t('events.maybeEclipse')})`;
         this.eclipseMap?.show(e.jd, label);
       });
     });

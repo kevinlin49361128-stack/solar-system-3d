@@ -10,7 +10,7 @@ import { OBSERVER_CITIES, OBSERVER_OBSERVATORIES, OBSERVER_PRESETS } from '../ph
 import { toast } from './toast';
 import { ASTRO_EVENTS } from '../data/events';
 import type { SimulationClock } from '../time/SimulationClock';
-import { t, onLanguageChange, bodyName } from '../i18n';
+import { t, onLanguageChange, bodyName, getLang } from '../i18n';
 import type { RealismPreset, RealismSettings } from '../scene/RealismSettings';
 
 /**
@@ -423,25 +423,49 @@ export class LeftPanel {
       cameraCtl.setObserverLockHorizon(lockHorizon.checked);
     });
 
-    const cityGroup = document.createElement('optgroup');
-    cityGroup.label = t('lp.cityGroup');
-    for (const p of OBSERVER_CITIES) {
-      const opt = document.createElement('option');
-      opt.value = p.id;
-      opt.textContent = p.name;
-      cityGroup.appendChild(opt);
-    }
-    presetSel.appendChild(cityGroup);
+    // Pick a preset's display name in the active UI language. Falls
+    // back along nameEn/name so missing localizations don't render
+    // empty.
+    const localizedPresetName = (p: { name: string; nameEn?: string; nameJa?: string }): string => {
+      const lang = getLang();
+      if (lang === 'en') return p.nameEn ?? p.name;
+      if (lang === 'ja') return p.nameJa ?? p.nameEn ?? p.name;
+      return p.name;
+    };
 
-    const obsGroup = document.createElement('optgroup');
-    obsGroup.label = t('lp.observatoryGroup');
-    for (const p of OBSERVER_OBSERVATORIES) {
-      const opt = document.createElement('option');
-      opt.value = p.id;
-      opt.textContent = p.name;
-      obsGroup.appendChild(opt);
-    }
-    presetSel.appendChild(obsGroup);
+    // (Re)build the city + observatory <optgroup>s. Called on init and on
+    // language change so option text + group labels follow the active
+    // language. We preserve the currently-selected value across rebuilds.
+    const buildPresetGroups = (): void => {
+      const previousValue = presetSel.value;
+      // Clear any previously-built optgroups (keeps any other static
+      // options the markup may carry).
+      presetSel.querySelectorAll('optgroup').forEach(g => g.remove());
+
+      const cityGroup = document.createElement('optgroup');
+      cityGroup.label = t('lp.cityGroup');
+      for (const p of OBSERVER_CITIES) {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = localizedPresetName(p);
+        cityGroup.appendChild(opt);
+      }
+      presetSel.appendChild(cityGroup);
+
+      const obsGroup = document.createElement('optgroup');
+      obsGroup.label = t('lp.observatoryGroup');
+      for (const p of OBSERVER_OBSERVATORIES) {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = localizedPresetName(p);
+        obsGroup.appendChild(opt);
+      }
+      presetSel.appendChild(obsGroup);
+
+      if (previousValue) presetSel.value = previousValue;
+    };
+    buildPresetGroups();
+    onLanguageChange(buildPresetGroups);
 
     // Default to Kaohsiung
     presetSel.value = 'kaohsiung';
