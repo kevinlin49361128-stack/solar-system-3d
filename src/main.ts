@@ -473,8 +473,18 @@ window.addEventListener('sim:exo-visit', (e) => {
   // scene-unit radius in log mode (Sun-like multiplier), and the
   // closest planets are ~0.3–0.4 units out. Distance ≈ 1.2 keeps the
   // host plus the inner few orbits in frame without clipping.
+  // We also reset the OrbitControls target + sync internal spherical
+  // state, otherwise the per-frame `orbit.update()` would snap the
+  // camera back to its previous spherical position (the neighbourhood
+  // tier camera the user was just at) and we'd never actually see the
+  // exoplanet system at origin.
+  cameraCtl.orbit.target.set(0, 0, 0);
   cameraCtl.camera.position.set(0, 0.3, 1.2);
   cameraCtl.camera.lookAt(0, 0, 0);
+  cameraCtl.orbit.update();
+  // Capture this fresh direction in the tier controller so the next
+  // tier transition (when we click Return) starts from the right view.
+  tierCtl.setCameraDirection(cameraCtl.camera.position.clone());
   // Show the banner with the system name (language-aware).
   const sys = solarSystem.getExoplanetHosts()?.resolvePick({ exoplanetSystemId: id });
   const nameEl = exoBanner.querySelector('#exo-banner-name');
