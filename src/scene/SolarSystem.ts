@@ -720,6 +720,23 @@ export class SolarSystem {
     if (this.spacecraft) this.spacecraft.setVisible(visible);
   }
 
+  /**
+   * Fade the entire heliocentric layer (sun + planets + moons + asteroids
+   * + spacecraft + Lagrange overlay) by setting Group.visible. Used by the
+   * scale-tier zoom-out animation: when the camera retreats to the local
+   * stellar neighbourhood, the solar-system meshes are no longer
+   * meaningfully visible (sub-pixel) and continuing to render them just
+   * wastes draw calls and can produce z-fighting artefacts.
+   *
+   * Opacity 0 → group hidden; opacity > 0 → group visible. We don't try
+   * to interpolate per-mesh material opacity here because that would
+   * require touching every BodyMesh / OrbitLine / Belt material, and the
+   * crossfade duration is short enough that a hard hide/show is fine.
+   */
+  setSolarSystemOpacity(opacity: number): void {
+    this.heliocentric.visible = opacity > 0.05;
+  }
+
   setLagrangePointsVisible(visible: boolean): void {
     if (this.lagrangePoints) {
       this.lagrangePoints.setVisible(visible);

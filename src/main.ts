@@ -6,6 +6,7 @@ import { SolarSystem } from './scene/SolarSystem';
 import { SimulationClock } from './time/SimulationClock';
 import { CameraController } from './controls/CameraController';
 import { ScaleController } from './controls/ScaleController';
+import { ScaleTierController } from './controls/ScaleTierController';
 import { TimeControls } from './ui/TimeControls';
 import { InfoPanel } from './ui/InfoPanel';
 import { LeftPanel } from './ui/LeftPanel';
@@ -58,6 +59,7 @@ const clock = new SimulationClock(new Date());
 
 const solarSystem = new SolarSystem(scaleCtl, clock);
 const cameraCtl = new CameraController(renderer.domElement, solarSystem, clock);
+const tierCtl = new ScaleTierController();
 
 new TimeControls(clock);
 const infoPanel = new InfoPanel(solarSystem, clock);
@@ -375,6 +377,30 @@ if (screenshotBtn) {
     }, 'image/png');
   });
 }
+
+// Galactic flythrough: keyboard shortcuts.
+//   G — zoom one tier outward (system → neighbourhood → galactic)
+//   Shift-G — zoom one tier inward
+//   H — snap home to system tier (with brief animation)
+// Skipped when typing into a text field or when the user is in a panel.
+window.addEventListener('keydown', (e) => {
+  // Don't hijack shortcuts when the user is typing into an input.
+  const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (cameraCtl.getMode() === 'observer') return;
+
+  if (e.key === 'g' && !e.shiftKey) {
+    tierCtl.zoomOut();
+    e.preventDefault();
+  } else if (e.key === 'G' && e.shiftKey) {
+    tierCtl.zoomIn();
+    e.preventDefault();
+  } else if (e.key === 'h' || e.key === 'H') {
+    tierCtl.home();
+    e.preventDefault();
+  }
+});
 
 // Share link: encode current state (jd, scale, frame, observer lat/lon if
 // active, follow body) into URL hash. On load, read it and apply.
@@ -1107,6 +1133,33 @@ function tick(now: number): void {
 
   clock.tick(realDt);
   solarSystem.update(clock.getJd());
+
+  // Drive the scale-tier camera dolly when a transition is animating.
+  // Outside an animation the user can freely orbit-zoom; we only take over
+  // the camera when explicitly requested via setTier(). Skipped in observer
+  // mode (which uses a totally different camera math path).
+  if (tierCtl.isAnimating() && cameraCtl.getMode() !== 'observer') {
+    const state = tierCtl.update(now);
+    const dir = tierCtl.getCameraDirection();
+    cameraCtl.camera.position.copy(dir).multiplyScalar(state.cameraDistance);
+    cameraCtl.camera.lookAt(0, 0, 0);
+    if (Math.abs(cameraCtl.camera.fov - state.cameraFov) > 0.05) {
+      cameraCtl.camera.fov = state.cameraFov;
+      cameraCtl.camera.updateProjectionMatrix();
+    }
+    // Apply layer weights — solar-system fade is the only one wired today;
+    // hyg / mw-disk hooks land when those layers exist.
+    solarSystem.setSolarSystemOpacity(state.layerWeights.solarSystem);
+  } else {
+    // Always advance internal state even when not driving the camera, so
+    // subscribers and the controller's clock stay consistent.
+    tierCtl.update(now);
+    // Capture current camera direction so the next tier transition starts
+    // along the user's chosen view angle.
+    const camDir = cameraCtl.camera.position.clone();
+    if (camDir.lengthSq() > 0) tierCtl.setCameraDirection(camDir);
+  }
+
   cameraCtl.update();
   solarSystem.updateLabelSizes(cameraCtl.camera, renderer.domElement.clientHeight);
   // Drive DSO real-angular-size scaling from current FOV + canvas height.

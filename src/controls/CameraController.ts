@@ -138,7 +138,10 @@ export class CameraController {
     this.orbit.enableDamping = true;
     this.orbit.dampingFactor = 0.08;
     this.orbit.minDistance = 1e-5;
-    this.orbit.maxDistance = 50000;
+    // Far enough out for the v0.3.0 galactic-tier dolly (60_000 scene
+    // units) plus headroom for the user to manually push past it. The
+    // logarithmic depth buffer keeps z-precision usable at this range.
+    this.orbit.maxDistance = 200_000;
     this.orbit.target.set(0, 0, 0);
 
     this.attachObserverPointerHandlers(canvas);
