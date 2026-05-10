@@ -1,4 +1,8 @@
-import { Group, Vector3 } from 'three';
+import {
+  AdditiveBlending, BufferGeometry, Float32BufferAttribute,
+  Group, Line, LineDashedMaterial,
+  Mesh, MeshBasicMaterial, RingGeometry, Vector3,
+} from 'three';
 import { BodyMesh } from './BodyMesh';
 import { OrbitLine } from './OrbitLine';
 import { eclipticToScene } from '../physics/frame';
@@ -7,6 +11,7 @@ import {
   getExoplanetSystem,
   type ExoplanetSystemMeta,
 } from '../data/exoplanetSystems';
+import { habitableZoneAU } from '../physics/habitableZone';
 import type { ScaleController } from '../controls/ScaleController';
 
 /**
@@ -35,6 +40,13 @@ interface SystemBuild {
     orbit: OrbitLine | null;
     propagator: ReturnType<typeof Object>;
   }>;
+  /** Habitable-zone disc (Recent Venus → Early Mars), or null if Teff
+   *  outside the calibrated range or system has no defined HZ. */
+  hzDisc: Mesh | null;
+  /** Mercury's orbit projected into this system's frame, as a dashed
+   *  line at 0.387 AU radius — gives an instant "compare to our solar
+   *  system" sense of scale. Null if scale information unavailable. */
+  mercuryOrbitOverlay: Line | null;
 }
 
 export class ExoplanetSystemView {
@@ -180,12 +192,87 @@ export class ExoplanetSystemView {
       planets.push({ mesh, orbit, propagator: planet.propagator });
     }
 
+    // Habitable-zone disc (Kopparapu+2013 conservative bounds).
+    // Renders as a faint green annulus on the orbital plane between
+    // the Recent Venus and Early Mars edges. Sits behind the planet
+    // dots (renderOrder = -1) so it doesn't fight the orbit lines.
+    let hzDisc: Mesh | null = null;
+    const hz = habitableZoneAU(meta.host.physical.radiusKm, meta.hostTeffK);
+    if (hz) {
+      // Same moon-distance scaling as the planet orbits, so the disc
+      // lines up with which planet is "in" the green ring.
+      const innerScene = this.scaler.moonDistanceAU(hz.innerAU);
+      const outerScene = this.scaler.moonDistanceAU(hz.outerAU);
+      const hzGeom = new RingGeometry(innerScene, outerScene, 96, 1);
+      const hzMat = new MeshBasicMaterial({
+        color: 0x46d97a,
+        transparent: true,
+        opacity: 0.15,
+        depthWrite: false,
+        side: 2,  // DoubleSide
+        blending: AdditiveBlending,
+      });
+      hzDisc = new Mesh(hzGeom, hzMat);
+      // Lay the disc flat on the orbital plane (XY in scene = ecliptic
+      // XY in our convention; Three.js Y-up means we want the disc
+      // normal to be Y, so rotate the default XY-plane geometry by
+      // -π/2 around X).
+      hzDisc.rotation.x = -Math.PI / 2;
+      hzDisc.renderOrder = -1;
+      hostMesh.group.add(hzDisc);
+    }
+
+    // Mercury's orbit overlay: dashed grey ring at 0.387 AU. Lets
+    // the viewer instantly compare any exoplanet system's scale to
+    // our solar system's innermost — for TRAPPIST-1 the dashed ring
+    // sits well outside ALL 7 planets, which is the "look how
+    // compact this is" moment. For Kepler-90 the ring sits inside
+    // most planets, which is the equally interesting "look how far
+    // these gas giants got" moment.
+    const mercuryOrbitOverlay = buildMercuryOverlayLine(this.scaler);
+    if (mercuryOrbitOverlay) hostMesh.group.add(mercuryOrbitOverlay);
+
     sysGroup.visible = false;
-    return { group: sysGroup, hostMesh, planets };
+    return { group: sysGroup, hostMesh, planets, hzDisc, mercuryOrbitOverlay };
   }
 
   /** Total system count — used for diagnostics / future menu. */
   static availableSystemIds(): string[] {
     return EXOPLANET_SYSTEMS.map(s => s.id);
   }
+}
+
+/**
+ * Build a dashed grey ring at Mercury's orbital semi-major axis
+ * (0.387 AU), in the active scaler's moon-distance frame. Returned
+ * as a plain Three.js Line so callers can attach it under the host
+ * group and toggle visibility. Returns null if a degenerate radius
+ * is computed.
+ */
+function buildMercuryOverlayLine(scaler: ScaleController): Line | null {
+  const MERCURY_A_AU = 0.3871;
+  const r = scaler.moonDistanceAU(MERCURY_A_AU);
+  if (!Number.isFinite(r) || r <= 0) return null;
+  const segments = 192;
+  const positions: number[] = [];
+  for (let i = 0; i <= segments; i++) {
+    const t = (i / segments) * 2 * Math.PI;
+    // Lay the ring on the X-Z plane (Three.js Y-up; ecliptic plane
+    // in our scene convention).
+    positions.push(r * Math.cos(t), 0, r * Math.sin(t));
+  }
+  const geom = new BufferGeometry();
+  geom.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  const mat = new LineDashedMaterial({
+    color: 0x8a8a9c,
+    dashSize: r * 0.05,
+    gapSize: r * 0.03,
+    transparent: true,
+    opacity: 0.55,
+    depthWrite: false,
+  });
+  const line = new Line(geom, mat);
+  line.computeLineDistances();  // required for dashed rendering
+  line.renderOrder = -0.5;
+  return line;
 }

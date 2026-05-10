@@ -94,9 +94,19 @@ export class NBodySimulation {
         const dx = b.pos.x - a.pos.x;
         const dy = b.pos.y - a.pos.y;
         const dz = b.pos.z - a.pos.z;
+        // Plummer softening: replaces 1/r³ with 1/(r² + ε²)^1.5 so
+        // even an exact close approach (r → 0) keeps the force finite.
+        // ε² = 1e-6 AU² ≈ (1500 km)² is below any planet's physical
+        // radius but well above the floating-point catastrophe zone.
+        // The original `+ 1e-30` softener was decorative — at r ≈ 0
+        // r3 dropped to 1e-30, accelerations reached ~1e30 AU/day², and
+        // the integrator silently exploded. With current dataset
+        // (planets stay > 0.3 AU apart) this is defensive; matters once
+        // someone adds a comet with a flyby trajectory.
+        const SOFT2 = 1e-6;
         const r2 = dx * dx + dy * dy + dz * dz;
-        const r = Math.sqrt(r2);
-        const r3 = r2 * r + 1e-30;
+        const softR2 = r2 + SOFT2;
+        const r3 = softR2 * Math.sqrt(softR2);
         const G = G_AU3_PER_MSUN_PER_DAY2;
         const aFactor = G * b.mass / r3;
         const bFactor = G * a.mass / r3;

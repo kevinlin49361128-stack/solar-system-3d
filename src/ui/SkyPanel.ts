@@ -7,7 +7,8 @@ import { t, onLanguageChange, bodyName, maybeJa } from '../i18n';
 import { computeDailyEvents, localSiderealDeg, jdToDate } from '../physics/dailyEvents';
 import { bodyObservables, moonObservables } from '../physics/bodyObservables';
 import { eclipticDirToRaDec } from '../physics/topocentric';
-import { constellationFor, loadConstellationData } from '../physics/constellationLookup';
+import { constellationFor, constellationLabel, loadConstellationData } from '../physics/constellationLookup';
+import { getLang } from '../i18n';
 
 const PRIORITY_IDS = [
   'sun', 'moon',
@@ -244,7 +245,7 @@ export class SkyPanel {
       ? `<span style="color:var(--text-dim);font-size:10px;">m=${mag >= 0 ? '+' : ''}${mag.toFixed(1)}</span>`
       : '';
     const constStr = constellation
-      ? `<span style="color:var(--text-dim);font-size:10px;margin-left:4px;">${constellation}</span>`
+      ? `<span style="color:var(--text-dim);font-size:10px;margin-left:4px;" title="${constellationLabel(constellation, getLang())}">${constellation}</span>`
       : '';
     return `<div class="sky-row" data-body-id="${id}" style="opacity:${opacity};cursor:pointer;" title="${t('sky.dblClickCenter')}">` +
       `<span class="name">${name} ${magStr}${constStr}</span>` +
@@ -260,7 +261,7 @@ export class SkyPanel {
     const opacity = alt > 0 ? 1 : 0.3;
     const sub = bayer ? ` <span style="color:var(--text-dim);font-size:10px;">${bayer}</span>` : '';
     const constStr = constellation
-      ? `<span style="color:var(--text-dim);font-size:10px;margin-left:4px;">${constellation}</span>`
+      ? `<span style="color:var(--text-dim);font-size:10px;margin-left:4px;" title="${constellationLabel(constellation, getLang())}">${constellation}</span>`
       : '';
     const pmAttr = pmRA !== undefined && pmDec !== undefined ? ` data-pm-ra="${pmRA}" data-pm-dec="${pmDec}"` : '';
     return `<div class="sky-row" data-ra="${ra}" data-dec="${dec}"${pmAttr} style="opacity:${opacity};cursor:pointer;" title="${t('sky.dblClickCenter')}">` +

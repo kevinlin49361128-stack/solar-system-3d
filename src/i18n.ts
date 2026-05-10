@@ -438,6 +438,7 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   // InfoPanel — observation-mode dynamic rows
   'info.row.orbitalSpeed':   { 'zh-Hant': '軌道速度', 'en': 'Orbital speed', 'ja': '軌道速度' },
   'info.row.distFromEarth':  { 'zh-Hant': '距地球', 'en': 'Distance from Earth', 'ja': '地球からの距離' },
+  'info.row.lightDelay':     { 'zh-Hant': '光行時延', 'en': 'Light-travel time', 'ja': '光行時間' },
   'info.row.phaseAngle':     { 'zh-Hant': '相位角', 'en': 'Phase angle', 'ja': '位相角' },
   'info.row.illuminated':    { 'zh-Hant': '照明', 'en': 'illuminated', 'ja': '照射部分' },
   'info.row.angularDiameter':{ 'zh-Hant': '視直徑', 'en': 'Angular diameter', 'ja': '視直径' },

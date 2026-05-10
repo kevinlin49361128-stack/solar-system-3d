@@ -21,6 +21,125 @@
  */
 export type ConstellationAbbr = string;  // IAU 3-letter (e.g. 'Ori', 'UMa')
 
+/**
+ * IAU 3-letter abbreviation → trilingual full name. The Latin /
+ * English / zh-Hant / ja columns match the Wikipedia "List of IAU
+ * constellations" canonical translations. Used by SkyPanel's
+ * tooltip so that users who don't recognise "Tau" still see "Taurus
+ * 金牛座 / おうし座".
+ */
+export interface ConstellationName {
+  /** Latin (canonical) — e.g. 'Taurus'. */
+  latin: string;
+  /** Traditional Chinese astronomical name. */
+  zhHant: string;
+  /** Japanese astronomical name (hiragana + 座). */
+  ja: string;
+}
+export const CONSTELLATION_NAMES: Record<ConstellationAbbr, ConstellationName> = {
+  And: { latin: 'Andromeda',         zhHant: '仙女座',     ja: 'アンドロメダ座' },
+  Ant: { latin: 'Antlia',            zhHant: '唧筒座',     ja: 'ポンプ座' },
+  Aps: { latin: 'Apus',              zhHant: '天燕座',     ja: 'ふうちょう座' },
+  Aql: { latin: 'Aquila',            zhHant: '天鷹座',     ja: 'わし座' },
+  Aqr: { latin: 'Aquarius',          zhHant: '寶瓶座',     ja: 'みずがめ座' },
+  Ara: { latin: 'Ara',               zhHant: '天壇座',     ja: 'さいだん座' },
+  Ari: { latin: 'Aries',             zhHant: '白羊座',     ja: 'おひつじ座' },
+  Aur: { latin: 'Auriga',            zhHant: '御夫座',     ja: 'ぎょしゃ座' },
+  Boo: { latin: 'Boötes',            zhHant: '牧夫座',     ja: 'うしかい座' },
+  CMa: { latin: 'Canis Major',       zhHant: '大犬座',     ja: 'おおいぬ座' },
+  CMi: { latin: 'Canis Minor',       zhHant: '小犬座',     ja: 'こいぬ座' },
+  CVn: { latin: 'Canes Venatici',    zhHant: '獵犬座',     ja: 'りょうけん座' },
+  Cae: { latin: 'Caelum',            zhHant: '雕具座',     ja: 'ちょうこくぐ座' },
+  Cam: { latin: 'Camelopardalis',    zhHant: '鹿豹座',     ja: 'きりん座' },
+  Cap: { latin: 'Capricornus',       zhHant: '摩羯座',     ja: 'やぎ座' },
+  Car: { latin: 'Carina',            zhHant: '船底座',     ja: 'りゅうこつ座' },
+  Cas: { latin: 'Cassiopeia',        zhHant: '仙后座',     ja: 'カシオペヤ座' },
+  Cen: { latin: 'Centaurus',         zhHant: '半人馬座',   ja: 'ケンタウルス座' },
+  Cep: { latin: 'Cepheus',           zhHant: '仙王座',     ja: 'ケフェウス座' },
+  Cet: { latin: 'Cetus',             zhHant: '鯨魚座',     ja: 'くじら座' },
+  Cha: { latin: 'Chamaeleon',        zhHant: '蝘蜓座',     ja: 'カメレオン座' },
+  Cir: { latin: 'Circinus',          zhHant: '圓規座',     ja: 'コンパス座' },
+  Cnc: { latin: 'Cancer',            zhHant: '巨蟹座',     ja: 'かに座' },
+  Col: { latin: 'Columba',           zhHant: '天鴿座',     ja: 'はと座' },
+  Com: { latin: 'Coma Berenices',    zhHant: '后髮座',     ja: 'かみのけ座' },
+  CrA: { latin: 'Corona Australis',  zhHant: '南冕座',     ja: 'みなみのかんむり座' },
+  CrB: { latin: 'Corona Borealis',   zhHant: '北冕座',     ja: 'かんむり座' },
+  Crt: { latin: 'Crater',            zhHant: '巨爵座',     ja: 'コップ座' },
+  Cru: { latin: 'Crux',              zhHant: '南十字座',   ja: 'みなみじゅうじ座' },
+  Crv: { latin: 'Corvus',            zhHant: '烏鴉座',     ja: 'からす座' },
+  Cyg: { latin: 'Cygnus',            zhHant: '天鵝座',     ja: 'はくちょう座' },
+  Del: { latin: 'Delphinus',         zhHant: '海豚座',     ja: 'いるか座' },
+  Dor: { latin: 'Dorado',            zhHant: '劍魚座',     ja: 'かじき座' },
+  Dra: { latin: 'Draco',             zhHant: '天龍座',     ja: 'りゅう座' },
+  Equ: { latin: 'Equuleus',          zhHant: '小馬座',     ja: 'こうま座' },
+  Eri: { latin: 'Eridanus',          zhHant: '波江座',     ja: 'エリダヌス座' },
+  For: { latin: 'Fornax',            zhHant: '天爐座',     ja: 'ろ座' },
+  Gem: { latin: 'Gemini',            zhHant: '雙子座',     ja: 'ふたご座' },
+  Gru: { latin: 'Grus',              zhHant: '天鶴座',     ja: 'つる座' },
+  Her: { latin: 'Hercules',          zhHant: '武仙座',     ja: 'ヘルクレス座' },
+  Hor: { latin: 'Horologium',        zhHant: '時鐘座',     ja: 'とけい座' },
+  Hya: { latin: 'Hydra',             zhHant: '長蛇座',     ja: 'うみへび座' },
+  Hyi: { latin: 'Hydrus',            zhHant: '水蛇座',     ja: 'みずへび座' },
+  Ind: { latin: 'Indus',             zhHant: '印第安座',   ja: 'インディアン座' },
+  LMi: { latin: 'Leo Minor',         zhHant: '小獅座',     ja: 'こじし座' },
+  Lac: { latin: 'Lacerta',           zhHant: '蝎虎座',     ja: 'とかげ座' },
+  Leo: { latin: 'Leo',               zhHant: '獅子座',     ja: 'しし座' },
+  Lep: { latin: 'Lepus',             zhHant: '天兔座',     ja: 'うさぎ座' },
+  Lib: { latin: 'Libra',             zhHant: '天秤座',     ja: 'てんびん座' },
+  Lup: { latin: 'Lupus',             zhHant: '豺狼座',     ja: 'おおかみ座' },
+  Lyn: { latin: 'Lynx',              zhHant: '天貓座',     ja: 'やまねこ座' },
+  Lyr: { latin: 'Lyra',              zhHant: '天琴座',     ja: 'こと座' },
+  Men: { latin: 'Mensa',             zhHant: '山案座',     ja: 'テーブルさん座' },
+  Mic: { latin: 'Microscopium',      zhHant: '顯微鏡座',   ja: 'けんびきょう座' },
+  Mon: { latin: 'Monoceros',         zhHant: '麒麟座',     ja: 'いっかくじゅう座' },
+  Mus: { latin: 'Musca',             zhHant: '蒼蠅座',     ja: 'はえ座' },
+  Nor: { latin: 'Norma',             zhHant: '矩尺座',     ja: 'じょうぎ座' },
+  Oct: { latin: 'Octans',            zhHant: '南極座',     ja: 'はちぶんぎ座' },
+  Oph: { latin: 'Ophiuchus',         zhHant: '蛇夫座',     ja: 'へびつかい座' },
+  Ori: { latin: 'Orion',             zhHant: '獵戶座',     ja: 'オリオン座' },
+  Pav: { latin: 'Pavo',              zhHant: '孔雀座',     ja: 'くじゃく座' },
+  Peg: { latin: 'Pegasus',           zhHant: '飛馬座',     ja: 'ペガスス座' },
+  Per: { latin: 'Perseus',           zhHant: '英仙座',     ja: 'ペルセウス座' },
+  Phe: { latin: 'Phoenix',           zhHant: '鳳凰座',     ja: 'ほうおう座' },
+  Pic: { latin: 'Pictor',            zhHant: '繪架座',     ja: 'がか座' },
+  PsA: { latin: 'Piscis Austrinus',  zhHant: '南魚座',     ja: 'みなみのうお座' },
+  Psc: { latin: 'Pisces',            zhHant: '雙魚座',     ja: 'うお座' },
+  Pup: { latin: 'Puppis',            zhHant: '船尾座',     ja: 'とも座' },
+  Pyx: { latin: 'Pyxis',             zhHant: '羅盤座',     ja: 'らしんばん座' },
+  Ret: { latin: 'Reticulum',         zhHant: '網罟座',     ja: 'レチクル座' },
+  Scl: { latin: 'Sculptor',          zhHant: '玉夫座',     ja: 'ちょうこくしつ座' },
+  Sco: { latin: 'Scorpius',          zhHant: '天蠍座',     ja: 'さそり座' },
+  Sct: { latin: 'Scutum',            zhHant: '盾牌座',     ja: 'たて座' },
+  Ser: { latin: 'Serpens',           zhHant: '巨蛇座',     ja: 'へび座' },
+  Sex: { latin: 'Sextans',           zhHant: '六分儀座',   ja: 'ろくぶんぎ座' },
+  Sge: { latin: 'Sagitta',           zhHant: '天箭座',     ja: 'や座' },
+  Sgr: { latin: 'Sagittarius',       zhHant: '人馬座',     ja: 'いて座' },
+  Tau: { latin: 'Taurus',            zhHant: '金牛座',     ja: 'おうし座' },
+  Tel: { latin: 'Telescopium',       zhHant: '望遠鏡座',   ja: 'ぼうえんきょう座' },
+  TrA: { latin: 'Triangulum Australe', zhHant: '南三角座', ja: 'みなみのさんかく座' },
+  Tri: { latin: 'Triangulum',        zhHant: '三角座',     ja: 'さんかく座' },
+  Tuc: { latin: 'Tucana',            zhHant: '杜鵑座',     ja: 'きょしちょう座' },
+  UMa: { latin: 'Ursa Major',        zhHant: '大熊座',     ja: 'おおぐま座' },
+  UMi: { latin: 'Ursa Minor',        zhHant: '小熊座',     ja: 'こぐま座' },
+  Vel: { latin: 'Vela',              zhHant: '船帆座',     ja: 'ほ座' },
+  Vir: { latin: 'Virgo',             zhHant: '室女座',     ja: 'おとめ座' },
+  Vol: { latin: 'Volans',            zhHant: '飛魚座',     ja: 'とびうお座' },
+  Vul: { latin: 'Vulpecula',         zhHant: '狐狸座',     ja: 'こぎつね座' },
+};
+
+/**
+ * Localised label for a constellation abbreviation, given the active
+ * UI language. Returns the abbreviation itself as a fallback if the
+ * abbrev is unknown (shouldn't happen — the table covers all 88).
+ */
+export function constellationLabel(abbr: ConstellationAbbr, lang: 'zh-Hant' | 'en' | 'ja'): string {
+  const entry = CONSTELLATION_NAMES[abbr];
+  if (!entry) return abbr;
+  if (lang === 'en') return entry.latin;
+  if (lang === 'ja') return entry.ja;
+  return entry.zhHant;
+}
+
 interface Poly {
   id: ConstellationAbbr;
   /** Vertices as (raDeg, decDeg) pairs after wrap normalisation. */

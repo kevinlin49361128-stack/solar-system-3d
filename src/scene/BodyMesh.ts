@@ -39,6 +39,11 @@ export class BodyMesh {
   private bodyRadius: number;
   private cloudMesh: Mesh | null = null;
   private atmoMesh: Mesh | null = null;
+  /** onLanguageChange unsubscribe handle. Captured so that callers
+   *  evicting BodyMesh instances (e.g. ExoplanetSystemView cache
+   *  invalidation, future user-defined-body deletion) can release it
+   *  via dispose() and not leak listeners. */
+  private langUnsubscribe: (() => void) | null = null;
 
   /** Pickable surface for raycasting; remains at unit-scale-relative size. */
   readonly pickable: Mesh;
@@ -411,7 +416,7 @@ export class BodyMesh {
     this.group.add(this.label);
     // Re-bake the label sprite when the user switches language so the
     // name on the planet updates without a page reload.
-    onLanguageChange(() => {
+    this.langUnsubscribe = onLanguageChange(() => {
       this.relabel(bodyName(descriptor), sceneRadius);
     });
 
@@ -670,5 +675,27 @@ export class BodyMesh {
       this.atmoMesh.geometry.dispose();
       this.atmoMesh.geometry = new SphereGeometry(sceneRadius * scale, widthSeg, heightSeg);
     }
+  }
+
+  /**
+   * Tear down this BodyMesh: release its language-change subscription,
+   * dispose all geometries + materials + textures. Only needs calling
+   * when a BodyMesh is being evicted from the scene graph for good
+   * (e.g. user-defined body deletion, ExoplanetSystemView cache
+   * shootdown). Bodies built once at startup don't need disposal.
+   */
+  dispose(): void {
+    if (this.langUnsubscribe) {
+      this.langUnsubscribe();
+      this.langUnsubscribe = null;
+    }
+    this.mesh.geometry.dispose();
+    this.pickable.geometry.dispose();
+    if (this.rings) this.rings.geometry.dispose();
+    if (this.cloudMesh) this.cloudMesh.geometry.dispose();
+    if (this.atmoMesh) this.atmoMesh.geometry.dispose();
+    const labelMat = this.label.material as { map?: { dispose: () => void }; dispose: () => void };
+    labelMat.map?.dispose();
+    labelMat.dispose();
   }
 }

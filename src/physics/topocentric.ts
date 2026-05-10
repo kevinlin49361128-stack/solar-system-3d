@@ -11,8 +11,25 @@ export const EARTH_RADIUS_AU = EARTH_RADIUS_KM / AU_KM;
  *
  * Vallado / IAU 1982 polynomial. Valid throughout the modern era; sub-arcsec
  * accuracy is overkill here, we only need it for sky-pointing visualisation.
+ *
+ * Range: the polynomial is documented to ~sub-arcsec accuracy in the
+ * 1900–2100 window. Outside that we still return a reasonable answer
+ * (errors grow as O(T⁴) from the omitted higher-order terms), but for
+ * year < 1700 or year > 2300 a one-time console warning fires so a
+ * curious dev sees that they're extrapolating. The simulator stays
+ * usable; this is just a "you asked for 1342 CE — your numbers may
+ * drift a few arcminutes" note.
  */
+const GMST_VALID_JD_MIN = 2342032.5;  // 1700-01-01
+const GMST_VALID_JD_MAX = 2488092.5;  // 2300-01-01
+let gmstWarnedOnce = false;
 export function gmstRad(jd: number): number {
+  if (!gmstWarnedOnce && (jd < GMST_VALID_JD_MIN || jd > GMST_VALID_JD_MAX)) {
+    gmstWarnedOnce = true;
+    console.warn(
+      `gmstRad(jd=${jd.toFixed(2)}): outside the IAU 1982 polynomial's ~1700–2300 calibration window; sky-pointing accuracy may degrade by minutes-of-arc.`,
+    );
+  }
   const T = (jd - J2000_JD) / 36525;
   let gmstSec = 67310.54841
     + (876600 * 3600 + 8640184.812866) * T

@@ -1007,6 +1007,13 @@ export class InfoPanel {
           ? moonObservables(sv.position, earthHelio, d.physical.radiusKm)
           : bodyObservables(d.id, sv.position, earthHelio, d.physical.radiusKm);
         dynRows.push([t('info.row.distFromEarth'), `${formatNumber(obs.observerDistanceAU, 4)} AU`]);
+        // Light-time delay: at this distance you're seeing the body
+        // as it was N seconds/minutes/hours ago. c = 173.14463 AU/day
+        // (one light-day = ~173 AU). For Sun/Mercury/Venus this is
+        // 3–8 minutes; for outer planets 30 minutes–6 hours; for the
+        // Moon, 1.3 seconds.
+        const lightSec = obs.observerDistanceAU * 86400 / 173.14463;
+        dynRows.push([t('info.row.lightDelay'), formatLightDelay(lightSec)]);
         if (Number.isFinite(obs.apparentMagnitude)) {
           dynRows.push([t('info.row.magnitude'), `${formatMag(obs.apparentMagnitude)}`]);
         }
@@ -1221,6 +1228,25 @@ function formatHill(rAU: number): string {
 function formatMag(m: number): string {
   const sign = m < 0 ? '−' : '+';
   return `${sign}${Math.abs(m).toFixed(2)}`;
+}
+
+/**
+ * Format a light-time delay in human-friendly units.
+ * < 60s → seconds, < 90 min → minutes, else hours+minutes.
+ * Used to express "you're seeing this object as it was N units ago" —
+ * the Sun's reading is iconic (~8m 20s); Jupiter at opposition ~33m;
+ * Voyager 1 at ~22 light-hours.
+ */
+function formatLightDelay(seconds: number): string {
+  if (seconds < 60) return `${seconds.toFixed(1)} s`;
+  if (seconds < 5400) {  // < 90 min
+    const m = Math.floor(seconds / 60);
+    const s = Math.round(seconds % 60);
+    return `${m}m ${s.toString().padStart(2, '0')}s`;
+  }
+  const h = Math.floor(seconds / 3600);
+  const m = Math.round((seconds % 3600) / 60);
+  return `${h}h ${m.toString().padStart(2, '0')}m`;
 }
 
 /** Format angular size with appropriate unit (″ < 60 → arcsec, < 60′ → arcmin, else degrees). */

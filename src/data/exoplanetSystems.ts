@@ -55,6 +55,13 @@ export interface ExoplanetSystemMeta {
   /** Host star + all confirmed planets (the renderer reads parentId chains). */
   host: BodyDescriptor;
   planets: BodyDescriptor[];
+  /**
+   * Host effective temperature in K. Used by ExoplanetSystemView to
+   * compute the conservative habitable-zone disc (Kopparapu+2013) and
+   * by InfoPanel for the "G2V main-sequence" / "M8 dwarf" readout.
+   * Required for the HZ shading; if absent the green ring is skipped.
+   */
+  hostTeffK: number;
 }
 
 /**
@@ -221,6 +228,7 @@ const TRAPPIST_1_SYSTEM: ExoplanetSystemMeta = {
   distanceLy: 40.66,
   raHours: 23.108,
   decDeg: -5.041,
+  hostTeffK: 2566,
   description: {
     'zh-Hant': '7 顆地球大小行星，繞 M8 矮星運轉，全部塞在比水星軌道還小的範圍內，且彼此構成 8:5:3:2:1 的軌道共振鏈。系統中 e、f、g 都在宜居帶內。',
     'en': '7 Earth-sized planets orbiting an M8 dwarf, all packed inside an orbit smaller than Mercury\'s, locked in an 8:5:3:2:1 mean-motion resonance chain. e, f, and g sit inside the habitable zone.',
@@ -267,6 +275,7 @@ const PROXIMA_SYSTEM: ExoplanetSystemMeta = {
   distanceLy: 4.246,
   raHours: 14.4955,
   decDeg: -62.6794,
+  hostTeffK: 3042,
   description: {
     'zh-Hant': '距離太陽最近的恆星 (4.24 ly)，紅矮星伴星 α Cen AB。已確認 3 顆行星，b 在宜居帶。',
     'en': 'Closest star to Sol (4.24 ly), an M5.5V red-dwarf companion to α Cen AB. Three confirmed planets; b sits in the habitable zone.',
@@ -309,6 +318,7 @@ const KEPLER_186_SYSTEM: ExoplanetSystemMeta = {
   distanceLy: 580,
   raHours: 19.916,
   decDeg: 43.954,
+  hostTeffK: 3788,
   description: {
     'zh-Hant': 'M1V 紅矮星，5 顆行星。f 是第一顆於另一恆星宜居帶被確認的地球大小世界。',
     'en': 'M1V red dwarf, 5 planets. f was the first Earth-sized world confirmed in another star\'s habitable zone.',
@@ -360,6 +370,7 @@ const KEPLER_90_SYSTEM: ExoplanetSystemMeta = {
   distanceLy: 2840,
   raHours: 18.957,
   decDeg: 49.305,
+  hostTeffK: 6080,
   description: {
     'zh-Hant': 'G 型恆星，8 顆已知行星，與太陽系並列「行星數最多」紀錄。第 8 顆 (i) 是 2017 年用機器學習方法重新分析 Kepler 資料時發現。',
     'en': 'G-type star with 8 known planets — tied with Sol for the planet-count record. The 8th (i) was found in 2017 by reanalysing Kepler data with machine-learning techniques.',
@@ -378,6 +389,7 @@ const PEG_51_SYSTEM: ExoplanetSystemMeta = {
   distanceLy: 50.45,
   raHours: 22.961,
   decDeg: 20.769,
+  hostTeffK: 5793,
   description: {
     'zh-Hant': '1995 年確認的第一顆繞主序星的系外行星。其熱木星 b 直接導致天文界對行星形成理論大幅修正，並開啟系外行星時代。',
     'en': 'In 1995, the first exoplanet ever confirmed around a Sun-like star. Its hot-Jupiter b forced a major rethink of planetary-formation theory and launched the exoplanet era.',
@@ -406,6 +418,7 @@ const HD_209458_SYSTEM: ExoplanetSystemMeta = {
   distanceLy: 159,
   raHours: 22.052,
   decDeg: 18.884,
+  hostTeffK: 6065,
   description: {
     'zh-Hant': '第一顆透過凌日法確認的系外行星 (1999)。「Osiris」b 失去大氣以驚人速率，是最早被探測大氣成分的系外行星。',
     'en': 'First exoplanet confirmed by the transit method (1999). "Osiris" b is losing its atmosphere at startling rates — the first exoplanet with measured atmospheric composition.',
@@ -434,6 +447,7 @@ const TOI_700_SYSTEM: ExoplanetSystemMeta = {
   distanceLy: 101.4,
   raHours: 6.5135,
   decDeg: -65.578,
+  hostTeffK: 3480,
   description: {
     'zh-Hant': 'TESS 任務發現的 4 顆行星系統。e 是宜居帶內的地球大小世界 (2023 年確認)。',
     'en': 'A 4-planet system found by NASA TESS. Planet e is an Earth-sized world in the habitable zone, confirmed 2023.',
@@ -466,6 +480,7 @@ const WASP_12_SYSTEM: ExoplanetSystemMeta = {
   distanceLy: 1410,
   raHours: 6.5092,
   decDeg: 29.6727,
+  hostTeffK: 6300,
   description: {
     'zh-Hant': '極端熱木星 b 被恆星撕裂，每秒損失約 60 億公噸物質。軌道在 1300 萬年內衰減進入恆星。',
     'en': 'Extreme hot Jupiter b being torn apart — losing ~6 billion tonnes/sec of mass. Will spiral into the star within 13 Myr.',
@@ -490,6 +505,7 @@ const LHS_1140_SYSTEM: ExoplanetSystemMeta = {
   distanceLy: 48.94,
   raHours: 0.8763,
   decDeg: -15.272,
+  hostTeffK: 3216,
   description: {
     'zh-Hant': 'M4.5 矮星，安靜不易耀斑，是大氣探測的優先目標。b 是岩質超地球，c 在外側軌道。',
     'en': 'Quiet M4.5 dwarf — low flare activity makes it a high-priority atmosphere-characterisation target. b is a rocky super-Earth; c orbits further out.',
@@ -517,6 +533,7 @@ const GJ_1214_SYSTEM: ExoplanetSystemMeta = {
   distanceLy: 47.5,
   raHours: 17.302,
   decDeg: 4.965,
+  hostTeffK: 3250,
   description: {
     'zh-Hant': 'M4.5 紅矮星，b 是首顆被詳細研究的「迷你海王星」(2009)。其大氣可能富含水蒸氣。',
     'en': 'M4.5 red dwarf. b was the first "mini-Neptune" characterised in detail (2009); its atmosphere may be water-rich.',
@@ -541,6 +558,7 @@ const KEPLER_452_SYSTEM: ExoplanetSystemMeta = {
   distanceLy: 1402,
   raHours: 19.722,
   decDeg: 44.277,
+  hostTeffK: 5757,
   description: {
     'zh-Hant': 'G 型恆星，比太陽老 15 億年。b 在宜居帶，公轉週期幾乎和地球一樣 (385 d)，被稱為「地球的老表親」。',
     'en': 'G-type star ~1.5 Gyr older than the Sun. Planet b sits in the habitable zone with a 385-day orbit — Earth\'s "older cousin".',
@@ -564,6 +582,7 @@ const ALPHA_CEN_SYSTEM: ExoplanetSystemMeta = {
   distanceLy: 4.3667,
   raHours: 14.660,
   decDeg: -60.834,
+  hostTeffK: 5790,
   description: {
     'zh-Hant': '與比鄰星形成三合星系統 (α Cen A, B, Proxima)。Toliman 任務 (2025+) 將以差分干涉測量法搜尋 α Cen A 周圍的類地行星。',
     'en': 'Forms a triple system with Proxima Centauri. The Toliman mission (2025+) will use differential astrometry to search α Cen A for Earth-like planets.',

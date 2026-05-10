@@ -62,7 +62,14 @@ function newton(
     }
     x = xNext;
   }
-  return x;
+  // Loop exhausted without |fx| < NEWTON_TOL. For the Sun-Earth /
+  // Sun-Jupiter / Earth-Moon parameters used in production this never
+  // happens (5-8 iters typical), but pathological μ (e.g. equal-mass
+  // binary, μ=0.5) or a starting guess in a basin pointing away from
+  // the root could land us here. Return NaN so callers can decide
+  // (LagrangePointsLayer falls back to hiding that point) rather than
+  // silently propagating an unconverged x.
+  return Number.isFinite(f(x)) && Math.abs(f(x)) < NEWTON_TOL * 100 ? x : NaN;
 }
 
 /**
