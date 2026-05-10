@@ -428,6 +428,11 @@ const exoBanner = (() => {
         scaleCtl.setMode(savedScaleModeForExoVisit);
       }
       savedScaleModeForExoVisit = null;
+      // Restore the user's pre-landing camera mode (free / top / follow / observer).
+      if (savedCameraModeForExoVisit && cameraCtl.getMode() !== savedCameraModeForExoVisit) {
+        cameraCtl.setMode(savedCameraModeForExoVisit);
+      }
+      savedCameraModeForExoVisit = null;
       // Camera zoom out: leave the system, head to neighbourhood tier.
       tierCtl.setTier('neighbourhood', 3.0);
     });
@@ -452,6 +457,10 @@ const exoBanner = (() => {
 // Captured before we land on an exoplanet, so the return trip restores
 // whatever scale mode the user had picked beforehand.
 let savedScaleModeForExoVisit: 'real' | 'log' | 'schematic' | null = null;
+// Same idea for the camera mode — landing forces free-flight so the
+// camera actually parks at the host instead of being dragged by a
+// follow-mode anchor back into the solar system.
+let savedCameraModeForExoVisit: ReturnType<typeof cameraCtl.getMode> | null = null;
 
 window.addEventListener('sim:exo-visit', (e) => {
   const id = (e as CustomEvent<{ id: string }>).detail?.id;
@@ -464,6 +473,15 @@ window.addEventListener('sim:exo-visit', (e) => {
   // top of that fresh state.
   savedScaleModeForExoVisit = scaleCtl.getMode() as 'real' | 'log' | 'schematic';
   if (savedScaleModeForExoVisit !== 'log') scaleCtl.setMode('log');
+
+  // Force free-flight camera mode. If we leave 'follow' on, every frame
+  // CameraController re-anchors the camera + target to the followed
+  // body's heliocentric position, dragging us back to the solar system
+  // even though we hid the heliocentric group. Save the previous mode
+  // so we can restore it on Return — the user can re-pick a follow body
+  // themselves if they want; that's simpler than plumbing the followId.
+  savedCameraModeForExoVisit = cameraCtl.getMode();
+  if (savedCameraModeForExoVisit !== 'free') cameraCtl.setMode('free');
 
   const ok = solarSystem.activateExoplanetSystem(id);
   if (!ok) return;
