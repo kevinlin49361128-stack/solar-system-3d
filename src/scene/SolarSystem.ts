@@ -53,6 +53,7 @@ import { LunarMansionsLayer } from './LunarMansionsLayer';
 import { GalacticDisk } from './GalacticDisk';
 import { HygCloud } from './HygCloud';
 import { ExoplanetHosts } from './ExoplanetHosts';
+import { ExoplanetSystemView } from './ExoplanetSystemView';
 
 interface BodyEntry {
   descriptor: BodyDescriptor;
@@ -97,6 +98,7 @@ export class SolarSystem {
   private galacticDisk: GalacticDisk | null = null;
   private hygCloud: HygCloud | null = null;
   private exoplanetHosts: ExoplanetHosts | null = null;
+  private exoplanetView: ExoplanetSystemView | null = null;
   readonly realism = new RealismState();
   private originalPropagators = new Map<string, import('../physics/types').OrbitPropagator | null>();
 
@@ -192,6 +194,12 @@ export class SolarSystem {
     // HYG-cloud frame so they overlay the actual host star positions.
     this.exoplanetHosts = new ExoplanetHosts();
     this.scene.add(this.exoplanetHosts.group);
+    // Scene-swap manager for "land on Trappist-1 / Proxima / etc."
+    // Lazy-builds each system's host + planet meshes the first time
+    // it's activated. Hidden by default; activated via the InfoPanel
+    // "Visit system" button.
+    this.exoplanetView = new ExoplanetSystemView(this.scaler);
+    this.scene.add(this.exoplanetView.group);
     // Ambient kept low so the day/night terminator on textured planets is
     // visible, but high enough to make the night side faintly readable.
     this.scene.add(new AmbientLight(0x6878a0, 0.55));
@@ -503,6 +511,7 @@ export class SolarSystem {
     if (this.scaler.getFrame() === 'geocentric') this.buildGeocentricOrbitLines();
     if (this.spacecraft) this.spacecraft.rebuild();
     if (this.lagrangePoints) this.lagrangePoints.rebuild(this.lastJd);
+    this.exoplanetView?.rebuild();
     this.refreshLocationPin();
   }
 
@@ -791,6 +800,39 @@ export class SolarSystem {
 
   getExoplanetHosts(): ExoplanetHosts | null {
     return this.exoplanetHosts;
+  }
+
+  /**
+   * Activate one of the 12 curated exoplanet systems (Trappist-1,
+   * Proxima, Kepler-90, etc.). Hides the solar-system meshes and
+   * shows the host + planets at scene origin in moon-distance scale.
+   */
+  activateExoplanetSystem(id: string): boolean {
+    if (!this.exoplanetView) return false;
+    const meta = this.exoplanetView.activate(id);
+    if (!meta) return false;
+    // Hide our solar system while landed on someone else's.
+    this.heliocentric.visible = false;
+    return true;
+  }
+
+  /** Return to solar-system view. */
+  deactivateExoplanetSystem(): void {
+    this.exoplanetView?.deactivate();
+    this.heliocentric.visible = true;
+  }
+
+  isExoplanetSystemActive(): boolean {
+    return this.exoplanetView?.isActive() ?? false;
+  }
+
+  getActiveExoplanetSystemId(): string | null {
+    return this.exoplanetView?.getActiveId() ?? null;
+  }
+
+  /** Per-frame: advance the active exoplanet system's planets. */
+  updateExoplanetSystem(jd: number): void {
+    this.exoplanetView?.update(jd);
   }
 
   setLagrangePointsVisible(visible: boolean): void {

@@ -543,6 +543,11 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'info.event.aphelion':         { 'zh-Hant': '遠日點',   'en': 'Aphelion',           'ja': '遠日点' },
   'info.event.planetConj':       { 'zh-Hant': '行星合',   'en': 'Planet conjunction', 'ja': '惑星合' },
 
+  // Exoplanet flythrough
+  'exo.visitSystem':       { 'zh-Hant': '降落到此系統', 'en': 'Land on this system', 'ja': 'このシステムに降下' },
+  'exo.returnToGalaxy':    { 'zh-Hant': '↩ 回到銀河', 'en': '↩ Return to galaxy', 'ja': '↩ 銀河に戻る' },
+  'exo.activeBanner':      { 'zh-Hant': '正在參觀', 'en': 'Currently visiting', 'ja': '訪問中' },
+
   // SkyPanel — sun/moon events
   'sky.polarNight':         { 'zh-Hant': '極夜/極晝',     'en': 'Polar night/day',         'ja': '極夜/白夜' },
   'sky.sunrise':            { 'zh-Hant': '☀ 升', 'en': '☀ Rise',  'ja': '☀ 出' },

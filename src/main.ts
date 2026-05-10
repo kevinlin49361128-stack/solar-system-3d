@@ -390,6 +390,63 @@ if (screenshotBtn) {
   });
 }
 
+// Exoplanet "visit" handler: when the user clicks the InfoPanel's
+// "Land on this system" button, swap the scene from solar-system to
+// the chosen exoplanet system and snap the camera to system tier.
+// A floating banner appears with a "return to galaxy" button.
+const exoBanner = (() => {
+  const el = document.createElement('div');
+  el.id = 'exo-banner';
+  el.style.cssText = [
+    'position:fixed', 'top:64px', 'left:50%', 'transform:translateX(-50%)',
+    'z-index:90', 'display:none', 'gap:10px', 'align-items:center',
+    'padding:6px 14px', 'background:var(--panel-bg-strong)',
+    'border:1px solid var(--accent)', 'border-radius:20px',
+    'backdrop-filter:blur(20px) saturate(140%)',
+    '-webkit-backdrop-filter:blur(20px) saturate(140%)',
+    'font-size:12px', 'font-family:inherit', 'color:var(--text)',
+    'box-shadow:0 4px 16px rgba(0,0,0,0.4)',
+  ].join(';');
+  el.innerHTML = `
+    <span><span style="color:var(--text-dim);">${t('exo.activeBanner')}:</span>
+      <b id="exo-banner-name" style="color:var(--accent);"></b></span>
+    <button id="exo-banner-return" style="background:transparent;border:1px solid var(--accent);color:var(--accent);
+            padding:3px 10px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:11px;">
+      ${t('exo.returnToGalaxy')}
+    </button>
+  `;
+  document.body.appendChild(el);
+  el.querySelector('#exo-banner-return')?.addEventListener('click', () => {
+    solarSystem.deactivateExoplanetSystem();
+    el.style.display = 'none';
+    // Camera zoom out: leave the system, head to neighbourhood tier.
+    tierCtl.setTier('neighbourhood', 3.0);
+  });
+  return el;
+})();
+
+window.addEventListener('sim:exo-visit', (e) => {
+  const id = (e as CustomEvent<{ id: string }>).detail?.id;
+  if (!id) return;
+  const ok = solarSystem.activateExoplanetSystem(id);
+  if (!ok) return;
+  // Snap camera to system tier so the host fills the view.
+  tierCtl.snapTo('system');
+  // Place the camera at a small distance from origin so we can see
+  // the host star + a bit of the planet orbits.
+  cameraCtl.camera.position.set(0, 1.5, 4);
+  cameraCtl.camera.lookAt(0, 0, 0);
+  // Show the banner with the system name.
+  const sys = solarSystem.getExoplanetHosts()?.resolvePick({ exoplanetSystemId: id });
+  const nameEl = exoBanner.querySelector('#exo-banner-name');
+  if (sys && nameEl) {
+    nameEl.textContent = (
+      typeof sys.name === 'string' ? sys.name : (sys.name['zh-Hant'] ?? sys.name.en ?? id)
+    );
+  }
+  exoBanner.style.display = 'flex';
+});
+
 // Galactic flythrough: keyboard shortcuts.
 //   G — zoom one tier outward (system → neighbourhood → galactic)
 //   Shift-G — zoom one tier inward
@@ -1177,6 +1234,8 @@ function tick(now: number): void {
   cameraCtl.update();
   // Keep host halos billboarded to the camera each frame.
   solarSystem.updateExoplanetHosts(cameraCtl.camera.position);
+  // Advance the active exoplanet system's planets, if any.
+  solarSystem.updateExoplanetSystem(clock.getJd());
   solarSystem.updateLabelSizes(cameraCtl.camera, renderer.domElement.clientHeight);
   // Drive DSO real-angular-size scaling from current FOV + canvas height.
   solarSystem.updateMessierAngularScale(cameraCtl.camera.fov, renderer.domElement.clientHeight);

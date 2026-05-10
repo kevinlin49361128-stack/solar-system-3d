@@ -336,6 +336,14 @@ export class InfoPanel {
 
     // Description + planet roster
     const desc = `<div class="info-section"><div class="info-text">${escapeHtml(langPick(sys.description))}</div></div>`;
+    const visitBtn = sys.planets.length > 0
+      ? `<button id="visit-exoplanet-${sys.id}" data-exo-visit-id="${sys.id}"
+            style="display:block;width:100%;margin:8px 0;padding:8px 14px;font-size:12px;font-weight:600;
+                   background:linear-gradient(135deg,#4a8eff,#5db1ff);color:#001a33;border:0;border-radius:6px;
+                   cursor:pointer;font-family:inherit;">
+            🚀 ${t('exo.visitSystem')}
+          </button>`
+      : '';
     const planetList = sys.planets.length === 0
       ? ''
       : `<div class="info-section">
@@ -350,8 +358,15 @@ export class InfoPanel {
                </div>
              </div>`).join('')}
          </div>`;
-    this.extraEl.innerHTML = desc + planetList;
+    this.extraEl.innerHTML = desc + visitBtn + planetList;
     this.planningEl.innerHTML = '';
+
+    // Wire the visit button — actual activation happens via a custom
+    // event so main.ts can drive camera animation alongside.
+    const btn = document.getElementById(`visit-exoplanet-${sys.id}`);
+    btn?.addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('sim:exo-visit', { detail: { id: sys.id } }));
+    });
   }
 
   /**
