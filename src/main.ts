@@ -24,7 +24,7 @@ import { CalcVectors } from './scene/CalcVectors';
 import { LongExposureCompositor } from './scene/LongExposureCompositor';
 import { skyColorForDayFactor, sunAltToDayFactor } from './scene/Skybox';
 import { TextureConfig } from './scene/textureConfig';
-import { applyLanguage, getLang, setLang, t, type Lang } from './i18n';
+import { applyLanguage, getLang, setLang, t, bodyName, type Lang } from './i18n';
 import { toast } from './ui/toast';
 import { PerfHUD } from './ui/PerfHUD';
 import { OnboardingTour } from './ui/OnboardingTour';
@@ -1137,7 +1137,7 @@ function updateSelectionMarker(): void {
     if (!entry) { selectionMarkerEl.classList.remove('visible'); return; }
     const got = solarSystem.getWorldPosition(bodyId, _markerWorldPos);
     if (!got) { selectionMarkerEl.classList.remove('visible'); return; }
-    labelText = entry.descriptor.name;
+    labelText = bodyName(entry.descriptor);
   } else if (starId) {
     const star = NAMED_STARS.find((s) => s.id === starId);
     if (!star) { selectionMarkerEl.classList.remove('visible'); return; }
@@ -1147,7 +1147,10 @@ function updateSelectionMarker(): void {
     const dirEcl = raDecToEcliptic(star.raHours, star.decDeg);
     const dirScene = eclipticToScene(dirEcl);
     _markerWorldPos.copy(dirScene).multiplyScalar(4000);
-    labelText = star.name;
+    const lang = getLang();
+    labelText = lang === 'en' ? star.nameEn
+              : lang === 'ja' ? (star.nameJa ?? star.nameEn)
+              : star.name;
   } else if (nameEl.dataset.unnamedStarRa && nameEl.dataset.unnamedStarDec) {
     // HYG-catalog (unnamed) star — same projection as named, tagged via
     // `dataset.unnamedStarRa/Dec` rather than a star id.

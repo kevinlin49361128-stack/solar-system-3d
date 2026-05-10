@@ -481,6 +481,9 @@ export class BodyMesh {
    * "太陽" → "Sun" → "太陽" without rebuilding the whole BodyMesh.
    */
   private relabel(text: string, sceneRadius: number): void {
+    // Capture previous visibility — don't force-on after a language
+    // switch if the user had labels turned off via the display toggle.
+    const wasVisible = this.label.visible;
     // Dispose the old map so we don't leak GPU textures on every switch.
     const oldMat = this.label.material as SpriteMaterial;
     oldMat.map?.dispose();
@@ -489,7 +492,7 @@ export class BodyMesh {
     this.group.remove(this.label);
     this.label = this.createLabel(text);
     this.label.position.set(0, sceneRadius * 1.6 + 0.2, 0);
-    this.label.visible = true;
+    this.label.visible = wasVisible;
     this.group.add(this.label);
   }
 
