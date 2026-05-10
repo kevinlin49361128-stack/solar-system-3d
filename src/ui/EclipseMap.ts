@@ -1,4 +1,5 @@
 import { Vector3 } from 'three';
+import { t } from '../i18n';
 import type { SolarSystem } from '../scene/SolarSystem';
 import { computeEclipsePath, type EclipsePath, type PathSample } from '../physics/eclipsePath';
 import { sunPositionEcliptic } from '../physics/solarPosition';
@@ -157,7 +158,7 @@ export class EclipseMap {
       ctx.stroke();
       ctx.fillStyle = '#ffcc40';
       ctx.font = 'bold 11px sans-serif';
-      ctx.fillText('★ 食甚', p.x + 12, p.y + 4);
+      ctx.fillText(t('em.greatest'), p.x + 12, p.y + 4);
     }
   }
 
@@ -181,9 +182,9 @@ export class EclipseMap {
       return `${lat} ${lon}`;
     };
 
-    const typeLabel = path.type === 'total' ? '日全食'
-                    : path.type === 'annular' ? '日環食'
-                    : '日偏食';
+    const typeLabel = path.type === 'total' ? t('em.kind.total')
+                    : path.type === 'annular' ? t('em.kind.annular')
+                    : t('em.kind.partial');
 
     this.detailsEl.innerHTML = `
       <div><b>${typeLabel}</b> · 食帶最寬 ${path.maxWidthKm.toFixed(0)} km</div>

@@ -2,7 +2,7 @@ import type { SolarSystem } from '../scene/SolarSystem';
 import type { SimulationClock } from '../time/SimulationClock';
 import type { BodyDescriptor } from '../physics/types';
 import { AU_KM } from '../physics/constants';
-import { bodyName, onLanguageChange } from '../i18n';
+import { bodyName, onLanguageChange, t } from '../i18n';
 
 const ELIGIBLE_IDS = [
   'sun',
@@ -148,10 +148,10 @@ export class CalcPanel {
     rows.sort((a, b) => a.distAU - b.distAU);
 
     let html = `<div class="calc-row calc-head">`
-      + `<span class="cn">天體</span>`
-      + `<span>距離 (AU)</span>`
-      + `<span>相對 v</span>`
-      + `<span>視線 v</span>`
+      + `<span class="cn">${t('calc.body')}</span>`
+      + `<span>${t('calc.distance')} (AU)</span>`
+      + `<span>${t('calc.relV')}</span>`
+      + `<span>${t('calc.losV')}</span>`
       + `</div>`;
 
     for (const r of rows) {
@@ -165,7 +165,7 @@ export class CalcPanel {
         + `<span class="${losClass}">${losSign}${r.losKmS.toFixed(2)}</span>`
         + `</div>`
         + `<div class="calc-extra" data-id="${r.desc.id}">`
-        + `視角直徑 <b>${formatArcsec(r.angularArcsec)}</b> · 角速度 <b>${r.angularRateDegPerHr.toFixed(4)}°/hr</b>`
+        + `${t('calc.angularSize')} <b>${formatArcsec(r.angularArcsec)}</b> · ${t('calc.angularRate')} <b>${r.angularRateDegPerHr.toFixed(4)}°/hr</b>`
         + `</div>`;
     }
 

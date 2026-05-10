@@ -1,6 +1,7 @@
 import type { CameraController } from '../controls/CameraController';
 import type { SolarSystem } from '../scene/SolarSystem';
 import type { InfoPanel } from './InfoPanel';
+import { t } from '../i18n';
 import { NAMED_STARS } from '../data/stars';
 import { OBSERVER_PRESETS } from '../physics/topocentric';
 import { CONSTELLATIONS } from '../data/constellations';
@@ -167,7 +168,7 @@ export class SearchBar {
         kind: 'constellation',
         search: `${c.name} ${c.nameEn} ${c.id}`.toLowerCase(),
         action: () => {
-          alert(`${c.name} (${c.nameEn})\n包含 ${c.lines.length} 條連線。\n進入觀測模式可在天空中找到此星座。`);
+          alert(`${c.name} (${c.nameEn})\n${t('search.constellationLines')} ${c.lines.length} ${t('search.constellationLines2')}.\n${t('search.observerHint')}`);
         },
       });
     }
@@ -202,7 +203,7 @@ export class SearchBar {
       return [{
         id: 'radec',
         label: `RA ${radec.raHours.toFixed(4)}ʰ  Dec ${radec.decDeg.toFixed(3)}°`,
-        sub: 'J2000 直接座標',
+        sub: t('search.coordsSub'),
         kind: 'star',
         search: q,
         action: () => {
@@ -211,7 +212,7 @@ export class SearchBar {
             const altAz = cam.getStarAltAz(radec.raHours, radec.decDeg);
             if (altAz) cam.setObserverLook(altAz.azDeg, altAz.altDeg);
           } else {
-            alert(`RA ${radec.raHours.toFixed(4)}ʰ\nDec ${radec.decDeg.toFixed(3)}°\n\n進入觀測模式即可定位至此座標。`);
+            alert(`RA ${radec.raHours.toFixed(4)}ʰ\nDec ${radec.decDeg.toFixed(3)}°\n\n${t('search.coordsHint')}`);
           }
         },
       }];
@@ -222,7 +223,7 @@ export class SearchBar {
   private render(): void {
     const items = this.query();
     if (items.length === 0) {
-      this.resultsEl.innerHTML = `<div style="color:var(--text-dim);padding:8px;">無相符結果</div>`;
+      this.resultsEl.innerHTML = `<div style="color:var(--text-dim);padding:8px;">${t('search.noResult')}</div>`;
       return;
     }
     this.selectedIdx = ((this.selectedIdx % items.length) + items.length) % items.length;
@@ -252,10 +253,10 @@ export class SearchBar {
 
 function kindLabel(k: SearchEntry['kind']): string {
   switch (k) {
-    case 'body': return '天體';
-    case 'star': return '恆星';
-    case 'site': return '觀測點';
-    case 'constellation': return '星座';
+    case 'body': return t('search.cat.body');
+    case 'star': return t('search.cat.star');
+    case 'site': return t('search.cat.site');
+    case 'constellation': return t('search.cat.constellation');
   }
 }
 

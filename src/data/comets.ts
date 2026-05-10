@@ -1,6 +1,7 @@
 import { J2000_JD } from '../physics/constants';
 import { KeplerPropagator, type KeplerElements } from '../physics/keplerPropagator';
 import type { BodyDescriptor, PropagatorSource } from '../physics/types';
+import type { LangText } from '../i18n';
 
 const JPL_SBDB: PropagatorSource = {
   label: 'JPL Small-Body Database',
@@ -98,8 +99,11 @@ function makeComet(
   nameEn: string,
   raw: CometRawElements,
   radiusKm: number,
-  description: string,
+  description: string | LangText,
 ): BodyDescriptor {
+  const desc: LangText = typeof description === 'string'
+    ? { 'zh-Hant': description, en: description, ja: description }
+    : description;
   return {
     id,
     name,
@@ -116,7 +120,7 @@ function makeComet(
     appearance: {
       color: 0xb6dcff,
     },
-    description: { 'zh-Hant': description, en: description, ja: description },
+    description: desc,
   };
 }
 
@@ -131,7 +135,11 @@ export const COMETS: BodyDescriptor[] = [
       periodDays: 27510,      // ≈ 75.32 years
     },
     11,
-    '最有名的週期彗星，平均 76 年回歸一次，下一次近日點為 2061 年；軌道為逆行 (i > 90°)。',
+    {
+      'zh-Hant': '最有名的週期彗星，平均 76 年回歸一次，下一次近日點為 2061 年；軌道為逆行 (i > 90°)。',
+      'en': 'The most famous periodic comet, returning every ~76 years; next perihelion is 2061. Retrograde orbit (i > 90°).',
+      'ja': '最も有名な周期彗星。76 年周期で回帰し、次回近日点は 2061 年。軌道は逆行（i > 90°）。',
+    },
   ),
   makeComet(
     'encke', '恩克彗星', '2P/Encke',
@@ -143,7 +151,11 @@ export const COMETS: BodyDescriptor[] = [
       periodDays: 1205,       // ≈ 3.30 years
     },
     2.4,
-    '已知週期最短的彗星，3.3 年一周；近日點僅 0.34 AU，常年熱蒸發殆盡塵埃。',
+    {
+      'zh-Hant': '已知週期最短的彗星，3.3 年一周；近日點僅 0.34 AU，常年熱蒸發殆盡塵埃。',
+      'en': 'Shortest-period comet known (3.3-year orbit). Perihelion only 0.34 AU — repeated solar baking has eroded most volatile dust.',
+      'ja': '最短周期の周期彗星（3.3 年）。近日点はわずか 0.34 AU で、太陽の熱で揮発性物質はほぼ蒸発済み。',
+    },
   ),
   makeComet(
     'tempel1', '坦普爾 1 號彗星', '9P/Tempel 1',
@@ -155,7 +167,11 @@ export const COMETS: BodyDescriptor[] = [
       periodDays: 2026,       // ≈ 5.55 years
     },
     3.0,
-    '2005 年 NASA 深度撞擊號 (Deep Impact) 撞擊任務的目標；分析撞擊噴出物的結構提供彗核成分線索。',
+    {
+      'zh-Hant': '2005 年 NASA 深度撞擊號 (Deep Impact) 撞擊任務的目標；分析撞擊噴出物的結構提供彗核成分線索。',
+      'en': 'Target of NASA\'s 2005 Deep Impact mission. Analysing the impact ejecta gave the first glimpse into a cometary nucleus\'s interior composition.',
+      'ja': '2005 年 NASA ディープインパクトの衝突対象。噴出物の解析が彗星核内部の組成を初めて明らかにした。',
+    },
   ),
   makeComet(
     'churyumov', '楚留莫夫－格拉西緬科彗星', '67P/Churyumov–Gerasimenko',
@@ -167,7 +183,11 @@ export const COMETS: BodyDescriptor[] = [
       periodDays: 2354,       // ≈ 6.44 years
     },
     2.0,
-    '羅塞塔號 (Rosetta) 探測器於 2014–2016 年伴飛、菲萊 (Philae) 著陸器歷史性著陸的雙葉狀彗核。',
+    {
+      'zh-Hant': '羅塞塔號 (Rosetta) 探測器於 2014–2016 年伴飛、菲萊 (Philae) 著陸器歷史性著陸的雙葉狀彗核。',
+      'en': 'Bilobed nucleus famously orbited by ESA\'s Rosetta (2014–2016) and softly landed on by Philae — the first soft landing on a comet.',
+      'ja': 'ESA ロゼッタ探査機が 2014–2016 年に伴走し、フィラエ着陸機が史上初の彗星軟着陸を達成した二葉状の彗星核。',
+    },
   ),
   makeComet(
     'halebopp', '海爾－波普彗星', 'C/1995 O1 (Hale–Bopp)',
@@ -179,7 +199,11 @@ export const COMETS: BodyDescriptor[] = [
       periodDays: 925000,     // ≈ 2533 years
     },
     30,
-    '1997 年的「世紀大彗星」，肉眼可見達 18 個月之久；軌道為近垂直 (i ≈ 89°)。',
+    {
+      'zh-Hant': '1997 年的「世紀大彗星」，肉眼可見達 18 個月之久；軌道為近垂直 (i ≈ 89°)。',
+      'en': 'The "Great Comet of 1997" — naked-eye visible for an unprecedented 18 months. Near-polar orbit (i ≈ 89°).',
+      'ja': '1997 年の「世紀の彗星」。肉眼で 18 ヶ月もの間見え続けた。軌道はほぼ極軌道（i ≈ 89°）。',
+    },
   ),
   makeComet(
     'neowise', '新智彗星', 'C/2020 F3 (NEOWISE)',
@@ -191,7 +215,11 @@ export const COMETS: BodyDescriptor[] = [
       periodDays: 2470000,    // ≈ 6766 years
     },
     2.5,
-    '2020 年北半球肉眼可見的「世紀彗星」，因 NEOWISE 太空望遠鏡發現命名；長尾、軌道近逆行。',
+    {
+      'zh-Hant': '2020 年北半球肉眼可見的「世紀彗星」，因 NEOWISE 太空望遠鏡發現命名；長尾、軌道近逆行。',
+      'en': '2020\'s naked-eye "Great Comet" in the Northern Hemisphere, named for the NEOWISE space telescope that discovered it. Long tail; near-retrograde orbit.',
+      'ja': '2020 年に北半球で肉眼観察された「大彗星」。発見した宇宙望遠鏡 NEOWISE にちなんで命名。長い尾を持ち、軌道はほぼ逆行。',
+    },
   ),
   makeComet(
     'tsuchinshan-atlas', '紫金山－ATLAS', 'C/2023 A3 (Tsuchinshan–ATLAS)',
@@ -205,7 +233,11 @@ export const COMETS: BodyDescriptor[] = [
       periodDays: 30000000,
     },
     5,
-    '2024 年下半年現身南北半球皆肉眼可見；中國紫金山天文台與 ATLAS 巡天獨立發現。',
+    {
+      'zh-Hant': '2024 年下半年現身南北半球皆肉眼可見；中國紫金山天文台與 ATLAS 巡天獨立發現。',
+      'en': 'Naked-eye visible in both hemispheres in late 2024. Co-discovered independently by China\'s Purple Mountain Observatory and the ATLAS sky survey.',
+      'ja': '2024 年下半期に南北両半球で肉眼観察可能だった彗星。中国紫金山天文台と ATLAS サーベイがそれぞれ独立に発見。',
+    },
   ),
   makeComet(
     'lovejoy', '洛夫喬伊彗星', 'C/2014 Q2 (Lovejoy)',
@@ -217,7 +249,11 @@ export const COMETS: BodyDescriptor[] = [
       periodDays: 2900000,    // ≈ 7944 years
     },
     8,
-    '2014–15 年北半球冬夜的綠色彗星，業餘望遠鏡輕鬆可見。',
+    {
+      'zh-Hant': '2014–15 年北半球冬夜的綠色彗星，業餘望遠鏡輕鬆可見。',
+      'en': 'The green comet of the 2014–15 northern winter sky — easily visible in amateur telescopes.',
+      'ja': '2014–15 年の北半球の冬空に現れた緑色の彗星。アマチュア望遠鏡で容易に観察できた。',
+    },
   ),
   makeComet(
     'mcnaught', '麥克諾特彗星', 'C/2006 P1 (McNaught)',
@@ -229,6 +265,10 @@ export const COMETS: BodyDescriptor[] = [
       periodDays: 30000000,
     },
     25,
-    '2007 年「白晝彗星」，亮度達 −5.5 等，南半球可見巨大扇形塵尾。',
+    {
+      'zh-Hant': '2007 年「白晝彗星」，亮度達 −5.5 等，南半球可見巨大扇形塵尾。',
+      'en': 'The 2007 "Daylight Comet" — peak magnitude −5.5, with an enormous fan-shaped dust tail visible from the Southern Hemisphere.',
+      'ja': '2007 年の「白昼彗星」。最大光度 −5.5 等に達し、南半球で巨大な扇形のダストテールが観察された。',
+    },
   ),
 ];

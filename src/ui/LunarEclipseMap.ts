@@ -1,4 +1,5 @@
 import { Vector3 } from 'three';
+import { t } from '../i18n';
 import type { SolarSystem } from '../scene/SolarSystem';
 import {
   computeLunarEclipse,
@@ -72,7 +73,7 @@ export class LunarEclipseMap {
     if (r.kind === 'none') {
       ctx.fillStyle = 'rgba(220,230,245,0.7)';
       ctx.font = '14px sans-serif';
-      ctx.fillText('（無月食事件）', W / 2 - 50, H / 2);
+      ctx.fillText(t('lecl.noEvent'), W / 2 - 50, H / 2);
       return;
     }
 
@@ -106,9 +107,9 @@ export class LunarEclipseMap {
     // Labels for shadow circles
     ctx.fillStyle = 'rgba(180,190,220,0.6)';
     ctx.font = '10px sans-serif';
-    ctx.fillText('半影', cx + km2px(peak.penumbraRadiusKm) * 0.7, cy - km2px(peak.penumbraRadiusKm) * 0.7);
+    ctx.fillText(t('lecl.penumbra'), cx + km2px(peak.penumbraRadiusKm) * 0.7, cy - km2px(peak.penumbraRadiusKm) * 0.7);
     ctx.fillStyle = 'rgba(220,220,235,0.7)';
-    ctx.fillText('本影', cx + km2px(peak.umbraRadiusKm) * 0.7, cy - km2px(peak.umbraRadiusKm) * 0.7);
+    ctx.fillText(t('lecl.umbra'), cx + km2px(peak.umbraRadiusKm) * 0.7, cy - km2px(peak.umbraRadiusKm) * 0.7);
 
     // Moon trajectory polyline
     ctx.strokeStyle = 'rgba(255,200,80,0.7)';
@@ -136,7 +137,7 @@ export class LunarEclipseMap {
       ctx.stroke();
       ctx.fillStyle = '#ffcc40';
       ctx.font = 'bold 11px sans-serif';
-      ctx.fillText('★ 食甚', x + km2px(peak.moonRadiusKm) + 6, y + 4);
+      ctx.fillText(t('lecl.greatest'), x + km2px(peak.moonRadiusKm) + 6, y + 4);
     }
 
     // Contact dots (P1/U1/U2/U3/U4/P4) — small ticks at known contact times.
@@ -172,32 +173,32 @@ export class LunarEclipseMap {
       const d = new Date((jd - 2440587.5) * 86400000);
       return `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())} UT`;
     };
-    const kindLabel = r.kind === 'total' ? '月全食'
-                    : r.kind === 'partial' ? '月偏食'
-                    : r.kind === 'penumbral' ? '半影月食'
-                    : '無月食';
+    const kindLabel = r.kind === 'total' ? t('lecl.kind.total')
+                    : r.kind === 'partial' ? t('lecl.kind.partial')
+                    : r.kind === 'penumbral' ? t('lecl.kind.penumbral')
+                    : t('lecl.kind.none');
     const date = r.greatestJd != null
       ? new Date((r.greatestJd - 2440587.5) * 86400000).toISOString().slice(0, 10)
       : '—';
     this.detailsEl.innerHTML = `
-      <div><b>${kindLabel}</b>${r.kind !== 'none' ? ` · 食分 ${r.umbraMagnitude.toFixed(3)}` : ''}</div>
+      <div><b>${kindLabel}</b>${r.kind !== 'none' ? ` · ${t('lecl.magnitude')} ${r.umbraMagnitude.toFixed(3)}` : ''}</div>
       <div style="margin-top:6px;">日期：${date}</div>
       <table style="font-size:11px;margin-top:6px;width:100%;border-collapse:collapse;">
-        <tr><td style="color:rgba(180,200,230,0.85);">P1（半影開始）</td><td style="text-align:right;">${fmtTime(r.p1Jd)}</td></tr>
-        <tr><td style="color:#ff7050;">U1（本影開始）</td><td style="text-align:right;">${fmtTime(r.u1Jd)}</td></tr>
-        <tr><td style="color:#ffcc40;">U2（全食開始）</td><td style="text-align:right;">${fmtTime(r.u2Jd)}</td></tr>
-        <tr><td style="color:#ffcc40;font-weight:600;">★ 食甚</td><td style="text-align:right;font-weight:600;">${fmtTime(r.greatestJd)}</td></tr>
-        <tr><td style="color:#ffcc40;">U3（全食結束）</td><td style="text-align:right;">${fmtTime(r.u3Jd)}</td></tr>
-        <tr><td style="color:#ff7050;">U4（本影結束）</td><td style="text-align:right;">${fmtTime(r.u4Jd)}</td></tr>
-        <tr><td style="color:rgba(180,200,230,0.85);">P4（半影結束）</td><td style="text-align:right;">${fmtTime(r.p4Jd)}</td></tr>
+        <tr><td style="color:rgba(180,200,230,0.85);">${t('lecl.p1')}</td><td style="text-align:right;">${fmtTime(r.p1Jd)}</td></tr>
+        <tr><td style="color:#ff7050;">${t('lecl.u1')}</td><td style="text-align:right;">${fmtTime(r.u1Jd)}</td></tr>
+        <tr><td style="color:#ffcc40;">${t('lecl.u2')}</td><td style="text-align:right;">${fmtTime(r.u2Jd)}</td></tr>
+        <tr><td style="color:#ffcc40;font-weight:600;">${t('lecl.greatest')}</td><td style="text-align:right;font-weight:600;">${fmtTime(r.greatestJd)}</td></tr>
+        <tr><td style="color:#ffcc40;">${t('lecl.u3')}</td><td style="text-align:right;">${fmtTime(r.u3Jd)}</td></tr>
+        <tr><td style="color:#ff7050;">${t('lecl.u4')}</td><td style="text-align:right;">${fmtTime(r.u4Jd)}</td></tr>
+        <tr><td style="color:rgba(180,200,230,0.85);">${t('lecl.p4')}</td><td style="text-align:right;">${fmtTime(r.p4Jd)}</td></tr>
       </table>
       <div style="margin-top:6px;color:var(--text-dim);font-size:10px;">
         ${r.kind === 'total'
-          ? '全食時段（U2 → U3）月球完全進入地球本影，呈現紅銅色「血月」。'
+          ? t('lecl.note.total')
           : r.kind === 'partial'
-          ? '部分月面進入本影；未進入部分仍受半影微弱遮蔽。'
+          ? t('lecl.note.partial')
           : r.kind === 'penumbral'
-          ? '月面僅穿過半影區，肉眼難以察覺；攝影可記錄到輕微暗化。'
+          ? t('lecl.note.penumbral')
           : ''}
         <br>包含 Danjon 大氣修正（影錐 +2%）；食甚時刻 < 1 分鐘誤差，接觸時刻 ±1-2 分鐘。
       </div>

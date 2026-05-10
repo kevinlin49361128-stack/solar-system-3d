@@ -1,4 +1,5 @@
 import type { SolarSystem } from '../scene/SolarSystem';
+import { t } from '../i18n';
 import type { SimulationClock } from '../time/SimulationClock';
 import type { CameraController } from '../controls/CameraController';
 import type { InfoPanel } from './InfoPanel';
@@ -74,7 +75,7 @@ export class EventsPanel {
 
   private render(): void {
     if (this.events.length === 0) {
-      this.listEl.innerHTML = `<div style="color:var(--text-dim);padding:8px;">無事件，按「重掃」嘗試。</div>`;
+      this.listEl.innerHTML = `<div style="color:var(--text-dim);padding:8px;">${t('events.empty')}</div>`;
       return;
     }
     this.listEl.innerHTML = this.events.map((e, i) => {
@@ -83,9 +84,9 @@ export class EventsPanel {
       // rows get a contact-diagram button (different geometry — the
       // shadow falls on the Moon, not on Earth).
       const mapBtn = e.kind === 'solar-eclipse'
-        ? `<button class="eclipse-map-btn" data-i="${i}" style="margin-top:4px;background:rgba(255,200,80,0.15);border:1px solid rgba(255,200,80,0.4);color:#ffcc40;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">🗺️ 食帶地圖</button>`
+        ? `<button class="eclipse-map-btn" data-i="${i}" style="margin-top:4px;background:rgba(255,200,80,0.15);border:1px solid rgba(255,200,80,0.4);color:#ffcc40;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">${t('events.eclipsePathBtn')}</button>`
         : e.kind === 'lunar-eclipse'
-        ? `<button class="lunar-eclipse-map-btn" data-i="${i}" style="margin-top:4px;background:rgba(255,200,80,0.15);border:1px solid rgba(255,200,80,0.4);color:#ffcc40;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">🌑 接觸圖</button>`
+        ? `<button class="lunar-eclipse-map-btn" data-i="${i}" style="margin-top:4px;background:rgba(255,200,80,0.15);border:1px solid rgba(255,200,80,0.4);color:#ffcc40;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">${t('events.lunarContactBtn')}</button>`
         : '';
       return `<div class="event-row" data-i="${i}">` +
         `<div><span style="color:var(--accent);font-size:11px;">${dateStr}</span> ` +
@@ -119,7 +120,7 @@ export class EventsPanel {
         // positions match the map.
         this.clock.setDate(e.date);
         const dateStr = e.date.toISOString().slice(0, 10);
-        const label = `日食食帶 — ${dateStr}（${e.description.split('：')[0] ?? '可能日食'}）`;
+        const label = `${t('events.eclipsePathLabel')} — ${dateStr} (${e.description.split('：')[0] ?? t('events.maybeEclipse')})`;
         this.eclipseMap?.show(e.jd, label);
       });
     });
@@ -130,7 +131,7 @@ export class EventsPanel {
         const e = this.events[i];
         this.clock.setDate(e.date);
         const dateStr = e.date.toISOString().slice(0, 10);
-        const label = `月食接觸圖 — ${dateStr}`;
+        const label = `${t('events.lunarContactLabel')} — ${dateStr}`;
         this.lunarEclipseMap?.show(e.jd, label);
       });
     });

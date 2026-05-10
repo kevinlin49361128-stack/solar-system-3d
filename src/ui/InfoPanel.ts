@@ -90,15 +90,15 @@ function parseTargetKey(currentId: string): { category: ObservationCategory; id:
 }
 
 function observabilityBadgeHtml(r: ObservabilityResult): string {
-  const label = r.rating === 'good' ? '🟢 適合觀測'
-              : r.rating === 'marginal' ? '🟡 條件普通'
-              : r.rating === 'poor' ? '🔴 條件不佳'
-              : '⚫ 不可見';
+  const label = r.rating === 'good' ? t('info.cond.good')
+              : r.rating === 'marginal' ? t('info.cond.marginal')
+              : r.rating === 'poor' ? t('info.cond.poor')
+              : t('info.cond.invisible');
   const reasons = r.reasons.length > 0
     ? `<ul style="margin:4px 0 0 0;padding-left:18px;">${r.reasons.slice(0, 3).map(s => `<li>${s}</li>`).join('')}</ul>`
     : '';
   return `<div class="planning-card">` +
-           `<div class="planning-status"><b>今晚可見性 — ${label}</b></div>` +
+           `<div class="planning-status"><b>${t('info.title.tonightVisibility')} — ${label}</b></div>` +
            `<div style="font-size:11px;color:var(--text-dim);margin-top:2px;line-height:1.5;">${reasons}</div>` +
          `</div>`;
 }
@@ -145,28 +145,28 @@ function fieldDataRows(
       Math.cos(moonAltAz.altDeg * D2R) * Math.cos(targetAltDeg * D2R) *
       Math.cos((moonAltAz.azDeg - targetAzDeg) * D2R);
     const moonDeg = Math.acos(Math.max(-1, Math.min(1, cosD))) / D2R;
-    const moonStatus = moonAltAz.altDeg < 0 ? '（月在地平下）'
+    const moonStatus = moonAltAz.altDeg < 0 ? t('info.row.moonBelowHorizon')
                      : moonDeg < 30 ? '⚠️'
                      : moonDeg < 60 ? ''
                      : '✓';
-    rows.push(['距月球', `${moonDeg.toFixed(1)}° ${moonStatus}`.trim()]);
+    rows.push([t('info.row.distFromMoon'), `${moonDeg.toFixed(1)}° ${moonStatus}`.trim()]);
   }
 
   // Low-horizon warning: alt < 5° usually unreachable behind buildings/
   // terrain even at flat sites. Surface as a row so the user notices.
   if (targetAltDeg > 0 && targetAltDeg < 5) {
-    rows.push(['⚠️ 地平警示', `仰角僅 ${targetAltDeg.toFixed(1)}°，多數地點被遮蔽`]);
+    rows.push([t('info.warn.altLow'), `${t('info.warn.altOnlyMsg')} ${targetAltDeg.toFixed(1)}°, ${t('info.warn.altLowMsg')}`]);
   }
 
   return rows;
 }
 
 const CATEGORY_LABEL: Record<BodyDescriptor['category'], string> = {
-  star: '恆星',
-  planet: '行星',
-  dwarf: '矮行星',
-  moon: '衛星',
-  comet: '彗星',
+  star: t('info.cat.star'),
+  planet: t('info.cat.planet'),
+  dwarf: t('info.cat.dwarf'),
+  moon: t('info.cat.moon'),
+  comet: t('info.cat.comet'),
 };
 
 export class InfoPanel {
@@ -326,15 +326,15 @@ export class InfoPanel {
     (this.nameEl as HTMLElement).dataset.unnamedStarRa = String(raHours);
     (this.nameEl as HTMLElement).dataset.unnamedStarDec = String(decDeg);
 
-    this.nameEl.textContent = `恆星 (HYG)`;
+    this.nameEl.textContent = t('info.title.starHyg');
     this.subtitleEl.textContent = `RA ${raHours.toFixed(4)}h Dec ${decDeg >= 0 ? '+' : ''}${decDeg.toFixed(4)}° · m=${magnitude.toFixed(2)}`;
 
     const rows: [string, string][] = [];
-    rows.push(['赤經 (J2000)', formatRA(raHours)]);
-    rows.push(['赤緯 (J2000)', `${decDeg >= 0 ? '+' : ''}${decDeg.toFixed(4)}°`]);
-    rows.push(['視星等', `${magnitude >= 0 ? '+' : ''}${magnitude.toFixed(2)}`]);
+    rows.push([t('info.row.ra2000'), formatRA(raHours)]);
+    rows.push([t('info.row.dec2000'), `${decDeg >= 0 ? '+' : ''}${decDeg.toFixed(4)}°`]);
+    rows.push([t('info.row.magnitude'), `${magnitude >= 0 ? '+' : ''}${magnitude.toFixed(2)}`]);
     this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-    this.extraEl.innerHTML = `<div class="info-section"><div class="info-text" style="color:var(--text-dim);">HYG 目錄中的恆星，無常用名與專屬描述。可從赤經/赤緯查詢更詳細的恆星資料。</div></div>`;
+    this.extraEl.innerHTML = `<div class="info-section"><div class="info-text" style="color:var(--text-dim);">${t('info.text.starHygFallback')}</div></div>`;
     this.planningEl.innerHTML = '';
 
     if (this.unsubscribe) this.unsubscribe();
@@ -370,11 +370,11 @@ export class InfoPanel {
     this.subtitleEl.textContent = `RA ${m.raHours.toFixed(4)}h Dec ${m.decDeg >= 0 ? '+' : ''}${m.decDeg.toFixed(4)}° · m=${m.magnitude.toFixed(2)} · ${m.type}`;
 
     const rows: [string, string][] = [];
-    rows.push(['類型', m.type]);
-    rows.push(['星座', m.constellation]);
-    rows.push(['赤經 (J2000)', formatRA(m.raHours)]);
-    rows.push(['赤緯 (J2000)', `${m.decDeg >= 0 ? '+' : ''}${m.decDeg.toFixed(4)}°`]);
-    rows.push(['視星等', `${m.magnitude >= 0 ? '+' : ''}${m.magnitude.toFixed(2)}`]);
+    rows.push([t('info.row.type'), m.type]);
+    rows.push([t('info.row.constellation'), m.constellation]);
+    rows.push([t('info.row.ra2000'), formatRA(m.raHours)]);
+    rows.push([t('info.row.dec2000'), `${m.decDeg >= 0 ? '+' : ''}${m.decDeg.toFixed(4)}°`]);
+    rows.push([t('info.row.magnitude'), `${m.magnitude >= 0 ? '+' : ''}${m.magnitude.toFixed(2)}`]);
     this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
 
     // Star-hopping hint: connect this DSO back to the nearest bright
@@ -418,8 +418,8 @@ export class InfoPanel {
     const altAz = this.cameraCtl.getStarAltAz(raHours, decDeg);
     if (!altAz) return;
     const dyn: [string, string][] = [
-      ['仰角', `${altAz.altDeg >= 0 ? '+' : ''}${altAz.altDeg.toFixed(3)}°`],
-      ['方位角', `${altAz.azDeg.toFixed(3)}°`],
+      [t('info.row.altitude'), `${altAz.altDeg >= 0 ? '+' : ''}${altAz.altDeg.toFixed(3)}°`],
+      [t('info.row.azimuth'), `${altAz.azDeg.toFixed(3)}°`],
       ...fieldDataRows(this.cameraCtl, altAz.altDeg, altAz.azDeg),
     ];
     this.dataEl.querySelectorAll('[data-dyn]').forEach(n => n.remove());
@@ -452,16 +452,16 @@ export class InfoPanel {
     this.nameEl.textContent = s.name;
     const subtitleParts = [s.nameEn];
     if (s.bayer) subtitleParts.push(s.bayer);
-    subtitleParts.push('恆星');
+    subtitleParts.push(t('info.cat.star'));
     this.subtitleEl.textContent = subtitleParts.join(' · ');
 
     const rows: [string, string][] = [];
-    rows.push(['赤經 (J2000)', formatRA(s.raHours)]);
-    rows.push(['赤緯 (J2000)', `${s.decDeg >= 0 ? '+' : ''}${s.decDeg.toFixed(4)}°`]);
-    rows.push(['視星等', `${s.magnitude >= 0 ? '+' : ''}${s.magnitude.toFixed(2)}`]);
+    rows.push([t('info.row.ra2000'), formatRA(s.raHours)]);
+    rows.push([t('info.row.dec2000'), `${s.decDeg >= 0 ? '+' : ''}${s.decDeg.toFixed(4)}°`]);
+    rows.push([t('info.row.magnitude'), `${s.magnitude >= 0 ? '+' : ''}${s.magnitude.toFixed(2)}`]);
     if (s.pmRA != null && s.pmDec != null) {
       const total = Math.sqrt(s.pmRA * s.pmRA + s.pmDec * s.pmDec);
-      rows.push(['自行', `${total.toFixed(1)} mas/yr`]);
+      rows.push([t('info.row.properMotion'), `${total.toFixed(1)} mas/yr`]);
     }
 
     this.dataEl.innerHTML = rows
@@ -471,7 +471,7 @@ export class InfoPanel {
     // Description card
     const descHtml = s.description
       ? `<div class="info-section"><div class="info-text">${escapeHtml(s.description)}</div></div>`
-      : `<div class="info-section"><div class="info-text" style="color:var(--text-dim);">夜空中可見的恆星之一。${s.bayer ? `Bayer 編號 ${s.bayer}。` : ''}</div></div>`;
+      : `<div class="info-section"><div class="info-text" style="color:var(--text-dim);">${t('info.text.bayerStar')}${s.bayer ? `${t('info.text.bayerSuffix')} ${s.bayer}.` : ''}</div></div>`;
     this.extraEl.innerHTML = descHtml;
 
     this.renderStarDynamic(s);
@@ -492,8 +492,8 @@ export class InfoPanel {
       return;
     }
     const dyn: [string, string][] = [
-      ['仰角', `${altAz.altDeg >= 0 ? '+' : ''}${altAz.altDeg.toFixed(3)}°`],
-      ['方位角', `${altAz.azDeg.toFixed(3)}°`],
+      [t('info.row.altitude'), `${altAz.altDeg >= 0 ? '+' : ''}${altAz.altDeg.toFixed(3)}°`],
+      [t('info.row.azimuth'), `${altAz.azDeg.toFixed(3)}°`],
       ...fieldDataRows(cam, altAz.altDeg, altAz.azDeg),
     ];
     this.dataEl.querySelectorAll('[data-dyn]').forEach(n => n.remove());
@@ -544,16 +544,16 @@ export class InfoPanel {
 
     el.style.display = '';
     const toggleLabel = observed
-      ? `✓ 已觀測 · ${entry!.sessionCount} 次（最近 ${formatRelativeDate(entry!.lastObservedAt)}）`
-      : '☐ 標記為已觀測';
+      ? `✓ ${t('info.row.observedCount')} · ${entry!.sessionCount} ${t('info.row.observedTimes')} ${formatRelativeDate(entry!.lastObservedAt)}）`
+      : t('info.obs.markObserved');
     el.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px;">
         <button id="obs-toggle" style="flex:1;text-align:left;background:${observed ? 'rgba(118,209,138,0.15)' : 'rgba(255,255,255,0.06)'};border:1px solid ${observed ? 'rgba(118,209,138,0.4)' : 'rgba(255,255,255,0.12)'};color:${observed ? '#76d18a' : 'var(--text)'};padding:5px 8px;border-radius:5px;cursor:pointer;font-size:11px;">${toggleLabel}</button>
-        <div id="obs-stars" style="display:flex;gap:2px;font-size:14px;cursor:pointer;user-select:none;color:#ffcc40;" title="評分（再次點擊清除）">
+        <div id="obs-stars" style="display:flex;gap:2px;font-size:14px;cursor:pointer;user-select:none;color:#ffcc40;" title=t('info.obs.ratingTooltip')>
           ${[1, 2, 3, 4, 5].map(n => `<span data-star="${n}" style="cursor:pointer;${n <= rating ? '' : 'opacity:0.3;'}">★</span>`).join('')}
         </div>
       </div>
-      <textarea id="obs-notes" placeholder="筆記（自動儲存）" style="width:100%;min-height:42px;background:rgba(0,0,0,0.25);border:1px solid rgba(160,190,230,0.18);color:var(--text);padding:5px 7px;border-radius:5px;font-size:11px;font-family:inherit;resize:vertical;box-sizing:border-box;">${escapeHtml(notes)}</textarea>
+      <textarea id="obs-notes" placeholder="${t('info.obs.notesPlaceholder')}" style="width:100%;min-height:42px;background:rgba(0,0,0,0.25);border:1px solid rgba(160,190,230,0.18);color:var(--text);padding:5px 7px;border-radius:5px;font-size:11px;font-family:inherit;resize:vertical;box-sizing:border-box;">${escapeHtml(notes)}</textarea>
     `;
 
     document.getElementById('obs-toggle')?.addEventListener('click', () => {
@@ -628,17 +628,17 @@ export class InfoPanel {
       : `${CATEGORY_LABEL[d.category]} · ${d.nameEn}`;
 
     const rows: [string, string][] = [];
-    rows.push(['半徑', `${formatNumber(d.physical.radiusKm, 1)} km`]);
-    rows.push(['質量', `${d.physical.massKg.toExponential(3)} kg`]);
-    rows.push(['自轉週期', `${formatNumber(Math.abs(d.physical.rotationPeriodDays), 4)} 天${d.physical.rotationPeriodDays < 0 ? '（逆向）' : ''}`]);
-    rows.push(['軸傾角', `${formatNumber(d.physical.axialTiltDeg, 2)}°`]);
+    rows.push([t('info.row.radius'), `${formatNumber(d.physical.radiusKm, 1)} km`]);
+    rows.push([t('info.row.mass'), `${d.physical.massKg.toExponential(3)} kg`]);
+    rows.push([t('info.row.rotationPeriod'), `${formatNumber(Math.abs(d.physical.rotationPeriodDays), 4)} ${t('info.row.days')}${d.physical.rotationPeriodDays < 0 ? t('info.row.retrograde') : ''}`]);
+    rows.push([t('info.row.axialTilt'), `${formatNumber(d.physical.axialTiltDeg, 2)}°`]);
 
     const el = d.propagator?.elements;
     if (el) {
-      rows.push(['軌道半長軸', `${formatNumber(el.a, 4)} AU`]);
-      rows.push(['離心率', `${formatNumber(el.e, 4)}`]);
-      rows.push(['軌道傾角', `${formatNumber(el.iDeg, 2)}°`]);
-      rows.push(['軌道週期', formatPeriod(el.periodDays)]);
+      rows.push([t('info.row.semiMajorAxis'), `${formatNumber(el.a, 4)} AU`]);
+      rows.push([t('info.row.eccentricity'), `${formatNumber(el.e, 4)}`]);
+      rows.push([t('info.row.inclination'), `${formatNumber(el.iDeg, 2)}°`]);
+      rows.push([t('info.row.orbitalPeriod'), formatPeriod(el.periodDays)]);
 
       // Synodic period vs Earth — only meaningful for solar-system bodies
       // other than Earth itself, and only if Earth is in the system.
@@ -647,7 +647,7 @@ export class InfoPanel {
         const earthEl = earth?.descriptor.propagator?.elements;
         if (earthEl) {
           const syn = synodicPeriod(el.periodDays, earthEl.periodDays);
-          if (Number.isFinite(syn)) rows.push(['會合週期 (對地球)', formatPeriod(syn)]);
+          if (Number.isFinite(syn)) rows.push([t('info.row.synodicEarth'), formatPeriod(syn)]);
         }
       }
 
@@ -659,25 +659,25 @@ export class InfoPanel {
         : 1.989e30; // Sun
       if (parentMassKg && d.physical.massKg > 0) {
         const rH = hillSphereAU(el.a, el.e, d.physical.massKg, parentMassKg);
-        rows.push(['希爾球半徑', formatHill(rH)]);
+        rows.push([t('info.row.hillSphere'), formatHill(rH)]);
       }
     }
 
     if (d.details?.classification) {
-      rows.push(['分類', langPick(d.details.classification)]);
+      rows.push([t('info.row.classification'), langPick(d.details.classification)]);
     }
     if (d.details?.surfaceGravityMS2 != null) {
-      rows.push(['表面重力', `${formatNumber(d.details.surfaceGravityMS2, 2)} m/s²`]);
+      rows.push([t('info.row.surfaceGravity'), `${formatNumber(d.details.surfaceGravityMS2, 2)} m/s²`]);
     }
     if (d.details?.escapeVelocityKmS != null) {
-      rows.push(['逃逸速度', `${formatNumber(d.details.escapeVelocityKmS, 2)} km/s`]);
+      rows.push([t('info.row.escapeVelocity'), `${formatNumber(d.details.escapeVelocityKmS, 2)} km/s`]);
     }
     if (d.details?.meanSurfaceTempC != null) {
-      rows.push(['平均溫度', `${formatNumber(d.details.meanSurfaceTempC, 0)}°C`]);
+      rows.push([t('info.row.meanTemp'), `${formatNumber(d.details.meanSurfaceTempC, 0)}°C`]);
     }
     if (d.details?.surfaceTempRangeC) {
       const [lo, hi] = d.details.surfaceTempRangeC;
-      rows.push(['溫度範圍', `${formatNumber(lo, 0)}°C ~ ${formatNumber(hi, 0)}°C`]);
+      rows.push([t('info.row.tempRange'), `${formatNumber(lo, 0)}°C ~ ${formatNumber(hi, 0)}°C`]);
     }
 
     this.dataEl.innerHTML = rows
@@ -798,21 +798,21 @@ export class InfoPanel {
     }
 
     if (d?.meanSurfaceTempC != null || d?.surfaceTempRangeC) {
-      html += sectionTitle('表面溫度');
+      html += sectionTitle(t('info.section.surfaceTemp'));
       html += tempGaugeHtml(d.meanSurfaceTempC, d.surfaceTempRangeC);
     }
 
     if (d?.bulkComposition) {
-      html += sectionTitle('組成（質量比）');
+      html += sectionTitle(t('info.section.composition'));
       const list = d.bulkComposition.map(c => ({ name: langPick(c.name), pct: c.pct }));
       html += pieChartSvg(list);
       html += compositionListHtml(list);
     }
 
     if (d?.atmosphere) {
-      html += sectionTitle('大氣');
+      html += sectionTitle(t('info.section.atmosphere'));
       if (d.atmosphere.surfacePressureKpa != null) {
-        html += `<div class="info-text"><b style="color:var(--accent);">表面氣壓</b> ${formatNumber(d.atmosphere.surfacePressureKpa, 2)} kPa</div>`;
+        html += `<div class="info-text"><b style="color:var(--accent);">${t('info.row.surfacePressure')}</b> ${formatNumber(d.atmosphere.surfacePressureKpa, 2)} kPa</div>`;
       }
       if (d.atmosphere.pressureNote) {
         html += `<div class="info-text" style="color:var(--text-dim);">${escapeHtml(langPick(d.atmosphere.pressureNote))}</div>`;
@@ -823,7 +823,7 @@ export class InfoPanel {
     }
 
     if (d?.internalStructure) {
-      html += sectionTitle('內部結構（剖面）');
+      html += sectionTitle(t('info.section.interior'));
       html += '<div class="info-layers">';
       for (const layer of d.internalStructure) {
         html += `<div class="info-layer"><b>${escapeHtml(langPick(layer.layer))}</b><span>${escapeHtml(langPick(layer.description))}</span></div>`;
@@ -832,12 +832,12 @@ export class InfoPanel {
     }
 
     if (d?.geology) {
-      html += sectionTitle('地質 / 表面');
+      html += sectionTitle(t('info.section.geology'));
       html += `<div class="info-text">${escapeHtml(langPick(d.geology))}</div>`;
     }
 
     if (d?.notableFacts && d.notableFacts.length > 0) {
-      html += sectionTitle('註記');
+      html += sectionTitle(t('info.section.notes'));
       html += '<ul class="info-list">';
       for (const f of d.notableFacts) html += `<li>${escapeHtml(langPick(f))}</li>`;
       html += '</ul>';
@@ -858,10 +858,10 @@ export class InfoPanel {
     const speed = sv.velocity.length();
     const speedKmS = speed * AU_KM / 86400;
 
-    const parentName = d.parentId ? this.solarSystem.getBody(d.parentId)?.descriptor.name : '太陽';
+    const parentName = d.parentId ? this.solarSystem.getBody(d.parentId)?.descriptor.name : t('info.parent.sun');
     const dynRows: [string, string][] = [
-      [`目前距${parentName}`, `${formatNumber(dist, 4)} AU`],
-      ['軌道速度', `${formatNumber(speedKmS, 2)} km/s`],
+      [`${t('info.row.distToParent')}${parentName}`, `${formatNumber(dist, 4)} AU`],
+      [t('info.row.orbitalSpeed'), `${formatNumber(speedKmS, 2)} km/s`],
     ];
 
     // Field-observable rows (airmass / 距月球 / 地平警示) — only when in
@@ -878,7 +878,7 @@ export class InfoPanel {
           if (am < 30) dynRows.push(['Airmass', am < 10 ? am.toFixed(2) : am.toFixed(0)]);
         }
         if (altAz.altDeg > 0 && altAz.altDeg < 5) {
-          dynRows.push(['⚠️ 地平警示', `仰角僅 ${altAz.altDeg.toFixed(1)}°`]);
+          dynRows.push([t('info.warn.altLow'), `${t('info.warn.altOnlyMsg')} ${altAz.altDeg.toFixed(1)}°`]);
         }
       }
     }
@@ -894,12 +894,12 @@ export class InfoPanel {
         const obs = d.parentId === 'earth'
           ? moonObservables(sv.position, earthHelio, d.physical.radiusKm)
           : bodyObservables(d.id, sv.position, earthHelio, d.physical.radiusKm);
-        dynRows.push(['距地球', `${formatNumber(obs.observerDistanceAU, 4)} AU`]);
+        dynRows.push([t('info.row.distFromEarth'), `${formatNumber(obs.observerDistanceAU, 4)} AU`]);
         if (Number.isFinite(obs.apparentMagnitude)) {
-          dynRows.push(['視星等', `${formatMag(obs.apparentMagnitude)}`]);
+          dynRows.push([t('info.row.magnitude'), `${formatMag(obs.apparentMagnitude)}`]);
         }
-        dynRows.push(['相位角', `${formatNumber(obs.phaseAngleDeg, 1)}°  (照明 ${(obs.illuminatedFraction * 100).toFixed(1)}%)`]);
-        dynRows.push(['視直徑', formatAngularSize(obs.angularDiameterArcsec)]);
+        dynRows.push([t('info.row.phaseAngle'), `${formatNumber(obs.phaseAngleDeg, 1)}°  (${t('info.row.illuminated')} ${(obs.illuminatedFraction * 100).toFixed(1)}%)`]);
+        dynRows.push([t('info.row.angularDiameter'), formatAngularSize(obs.angularDiameterArcsec)]);
       }
     } else if (d.id === 'sun') {
       // Sun: angular diameter from Earth varies with distance; we can
@@ -909,10 +909,10 @@ export class InfoPanel {
       const earthHelio = earth?.descriptor.propagator?.stateAt(jd).position;
       if (earthHelio) {
         const distFromEarth = earthHelio.length();
-        dynRows.push(['距地球', `${formatNumber(distFromEarth, 4)} AU`]);
+        dynRows.push([t('info.row.distFromEarth'), `${formatNumber(distFromEarth, 4)} AU`]);
         const angDiam = (2 * Math.atan(d.physical.radiusKm / (distFromEarth * AU_KM))) * 206264.806;
-        dynRows.push(['視直徑', formatAngularSize(angDiam)]);
-        dynRows.push(['視星等', '−26.74']);
+        dynRows.push([t('info.row.angularDiameter'), formatAngularSize(angDiam)]);
+        dynRows.push([t('info.row.magnitude'), '−26.74']);
       }
     }
     void Vector3;
@@ -985,34 +985,34 @@ export class InfoPanel {
       const d = jdToDate(t + timezoneOffsetMin / 1440);
       return `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`;
     };
-    const fmtRelative = (t: number | null): string => {
-      if (t == null) return '—';
-      const dh = (t - jd) * 24;
-      if (dh < 1) return `${Math.round(dh * 60)} 分後`;
-      if (dh < 48) return `${dh.toFixed(1)} 小時後`;
-      return `${(dh / 24).toFixed(1)} 天後`;
+    const fmtRelative = (jdValue: number | null): string => {
+      if (jdValue == null) return '—';
+      const dh = (jdValue - jd) * 24;
+      if (dh < 1) return `${Math.round(dh * 60)} ${t('info.time.minutes')}`;
+      if (dh < 48) return `${dh.toFixed(1)} ${t('info.time.hours')}`;
+      return `${(dh / 24).toFixed(1)} ${t('info.time.daysLater')}`;
     };
 
     const rows: [string, string][] = [];
     if (transit) {
-      rows.push(['下次過中天', `${fmtTime(transit.jd)} (${fmtRelative(transit.jd)})`]);
-      rows.push(['過中天高度', `${transit.altDeg >= 0 ? '+' : ''}${transit.altDeg.toFixed(1)}°`]);
+      rows.push([t('info.row.nextTransit'), `${fmtTime(transit.jd)} (${fmtRelative(transit.jd)})`]);
+      rows.push([t('info.row.transitAlt'), `${transit.altDeg >= 0 ? '+' : ''}${transit.altDeg.toFixed(1)}°`]);
     }
     if (nextRiseJd != null) {
-      rows.push(['下次升起', `${fmtTime(nextRiseJd)} (${fmtRelative(nextRiseJd)})`]);
+      rows.push([t('info.row.nextRise'), `${fmtTime(nextRiseJd)} (${fmtRelative(nextRiseJd)})`]);
     }
     if (nextSetJd != null) {
-      rows.push(['下次西沒', `${fmtTime(nextSetJd)} (${fmtRelative(nextSetJd)})`]);
+      rows.push([t('info.row.nextSet'), `${fmtTime(nextSetJd)} (${fmtRelative(nextSetJd)})`]);
     }
 
     let windowHtml = '';
     if (window) {
       windowHtml = `<div class="planning-window">` +
-        `今晚最佳觀測：<span class="strong">${fmtTime(window.startJd)} – ${fmtTime(window.endJd)}</span>` +
-        ` （${window.durationHours.toFixed(1)} 小時，仰角 ≥ 30° 且海上昏影後）` +
+        `${t('info.planning.tonightBest')}: <span class="strong">${fmtTime(window.startJd)} – ${fmtTime(window.endJd)}</span>` +
+        ` (${window.durationHours.toFixed(1)} ${t('info.planning.windowDetail')})` +
         `</div>`;
     } else {
-      windowHtml = `<div class="planning-window">今晚未達 30° 仰角的暗夜窗。</div>`;
+      windowHtml = `<div class="planning-window">${t('info.planning.noWindow')}</div>`;
     }
 
     // Next major event for this body — pulled from the eventScanner
@@ -1026,11 +1026,11 @@ export class InfoPanel {
         const days = ev.jd - jd;
         if (days < 365) {
           const dateStr = ev.date.toISOString().slice(0, 10);
-          const rel = days < 1 ? `${Math.round(days * 24)} 小時後`
-                   : days < 60 ? `${Math.round(days)} 天後`
-                   : `${(days / 30).toFixed(1)} 個月後`;
+          const rel = days < 1 ? `${Math.round(days * 24)} ${t('info.time.hoursLater')}`
+                   : days < 60 ? `${Math.round(days)} ${t('info.time.daysLater')}`
+                   : `${(days / 30).toFixed(1)} ${t('info.time.monthsLater')}`;
           nextEventHtml = `<div class="planning-window">` +
-            `下一個重要事件：<span class="strong">${dateStr} ${getEventKindShort(ev.kind)}</span>（${rel}）` +
+            `${t('info.planning.nextEvent')}: <span class="strong">${dateStr} ${getEventKindShort(ev.kind)}</span>（${rel}）` +
             `</div>`;
         }
       }
@@ -1038,7 +1038,7 @@ export class InfoPanel {
 
     this.planningEl.innerHTML =
       `<div class="planning-card">` +
-        `<div class="planning-status">${vis.statusLabel}（仰角 ${altNow >= 0 ? '+' : ''}${altNow.toFixed(1)}°）</div>` +
+        `<div class="planning-status">${vis.statusLabel}(${t('info.row.altitude')} ${altNow >= 0 ? '+' : ''}${altNow.toFixed(1)}°)</div>` +
         `<dl class="planning-grid">` +
           rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('') +
         `</dl>` +
@@ -1051,22 +1051,22 @@ export class InfoPanel {
 /** Compact label for an event kind, used in the planning footer. */
 function getEventKindShort(kind: string): string {
   const m: Record<string, string> = {
-    'opposition': '衝',
-    'conjunction-sup': '上合',
-    'conjunction-inf': '下合',
-    'elongation-east': '東大距',
-    'elongation-west': '西大距',
-    'new-moon': '新月',
-    'full-moon': '滿月',
-    'solar-eclipse': '日食',
-    'lunar-eclipse': '月食',
-    'transit': '凌日',
-    'occultation': '月掩星',
-    'equinox': '分點',
-    'solstice': '至點',
-    'perihelion': '近日點',
-    'aphelion': '遠日點',
-    'planet-conjunction': '行星合',
+    'opposition': t('info.event.opposition'),
+    'conjunction-sup': t('info.event.conjunctionSup'),
+    'conjunction-inf': t('info.event.conjunctionInf'),
+    'elongation-east': t('info.event.elongationEast'),
+    'elongation-west': t('info.event.elongationWest'),
+    'new-moon': t('info.event.newMoon'),
+    'full-moon': t('info.event.fullMoon'),
+    'solar-eclipse': t('info.event.solarEclipse'),
+    'lunar-eclipse': t('info.event.lunarEclipse'),
+    'transit': t('info.event.transit'),
+    'occultation': t('info.event.occultation'),
+    'equinox': t('info.event.equinox'),
+    'solstice': t('info.event.solstice'),
+    'perihelion': t('info.event.perihelion'),
+    'aphelion': t('info.event.aphelion'),
+    'planet-conjunction': t('info.event.planetConj'),
   };
   return m[kind] ?? kind;
 }
@@ -1092,16 +1092,16 @@ function formatNumber(n: number, digits: number): string {
 }
 
 function formatPeriod(days: number): string {
-  if (days < 1) return `${formatNumber(days * 24, 2)} 小時`;
-  if (days < 1000) return `${formatNumber(days, 2)} 天`;
+  if (days < 1) return `${formatNumber(days * 24, 2)} ${t('info.unit.hour')}`;
+  if (days < 1000) return `${formatNumber(days, 2)} ${t('info.unit.day')}`;
   const years = days / 365.256;
-  return `${formatNumber(years, 2)} 年`;
+  return `${formatNumber(years, 2)} ${t('info.unit.year')}`;
 }
 
 function formatHill(rAU: number): string {
   const km = rAU * AU_KM;
   if (rAU >= 0.01) return `${formatNumber(rAU, 4)} AU`;
-  if (km >= 1000) return `${formatNumber(km / 1000, 2)} 千 km`;
+  if (km >= 1000) return `${formatNumber(km / 1000, 2)} ${t('info.unit.thousandKm')}`;
   return `${formatNumber(km, 0)} km`;
 }
 
@@ -1134,15 +1134,15 @@ function escapeHtml(s: string): string {
 function formatRelativeDate(ms: number): string {
   const diffMs = Date.now() - ms;
   const sec = Math.round(diffMs / 1000);
-  if (sec < 30) return '剛剛';
+  if (sec < 30) return t('info.time.justNow');
   const min = Math.round(sec / 60);
-  if (min < 60) return `${min} 分鐘前`;
+  if (min < 60) return `${min} ${t('info.time.minutesAgo')}`;
   const hr = Math.round(min / 60);
-  if (hr < 48) return `${hr} 小時前`;
+  if (hr < 48) return `${hr} ${t('info.time.hoursAgo')}`;
   const day = Math.round(hr / 24);
-  if (day < 60) return `${day} 天前`;
+  if (day < 60) return `${day} ${t('info.time.daysAgo')}`;
   const mo = Math.round(day / 30);
-  if (mo < 24) return `${mo} 個月前`;
+  if (mo < 24) return `${mo} ${t('info.time.monthsAgo')}`;
   return new Date(ms).toISOString().slice(0, 10);
 }
 

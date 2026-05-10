@@ -348,7 +348,7 @@ export class LeftPanel {
     for (const e of ASTRO_EVENTS) {
       const opt = document.createElement('option');
       opt.value = e.id;
-      opt.textContent = `${e.iso === 'now' ? '現在' : e.iso.slice(0, 10)} · ${e.name}`;
+      opt.textContent = `${e.iso === 'now' ? t('lp.now') : e.iso.slice(0, 10)} · ${e.name}`;
       sel.appendChild(opt);
     }
     sel.addEventListener('change', () => {
@@ -412,7 +412,7 @@ export class LeftPanel {
     });
 
     const cityGroup = document.createElement('optgroup');
-    cityGroup.label = '城市';
+    cityGroup.label = t('lp.cityGroup');
     for (const p of OBSERVER_CITIES) {
       const opt = document.createElement('option');
       opt.value = p.id;
@@ -422,7 +422,7 @@ export class LeftPanel {
     presetSel.appendChild(cityGroup);
 
     const obsGroup = document.createElement('optgroup');
-    obsGroup.label = '歷史 / 著名天文台';
+    obsGroup.label = t('lp.observatoryGroup');
     for (const p of OBSERVER_OBSERVATORIES) {
       const opt = document.createElement('option');
       opt.value = p.id;
@@ -730,7 +730,7 @@ function showSiteInfo(loc: ReturnType<typeof finder>): void {
   document.getElementById('site-subtitle')!.textContent = loc.nameEn ?? '';
   const lat = Math.abs(loc.lat).toFixed(4) + (loc.lat >= 0 ? '°N' : '°S');
   const lon = Math.abs(loc.lon).toFixed(4) + (loc.lon >= 0 ? '°E' : '°W');
-  const elev = loc.elevationM != null ? ` · 海拔 ${loc.elevationM.toLocaleString()} m` : '';
+  const elev = loc.elevationM != null ? ` · ${t('lp.elevation')} ${loc.elevationM.toLocaleString()} m` : '';
   document.getElementById('site-meta')!.textContent = `${lat}, ${lon}${elev}`;
   document.getElementById('site-description')!.textContent = loc.description ?? '';
 

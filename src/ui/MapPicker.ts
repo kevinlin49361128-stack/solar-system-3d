@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+
 declare const L: any;
 
 const LEAFLET_VERSION = '1.9.4';
@@ -83,7 +85,7 @@ export class MapPicker {
     try {
       await loadLeaflet();
     } catch {
-      this.coordsEl.textContent = '地圖載入失敗（請檢查網路）';
+      this.coordsEl.textContent = t('mp.loadFail');
       return;
     }
 

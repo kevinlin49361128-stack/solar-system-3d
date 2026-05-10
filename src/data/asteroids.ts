@@ -81,7 +81,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 254.37, periodDays: 323.59,
     },
     0.185,
-    '潛在威脅小行星：2029 年 4 月 13 日將通過距地表 32 000 km 處（地球同步軌道高度），近代史上最近的危險級小天體之一。',
+    {
+      'zh-Hant': '潛在威脅小行星：2029 年 4 月 13 日將通過距地表 32 000 km 處（地球同步軌道高度），近代史上最近的危險級小天體之一。',
+      'en': 'Potentially hazardous asteroid: on 13 April 2029 it will pass within ~32,000 km of Earth\'s surface (geostationary altitude) — one of the closest predicted approaches of a hazardous body in modern history.',
+      'ja': '潜在的危険小惑星。2029 年 4 月 13 日に地表から約 32,000 km（静止軌道高度）を通過予定。近代史上もっとも接近する危険等級の小天体の一つ。',
+    },
     0xff6a6a, // red — danger flag
   ),
   makeAsteroid(
@@ -93,7 +97,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 101.70, periodDays: 436.65,
     },
     0.245,
-    'NASA OSIRIS-REx 的取樣目標；2023 年 9 月把樣本送回地球，碳質球粒結構與太陽系起源研究有關。',
+    {
+      'zh-Hant': 'NASA OSIRIS-REx 的取樣目標；2023 年 9 月把樣本送回地球，碳質球粒結構與太陽系起源研究有關。',
+      'en': 'Sample-return target of NASA OSIRIS-REx; the capsule returned to Earth in September 2023. Its carbonaceous chondrite structure feeds research into solar-system origins.',
+      'ja': 'NASA OSIRIS-REx のサンプルリターン対象。2023 年 9 月にカプセルが地球に帰還。炭素質コンドライト構造は太陽系起源の研究に貢献。',
+    },
   ),
   makeAsteroid(
     'ryugu', '龍宮', '162173 Ryugu',
@@ -104,7 +112,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 248.77, periodDays: 473.88,
     },
     0.435,
-    'JAXA 隼鳥 2 號 2018–2019 年駐點，2020 年 12 月 6 日在澳洲沙漠回收樣本艙；發現含氨基酸的有機物。',
+    {
+      'zh-Hant': 'JAXA 隼鳥 2 號 2018–2019 年駐點，2020 年 12 月 6 日在澳洲沙漠回收樣本艙；發現含氨基酸的有機物。',
+      'en': 'Visited by JAXA Hayabusa 2 in 2018–2019; the sample capsule landed in the Australian outback on 6 December 2020. Returned material contained amino-acid bearing organics.',
+      'ja': 'JAXA はやぶさ 2 が 2018–2019 年に滞在。2020 年 12 月 6 日にサンプルカプセルが豪州砂漠に帰還し、アミノ酸を含む有機物が確認された。',
+    },
   ),
   makeAsteroid(
     'eros', '愛神星', '433 Eros',
@@ -115,7 +127,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 320.32, periodDays: 643.15,
     },
     8.42,
-    '第一顆被太空船 NEAR Shoemaker 環繞 (2000) 並著陸 (2001) 的小行星；橢長花生型，~33 km 長。',
+    {
+      'zh-Hant': '第一顆被太空船 NEAR Shoemaker 環繞 (2000) 並著陸 (2001) 的小行星；橢長花生型，~33 km 長。',
+      'en': 'First asteroid ever orbited (NEAR Shoemaker, 2000) and landed on (2001). Elongated peanut shape, ~33 km long.',
+      'ja': '探査機が初めて周回（NEAR Shoemaker、2000 年）し着陸（2001 年）した小惑星。落花生型で全長約 33 km。',
+    },
   ),
   makeAsteroid(
     'itokawa', '糸川', '25143 Itokawa',
@@ -126,7 +142,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 117.14, periodDays: 556.39,
     },
     0.165,
-    'JAXA 隼鳥號 2005 年取樣，2010 年回收；首批小行星樣本，揭示「碎石堆」(rubble pile) 構造。',
+    {
+      'zh-Hant': 'JAXA 隼鳥號 2005 年取樣，2010 年回收；首批小行星樣本，揭示「碎石堆」(rubble pile) 構造。',
+      'en': 'Sampled by JAXA Hayabusa in 2005 and returned in 2010 — the first asteroid samples ever brought to Earth, revealing rubble-pile interior structure.',
+      'ja': 'JAXA はやぶさが 2005 年に試料採取し 2010 年に帰還。史上初の小惑星試料で、「ラブルパイル（瓦礫堆積）」構造を明らかにした。',
+    },
   ),
 
   // ── Visited / large main-belt asteroids ────────────────────────────────
@@ -139,7 +159,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 169.57, periodDays: 1325.46,
     },
     262.7,
-    '主帶第二大天體，NASA Dawn 2011–2012 年環繞研究；表面遍佈巨大撞擊坑「Rheasilvia」。',
+    {
+      'zh-Hant': '主帶第二大天體，NASA Dawn 2011–2012 年環繞研究；表面遍佈巨大撞擊坑「Rheasilvia」。',
+      'en': 'Second-largest main-belt body, orbited by NASA Dawn (2011–2012). Dominated by the giant Rheasilvia impact basin in its southern hemisphere.',
+      'ja': '主小惑星帯で 2 番目に大きな天体。NASA Dawn が 2011–2012 年に周回観測。南半球を巨大衝突盆地「レアシルヴィア」が覆う。',
+    },
     0xb89b6a,
   ),
   makeAsteroid(
@@ -151,7 +175,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 311.04, periodDays: 1685.98,
     },
     256,
-    '主帶第三大；軌道傾角極高 (35°)，可能是早期太陽系倖存的原始天體之一。',
+    {
+      'zh-Hant': '主帶第三大；軌道傾角極高 (35°)，可能是早期太陽系倖存的原始天體之一。',
+      'en': 'Third-largest main-belt body. Unusually high orbital inclination (35°) hints it may be a surviving relic from the early Solar System.',
+      'ja': '主帯で 3 番目に大きな小惑星。軌道傾斜角は異常に高く（35°）、太陽系初期から残存する原始天体の可能性。',
+    },
     0xb89b6a,
   ),
   makeAsteroid(
@@ -163,7 +191,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 130.56, periodDays: 1387.23,
     },
     49,
-    'ESA Rosetta 2010 年飛掠；金屬-碳混合成分，疑似太陽系早期殘留 planetesimal。',
+    {
+      'zh-Hant': 'ESA Rosetta 2010 年飛掠；金屬-碳混合成分，疑似太陽系早期殘留 planetesimal。',
+      'en': 'Flown by ESA Rosetta in 2010. Mixed metallic / carbonaceous composition; possibly an unaltered planetesimal surviving from the early Solar System.',
+      'ja': 'ESA ロゼッタが 2010 年にフライバイ観測。金属＋炭素質の混合組成で、太陽系初期の未進化微惑星の可能性。',
+    },
     0xb89b6a,
   ),
   makeAsteroid(
@@ -175,7 +207,11 @@ export const ASTEROIDS: BodyDescriptor[] = [
       M0Deg: 146.86, periodDays: 770.00,
     },
     0.39,
-    'NASA DART 任務 2022 年衝撞其衛星 Dimorphos 的目標；史上首次行星防禦動能測試。',
+    {
+      'zh-Hant': 'NASA DART 任務 2022 年衝撞其衛星 Dimorphos 的目標；史上首次行星防禦動能測試。',
+      'en': 'Target of NASA DART (2022), which kinetically impacted its moonlet Dimorphos — the first-ever planetary-defence demonstration.',
+      'ja': 'NASA DART が 2022 年に衛星ディモルフォスへ衝突した対象天体。史上初の惑星防衛キネティック実証。',
+    },
     0xff6a6a,
   ),
 

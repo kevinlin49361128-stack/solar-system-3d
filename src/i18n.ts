@@ -379,6 +379,230 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'physics.kind.horizons':         { 'zh-Hant': 'JPL Horizons + Hermite 內插', 'en': 'JPL Horizons + Hermite interpolation', 'ja': 'JPL Horizons + エルミート補間' },
   'physics.kind.nbody':            { 'zh-Hant': 'N-body 數值積分 (Yoshida4)', 'en': 'N-body integration (Yoshida 4th-order symplectic)', 'ja': 'N体数値積分 (Yoshida 4次)' },
   'physics.kind.lunar-elp':        { 'zh-Hant': 'Meeus / ELP-2000 月球理論', 'en': 'Meeus / ELP-2000 lunar theory', 'ja': 'Meeus / ELP-2000 月理論' },
+
+  // InfoPanel — body data rows
+  'info.row.radius':           { 'zh-Hant': '半徑', 'en': 'Radius', 'ja': '半径' },
+  'info.row.mass':             { 'zh-Hant': '質量', 'en': 'Mass', 'ja': '質量' },
+  'info.row.rotationPeriod':   { 'zh-Hant': '自轉週期', 'en': 'Rotation period', 'ja': '自転周期' },
+  'info.row.axialTilt':        { 'zh-Hant': '軸傾角', 'en': 'Axial tilt', 'ja': '自転軸傾斜' },
+  'info.row.semiMajorAxis':    { 'zh-Hant': '軌道半長軸', 'en': 'Semi-major axis', 'ja': '軌道長半径' },
+  'info.row.eccentricity':     { 'zh-Hant': '離心率', 'en': 'Eccentricity', 'ja': '離心率' },
+  'info.row.inclination':      { 'zh-Hant': '軌道傾角', 'en': 'Orbital inclination', 'ja': '軌道傾斜角' },
+  'info.row.orbitalPeriod':    { 'zh-Hant': '軌道週期', 'en': 'Orbital period', 'ja': '軌道周期' },
+  'info.row.synodicEarth':     { 'zh-Hant': '會合週期 (對地球)', 'en': 'Synodic period (vs Earth)', 'ja': '会合周期 (対地球)' },
+  'info.row.hillSphere':       { 'zh-Hant': '希爾球半徑', 'en': 'Hill sphere radius', 'ja': 'ヒル球半径' },
+  'info.row.classification':   { 'zh-Hant': '分類', 'en': 'Classification', 'ja': '分類' },
+  'info.row.surfaceGravity':   { 'zh-Hant': '表面重力', 'en': 'Surface gravity', 'ja': '表面重力' },
+  'info.row.escapeVelocity':   { 'zh-Hant': '逃逸速度', 'en': 'Escape velocity', 'ja': '脱出速度' },
+  'info.row.meanTemp':         { 'zh-Hant': '平均溫度', 'en': 'Mean surface temp', 'ja': '平均表面温度' },
+  'info.row.tempRange':        { 'zh-Hant': '溫度範圍', 'en': 'Temperature range', 'ja': '温度範囲' },
+  'info.row.altitude':         { 'zh-Hant': '仰角', 'en': 'Altitude', 'ja': '仰角' },
+  'info.row.azimuth':          { 'zh-Hant': '方位角', 'en': 'Azimuth', 'ja': '方位角' },
+  'info.row.distFromMoon':     { 'zh-Hant': '距月球', 'en': 'Angular distance from Moon', 'ja': '月との離角' },
+  'info.row.ra2000':           { 'zh-Hant': '赤經 (J2000)', 'en': 'Right ascension (J2000)', 'ja': '赤経 (J2000)' },
+  'info.row.dec2000':          { 'zh-Hant': '赤緯 (J2000)', 'en': 'Declination (J2000)', 'ja': '赤緯 (J2000)' },
+  'info.row.magnitude':        { 'zh-Hant': '視星等', 'en': 'Apparent magnitude', 'ja': '実視等級' },
+  'info.row.type':             { 'zh-Hant': '類型', 'en': 'Type', 'ja': 'タイプ' },
+  'info.row.constellation':    { 'zh-Hant': '星座', 'en': 'Constellation', 'ja': '星座' },
+  'info.row.properMotion':     { 'zh-Hant': '自行', 'en': 'Proper motion', 'ja': '固有運動' },
+  'info.row.moonBelowHorizon': { 'zh-Hant': '（月在地平下）', 'en': '(Moon below horizon)', 'ja': '（月は地平下）' },
+  'info.row.horizonWarning':   { 'zh-Hant': '⚠️ 地平警示', 'en': '⚠️ Near-horizon warning', 'ja': '⚠️ 地平線警告' },
+  'info.row.horizonWarningMsg':{ 'zh-Hant': '仰角過低，多數地點被遮蔽', 'en': 'Altitude too low — blocked at most observation sites', 'ja': '仰角が低く、多くの観測地点で遮蔽される' },
+
+  // InfoPanel — sky condition labels
+  'info.cond.good':       { 'zh-Hant': '🟢 適合觀測', 'en': '🟢 Good for observation', 'ja': '🟢 観測に適' },
+  'info.cond.marginal':   { 'zh-Hant': '🟡 條件普通', 'en': '🟡 Marginal conditions', 'ja': '🟡 条件は普通' },
+  'info.cond.poor':       { 'zh-Hant': '🔴 條件不佳', 'en': '🔴 Poor conditions', 'ja': '🔴 条件不良' },
+  'info.cond.invisible':  { 'zh-Hant': '⚫ 不可見', 'en': '⚫ Not visible', 'ja': '⚫ 観測不可' },
+
+  // InfoPanel — body category labels (used in subtitle)
+  'info.cat.star':   { 'zh-Hant': '恆星', 'en': 'Star', 'ja': '恒星' },
+  'info.cat.planet': { 'zh-Hant': '行星', 'en': 'Planet', 'ja': '惑星' },
+  'info.cat.dwarf':  { 'zh-Hant': '矮行星', 'en': 'Dwarf planet', 'ja': '準惑星' },
+  'info.cat.moon':   { 'zh-Hant': '衛星', 'en': 'Moon', 'ja': '衛星' },
+  'info.cat.comet':  { 'zh-Hant': '彗星', 'en': 'Comet', 'ja': '彗星' },
+
+  // InfoPanel — observation log block
+  'info.obs.markObserved':    { 'zh-Hant': '☐ 標記為已觀測', 'en': '☐ Mark as observed', 'ja': '☐ 観測済みに記録' },
+  'info.obs.markedObserved':  { 'zh-Hant': '☑ 已觀測', 'en': '☑ Observed', 'ja': '☑ 観測済み' },
+  'info.obs.ratingTooltip':   { 'zh-Hant': '評分（再次點擊清除）', 'en': 'Rating (click again to clear)', 'ja': '評価（再クリックで解除）' },
+  'info.obs.notesPlaceholder': { 'zh-Hant': '筆記（自動儲存）', 'en': 'Notes (auto-saved)', 'ja': 'メモ（自動保存）' },
+
+  // InfoPanel — defaults / fallbacks
+  'info.section.surfaceTemp': { 'zh-Hant': '表面溫度', 'en': 'Surface temperature', 'ja': '表面温度' },
+  'info.text.bayerStar':      { 'zh-Hant': '夜空中可見的恆星之一。', 'en': 'A star visible in the night sky.', 'ja': '夜空に見える恒星の一つ。' },
+  'info.text.bayerSuffix':    { 'zh-Hant': 'Bayer 編號', 'en': 'Bayer designation', 'ja': 'Bayer 符号' },
+  'info.row.retrograde':      { 'zh-Hant': '（逆向）', 'en': '(retrograde)', 'ja': '（逆行）' },
+  'info.row.days':            { 'zh-Hant': '天', 'en': 'days', 'ja': '日' },
+
+  // InfoPanel — observation-mode dynamic rows
+  'info.row.orbitalSpeed':   { 'zh-Hant': '軌道速度', 'en': 'Orbital speed', 'ja': '軌道速度' },
+  'info.row.distFromEarth':  { 'zh-Hant': '距地球', 'en': 'Distance from Earth', 'ja': '地球からの距離' },
+  'info.row.phaseAngle':     { 'zh-Hant': '相位角', 'en': 'Phase angle', 'ja': '位相角' },
+  'info.row.illuminated':    { 'zh-Hant': '照明', 'en': 'illuminated', 'ja': '照射部分' },
+  'info.row.angularDiameter':{ 'zh-Hant': '視直徑', 'en': 'Angular diameter', 'ja': '視直径' },
+  'info.row.nextTransit':    { 'zh-Hant': '下次過中天', 'en': 'Next transit', 'ja': '次の南中' },
+  'info.row.transitAlt':     { 'zh-Hant': '過中天高度', 'en': 'Transit altitude', 'ja': '南中時の仰角' },
+  'info.row.nextRise':       { 'zh-Hant': '下次升起', 'en': 'Next rise', 'ja': '次の出' },
+  'info.row.nextSet':        { 'zh-Hant': '下次西沒', 'en': 'Next set', 'ja': '次の入' },
+
+  // InfoPanel — section titles
+  'info.section.composition':  { 'zh-Hant': '組成（質量比）', 'en': 'Composition (by mass)', 'ja': '組成（質量比）' },
+  'info.section.atmosphere':   { 'zh-Hant': '大氣', 'en': 'Atmosphere', 'ja': '大気' },
+  'info.section.interior':     { 'zh-Hant': '內部結構（剖面）', 'en': 'Internal structure', 'ja': '内部構造' },
+  'info.section.geology':      { 'zh-Hant': '地質 / 表面', 'en': 'Geology / surface', 'ja': '地質 / 表面' },
+  'info.section.notes':        { 'zh-Hant': '註記', 'en': 'Notable facts', 'ja': '注釈' },
+
+  // InfoPanel — event-type labels
+  'info.event.opposition':       { 'zh-Hant': '衝',     'en': 'Opposition',          'ja': '衝' },
+  'info.event.conjunctionSup':   { 'zh-Hant': '上合',   'en': 'Superior conjunction','ja': '外合' },
+  'info.event.conjunctionInf':   { 'zh-Hant': '下合',   'en': 'Inferior conjunction','ja': '内合' },
+  'info.event.elongationEast':   { 'zh-Hant': '東大距', 'en': 'Greatest eastern elongation', 'ja': '東方最大離角' },
+  'info.event.elongationWest':   { 'zh-Hant': '西大距', 'en': 'Greatest western elongation', 'ja': '西方最大離角' },
+  'info.event.newMoon':          { 'zh-Hant': '新月',   'en': 'New moon',           'ja': '新月' },
+  'info.event.fullMoon':         { 'zh-Hant': '滿月',   'en': 'Full moon',          'ja': '満月' },
+  'info.event.solarEclipse':     { 'zh-Hant': '日食',   'en': 'Solar eclipse',      'ja': '日食' },
+  'info.event.lunarEclipse':     { 'zh-Hant': '月食',   'en': 'Lunar eclipse',      'ja': '月食' },
+  'info.event.transit':          { 'zh-Hant': '凌日',   'en': 'Transit',            'ja': '太陽面通過' },
+  'info.event.occultation':      { 'zh-Hant': '月掩星', 'en': 'Lunar occultation',  'ja': '月による掩蔽' },
+  'info.event.equinox':          { 'zh-Hant': '分點',   'en': 'Equinox',            'ja': '分点' },
+
+  // InfoPanel — fallbacks / parent labels
+  'info.parent.sun':           { 'zh-Hant': '太陽', 'en': 'Sun', 'ja': '太陽' },
+  'info.warn.altLow':          { 'zh-Hant': '⚠️ 地平警示',     'en': '⚠️ Near-horizon',         'ja': '⚠️ 地平線警告' },
+  'info.warn.altOnlyMsg':      { 'zh-Hant': '仰角僅',          'en': 'Altitude only',           'ja': '仰角のみ' },
+  'info.warn.altLowMsg':       { 'zh-Hant': '多數地點被遮蔽', 'en': 'blocked at most sites',   'ja': '多くの観測地で遮蔽' },
+
+  // InfoPanel — late additions
+  'info.title.tonightVisibility': { 'zh-Hant': '今晚可見性', 'en': 'Tonight\'s visibility', 'ja': '今夜の見やすさ' },
+  'info.title.starHyg':           { 'zh-Hant': '恆星 (HYG)', 'en': 'Star (HYG)', 'ja': '恒星 (HYG)' },
+  'info.text.starHygFallback':    {
+    'zh-Hant': 'HYG 目錄中的恆星，無常用名與專屬描述。可從赤經/赤緯查詢更詳細的恆星資料。',
+    'en': 'A star from the HYG catalogue without a common name or dedicated description. Look up its RA/Dec for further detail.',
+    'ja': 'HYG カタログ中の恒星で、固有名や専用解説はありません。赤経・赤緯から詳細を確認してください。',
+  },
+  'info.row.surfacePressure':    { 'zh-Hant': '表面氣壓', 'en': 'Surface pressure', 'ja': '表面気圧' },
+  'info.row.distToParent':       { 'zh-Hant': '目前距', 'en': 'Distance from', 'ja': '現在の距離から' },
+  'info.row.observedCount':      { 'zh-Hant': '已觀測', 'en': 'Observed', 'ja': '観測済み' },
+  'info.row.observedTimes':      { 'zh-Hant': '次（最近', 'en': 'time(s) — last', 'ja': '回（最近' },
+  'info.time.minutes':           { 'zh-Hant': '分後', 'en': 'min from now', 'ja': '分後' },
+  'info.time.hours':             { 'zh-Hant': '小時後', 'en': 'hours from now', 'ja': '時間後' },
+  'info.time.daysLater':         { 'zh-Hant': '天後', 'en': 'days from now', 'ja': '日後' },
+
+  // LunarEclipseMap
+  'lecl.noEvent':       { 'zh-Hant': '（無月食事件）', 'en': '(No lunar eclipse)', 'ja': '（月食なし）' },
+  'lecl.penumbra':      { 'zh-Hant': '半影', 'en': 'Penumbra', 'ja': '半影' },
+  'lecl.umbra':         { 'zh-Hant': '本影', 'en': 'Umbra', 'ja': '本影' },
+  'lecl.greatest':      { 'zh-Hant': '★ 食甚', 'en': '★ Greatest', 'ja': '★ 食の最大' },
+  'lecl.kind.total':       { 'zh-Hant': '月全食',     'en': 'Total lunar eclipse',    'ja': '皆既月食' },
+  'lecl.kind.partial':     { 'zh-Hant': '月偏食',     'en': 'Partial lunar eclipse',  'ja': '部分月食' },
+  'lecl.kind.penumbral':   { 'zh-Hant': '半影月食',   'en': 'Penumbral lunar eclipse','ja': '半影月食' },
+  'lecl.kind.none':        { 'zh-Hant': '無月食',     'en': 'No eclipse',             'ja': '月食なし' },
+  'lecl.magnitude':     { 'zh-Hant': '食分', 'en': 'Magnitude', 'ja': '食分' },
+  'lecl.p1':            { 'zh-Hant': 'P1（半影開始）', 'en': 'P1 (penumbra start)',  'ja': 'P1（半影食の始め）' },
+  'lecl.u1':            { 'zh-Hant': 'U1（本影開始）', 'en': 'U1 (umbra start)',     'ja': 'U1（本影食の始め）' },
+  'lecl.u2':            { 'zh-Hant': 'U2（全食開始）', 'en': 'U2 (totality start)',  'ja': 'U2（皆既の始め）' },
+  'lecl.u3':            { 'zh-Hant': 'U3（全食結束）', 'en': 'U3 (totality end)',    'ja': 'U3（皆既の終わり）' },
+  'lecl.u4':            { 'zh-Hant': 'U4（本影結束）', 'en': 'U4 (umbra end)',       'ja': 'U4（本影食の終わり）' },
+  'lecl.p4':            { 'zh-Hant': 'P4（半影結束）', 'en': 'P4 (penumbra end)',    'ja': 'P4（半影食の終わり）' },
+  'lecl.note.total':    {
+    'zh-Hant': '全食時段（U2 → U3）月球完全進入地球本影，呈現紅銅色「血月」。',
+    'en': 'During totality (U2 → U3) the Moon is fully inside Earth\'s umbra and turns the famous coppery "blood moon" red.',
+    'ja': '皆既時間中（U2→U3）に月は地球の本影に完全に入り、銅色の「ブラッドムーン」となる。',
+  },
+  'lecl.note.partial':  {
+    'zh-Hant': '部分月面進入本影；未進入部分仍受半影微弱遮蔽。',
+    'en': 'Part of the lunar disk enters the umbra; the remaining surface still passes through the fainter penumbra.',
+    'ja': '月面の一部が本影に入る。残りの部分は半影中にある。',
+  },
+  'lecl.note.penumbral': {
+    'zh-Hant': '月面僅穿過半影區，肉眼難以察覺；攝影可記錄到輕微暗化。',
+    'en': 'The Moon passes only through the penumbra — nearly invisible to the eye but a slight dimming is captured photographically.',
+    'ja': '月面は半影のみを通過する。肉眼ではほぼ識別できないが、撮影では僅かな減光が記録される。',
+  },
+
+  // InfoPanel — observation planning window
+  'info.planning.tonightBest':       { 'zh-Hant': '今晚最佳觀測', 'en': 'Best window tonight', 'ja': '今夜のベスト時間帯' },
+  'info.planning.windowDetail':      { 'zh-Hant': '小時，仰角 ≥ 30° 且海上昏影後', 'en': 'h above 30° altitude after astronomical dusk', 'ja': '時間、仰角 ≥ 30° かつ航海薄明終了後' },
+  'info.planning.noWindow':          { 'zh-Hant': '今晚未達 30° 仰角的暗夜窗。', 'en': 'No 30°-altitude dark-sky window tonight.', 'ja': '今夜は仰角 30° を超える暗夜時間帯がありません。' },
+  'info.planning.nextEvent':         { 'zh-Hant': '下一個重要事件', 'en': 'Next major event', 'ja': '次の主要イベント' },
+  'info.time.hoursLater':            { 'zh-Hant': '小時後', 'en': 'h from now', 'ja': '時間後' },
+  'info.time.monthsLater':           { 'zh-Hant': '個月後', 'en': 'mo from now', 'ja': 'ヶ月後' },
+  'info.time.justNow':               { 'zh-Hant': '剛剛',   'en': 'just now',     'ja': 'たった今' },
+  'info.time.minutesAgo':            { 'zh-Hant': '分鐘前', 'en': 'min ago',      'ja': '分前' },
+  'info.time.hoursAgo':              { 'zh-Hant': '小時前', 'en': 'h ago',        'ja': '時間前' },
+  'info.time.daysAgo':               { 'zh-Hant': '天前',   'en': 'd ago',        'ja': '日前' },
+  'info.time.monthsAgo':             { 'zh-Hant': '個月前', 'en': 'mo ago',       'ja': 'ヶ月前' },
+  'info.unit.hour':                  { 'zh-Hant': '小時',   'en': 'h',     'ja': '時間' },
+  'info.unit.day':                   { 'zh-Hant': '天',     'en': 'd',     'ja': '日' },
+  'info.unit.year':                  { 'zh-Hant': '年',     'en': 'yr',    'ja': '年' },
+  'info.unit.thousandKm':            { 'zh-Hant': '千 km',  'en': "k km",  'ja': '千 km' },
+
+  'info.event.solstice':         { 'zh-Hant': '至點',     'en': 'Solstice',           'ja': '至点' },
+  'info.event.perihelion':       { 'zh-Hant': '近日點',   'en': 'Perihelion',         'ja': '近日点' },
+  'info.event.aphelion':         { 'zh-Hant': '遠日點',   'en': 'Aphelion',           'ja': '遠日点' },
+  'info.event.planetConj':       { 'zh-Hant': '行星合',   'en': 'Planet conjunction', 'ja': '惑星合' },
+
+  // SkyPanel — sun/moon events
+  'sky.polarNight':         { 'zh-Hant': '極夜/極晝',     'en': 'Polar night/day',         'ja': '極夜/白夜' },
+  'sky.sunrise':            { 'zh-Hant': '☀ 升', 'en': '☀ Rise',  'ja': '☀ 出' },
+  'sky.sunset':             { 'zh-Hant': '☀ 落', 'en': '☀ Set',   'ja': '☀ 入' },
+  'sky.moonrise':           { 'zh-Hant': '☽ 升', 'en': '☽ Rise',  'ja': '☽ 出' },
+  'sky.moonset':            { 'zh-Hant': '☽ 落', 'en': '☽ Set',   'ja': '☽ 入' },
+  'sky.civilDusk':          { 'zh-Hant': '民用昏', 'en': 'Civil dusk',         'ja': '市民薄明（夕）' },
+  'sky.nauticalDusk':       { 'zh-Hant': '航海昏', 'en': 'Nautical dusk',      'ja': '航海薄明（夕）' },
+  'sky.astronomicalDusk':   { 'zh-Hant': '天文昏', 'en': 'Astronomical dusk',  'ja': '天文薄明（夕）' },
+  'sky.astronomicalDawn':   { 'zh-Hant': '天文晨', 'en': 'Astronomical dawn',  'ja': '天文薄明（朝）' },
+  'sky.nauticalDawn':       { 'zh-Hant': '航海晨', 'en': 'Nautical dawn',      'ja': '航海薄明（朝）' },
+  'sky.civilDawn':          { 'zh-Hant': '民用晨', 'en': 'Civil dawn',         'ja': '市民薄明（朝）' },
+  'sky.daylightLen':        { 'zh-Hant': '白晝', 'en': 'Daylight',           'ja': '昼長' },
+  'sky.equationOfTime':     { 'zh-Hant': '時差', 'en': 'Eq. of time',        'ja': '均時差' },
+  'sky.minutes':            { 'zh-Hant': '分',   'en': 'min',                'ja': '分' },
+  'sky.lst':                { 'zh-Hant': '恆星時', 'en': 'Sidereal time',    'ja': '恒星時' },
+  'sky.dblClickCenter':     { 'zh-Hant': '雙擊置中',   'en': 'Double-click to center', 'ja': 'ダブルクリックで中心に' },
+
+  // SearchBar
+  'search.constellationLines':  { 'zh-Hant': '包含', 'en': 'contains', 'ja': '構成線数' },
+  'search.constellationLines2': { 'zh-Hant': '條連線', 'en': 'connection lines', 'ja': '本' },
+  'search.observerHint':        { 'zh-Hant': '進入觀測模式可在天空中找到此星座。', 'en': 'Enter observer mode to locate it in the sky.', 'ja': '観測モードに入ると、天空でこの星座を見つけられます。' },
+  'search.coordsSub':           { 'zh-Hant': 'J2000 直接座標', 'en': 'J2000 raw coordinates', 'ja': 'J2000 直接座標' },
+  'search.coordsHint':          { 'zh-Hant': '進入觀測模式即可定位至此座標。', 'en': 'Enter observer mode to point at these coordinates.', 'ja': '観測モードに入るとこの座標へポイントできます。' },
+  'search.noResult':            { 'zh-Hant': '無相符結果', 'en': 'No matches', 'ja': '該当なし' },
+  'search.cat.body':            { 'zh-Hant': '天體', 'en': 'Body', 'ja': '天体' },
+  'search.cat.star':            { 'zh-Hant': '恆星', 'en': 'Star', 'ja': '恒星' },
+  'search.cat.site':            { 'zh-Hant': '觀測點', 'en': 'Observing site', 'ja': '観測地' },
+  'search.cat.constellation':   { 'zh-Hant': '星座', 'en': 'Constellation', 'ja': '星座' },
+
+  // EventsPanel
+  'events.empty':            { 'zh-Hant': '無事件，按「重掃」嘗試。', 'en': 'No events — try the "Rescan" button.', 'ja': 'イベントなし。「再スキャン」をお試しください。' },
+  'events.eclipsePathBtn':   { 'zh-Hant': '🗺️ 食帶地圖', 'en': '🗺️ Eclipse path map', 'ja': '🗺️ 食帯地図' },
+  'events.lunarContactBtn':  { 'zh-Hant': '🌑 接觸圖', 'en': '🌑 Contact diagram', 'ja': '🌑 接触図' },
+  'events.eclipsePathLabel': { 'zh-Hant': '日食食帶', 'en': 'Solar eclipse path', 'ja': '日食帯' },
+  'events.lunarContactLabel':{ 'zh-Hant': '月食接觸圖', 'en': 'Lunar eclipse contacts', 'ja': '月食接触図' },
+  'events.maybeEclipse':     { 'zh-Hant': '可能日食', 'en': 'Possible eclipse', 'ja': '日食の可能性' },
+
+  // CalcPanel — table column headers (some defined earlier; only add new ones)
+  'calc.body':         { 'zh-Hant': '天體',     'en': 'Body',           'ja': '天体' },
+  'calc.angularSize':  { 'zh-Hant': '視角直徑', 'en': 'Angular size',   'ja': '視直径' },
+  'calc.angularRate':  { 'zh-Hant': '角速度',   'en': 'Angular rate',   'ja': '角速度' },
+
+  // LeftPanel + map picker
+  'lp.now':                  { 'zh-Hant': '現在',                  'en': 'Now',                'ja': '現在' },
+  'lp.cityGroup':            { 'zh-Hant': '城市',                  'en': 'Cities',             'ja': '都市' },
+  'lp.observatoryGroup':     { 'zh-Hant': '歷史 / 著名天文台',     'en': 'Historic / famous observatories', 'ja': '歴史的・著名な天文台' },
+  'lp.elevation':            { 'zh-Hant': '海拔',                  'en': 'Elevation',          'ja': '標高' },
+  'mp.loadFail':             { 'zh-Hant': '地圖載入失敗（請檢查網路）', 'en': 'Map failed to load (check your connection)', 'ja': '地図の読み込みに失敗しました（ネットワークをご確認ください）' },
+
+  // EclipseMap
+  'em.greatest':       { 'zh-Hant': '★ 食甚', 'en': '★ Greatest eclipse', 'ja': '★ 食の最大' },
+  'em.kind.total':     { 'zh-Hant': '日全食', 'en': 'Total solar eclipse',  'ja': '皆既日食' },
+  'em.kind.annular':   { 'zh-Hant': '日環食', 'en': 'Annular solar eclipse','ja': '金環日食' },
+  'em.kind.partial':   { 'zh-Hant': '日偏食', 'en': 'Partial solar eclipse','ja': '部分日食' },
+
+  // ObservationLogPanel
+  'obslog.imported':         { 'zh-Hant': '已匯入 N 筆觀測紀錄', 'en': 'Imported N observation entries', 'ja': '観測記録を N 件読み込みました' },
+  'obslog.importFail':       { 'zh-Hant': '匯入失敗', 'en': 'Import failed', 'ja': '読み込み失敗' },
+  'obslog.clearConfirmCount':{ 'zh-Hant': '筆',       'en': 'entries',       'ja': '件' },
 };
 
 let currentLang: Lang = (localStorage.getItem('solarSysLang') as Lang) || 'zh-Hant';

@@ -159,23 +159,23 @@ export class SkyPanel {
     const lstM = Math.floor(((lst / 15) - lstH) * 60);
     const lstS = Math.floor((((lst / 15) - lstH) * 60 - lstM) * 60);
     const dayLen = ev.dayLengthHours;
-    const dayLenStr = dayLen != null ? `${Math.floor(dayLen)}h ${pad2(Math.round((dayLen % 1) * 60))}m` : '極夜/極晝';
+    const dayLenStr = dayLen != null ? `${Math.floor(dayLen)}h ${pad2(Math.round((dayLen % 1) * 60))}m` : t('sky.polarNight');
     return `
       <div class="sky-section-title">${t('sky.tonight')}</div>
       <div class="tonight-grid">
-        <span class="lbl">☀ 升</span><span class="val">${fmt(ev.sunrise)}</span>
-        <span class="lbl">☀ 落</span><span class="val">${fmt(ev.sunset)}</span>
-        <span class="lbl">☽ 升</span><span class="val">${fmt(ev.moonrise)}</span>
-        <span class="lbl">☽ 落</span><span class="val">${fmt(ev.moonset)}</span>
-        <span class="lbl">民用昏</span><span class="val">${fmt(ev.civilDusk)}</span>
-        <span class="lbl">航海昏</span><span class="val">${fmt(ev.nauticalDusk)}</span>
-        <span class="lbl">天文昏</span><span class="val">${fmt(ev.astronomicalDusk)}</span>
-        <span class="lbl">天文晨</span><span class="val">${fmt(ev.astronomicalDawn)}</span>
-        <span class="lbl">航海晨</span><span class="val">${fmt(ev.nauticalDawn)}</span>
-        <span class="lbl">民用晨</span><span class="val">${fmt(ev.civilDawn)}</span>
-        <span class="lbl">白晝</span><span class="val">${dayLenStr}</span>
-        <span class="lbl">時差</span><span class="val">${ev.equationOfTimeMin >= 0 ? '+' : ''}${ev.equationOfTimeMin.toFixed(1)} 分</span>
-        <span class="lbl">恆星時</span><span class="val">${pad2(lstH)}:${pad2(lstM)}:${pad2(lstS)}</span>
+        <span class="lbl">${t('sky.sunrise')}</span><span class="val">${fmt(ev.sunrise)}</span>
+        <span class="lbl">${t('sky.sunset')}</span><span class="val">${fmt(ev.sunset)}</span>
+        <span class="lbl">${t('sky.moonrise')}</span><span class="val">${fmt(ev.moonrise)}</span>
+        <span class="lbl">${t('sky.moonset')}</span><span class="val">${fmt(ev.moonset)}</span>
+        <span class="lbl">${t('sky.civilDusk')}</span><span class="val">${fmt(ev.civilDusk)}</span>
+        <span class="lbl">${t('sky.nauticalDusk')}</span><span class="val">${fmt(ev.nauticalDusk)}</span>
+        <span class="lbl">${t('sky.astronomicalDusk')}</span><span class="val">${fmt(ev.astronomicalDusk)}</span>
+        <span class="lbl">${t('sky.astronomicalDawn')}</span><span class="val">${fmt(ev.astronomicalDawn)}</span>
+        <span class="lbl">${t('sky.nauticalDawn')}</span><span class="val">${fmt(ev.nauticalDawn)}</span>
+        <span class="lbl">${t('sky.civilDawn')}</span><span class="val">${fmt(ev.civilDawn)}</span>
+        <span class="lbl">${t('sky.daylightLen')}</span><span class="val">${dayLenStr}</span>
+        <span class="lbl">${t('sky.equationOfTime')}</span><span class="val">${ev.equationOfTimeMin >= 0 ? '+' : ''}${ev.equationOfTimeMin.toFixed(1)} ${t('sky.minutes')}</span>
+        <span class="lbl">${t('sky.lst')}</span><span class="val">${pad2(lstH)}:${pad2(lstM)}:${pad2(lstS)}</span>
       </div>
     `;
   }
@@ -184,7 +184,7 @@ export class SkyPanel {
     const altStr = `${alt >= 0 ? '+' : ''}${alt.toFixed(1)}°`;
     const azStr = `${az.toFixed(0)}°`;
     const opacity = alt > 0 ? 1 : 0.35;
-    return `<div class="sky-row" data-body-id="${id}" style="opacity:${opacity};cursor:pointer;" title="雙擊置中">` +
+    return `<div class="sky-row" data-body-id="${id}" style="opacity:${opacity};cursor:pointer;" title="${t('sky.dblClickCenter')}">` +
       `<span class="name">${name}</span>` +
       `<span class="alt">${altStr}</span>` +
       `<span class="az">${azStr}</span>` +
@@ -198,7 +198,7 @@ export class SkyPanel {
     const opacity = alt > 0 ? 1 : 0.3;
     const sub = bayer ? ` <span style="color:var(--text-dim);font-size:10px;">${bayer}</span>` : '';
     const pmAttr = pmRA !== undefined && pmDec !== undefined ? ` data-pm-ra="${pmRA}" data-pm-dec="${pmDec}"` : '';
-    return `<div class="sky-row" data-ra="${ra}" data-dec="${dec}"${pmAttr} style="opacity:${opacity};cursor:pointer;" title="雙擊置中">` +
+    return `<div class="sky-row" data-ra="${ra}" data-dec="${dec}"${pmAttr} style="opacity:${opacity};cursor:pointer;" title="${t('sky.dblClickCenter')}">` +
       `<span class="name">${name}${sub} <span style="color:var(--text-dim);font-size:10px;">m=${mag.toFixed(1)}</span></span>` +
       `<span class="alt">${altStr}</span>` +
       `<span class="az">${azStr}</span>` +

@@ -172,10 +172,10 @@ export class ObservationLogPanel {
           const text = String(reader.result ?? '');
           if (!confirm(t('obslog.importConfirm'))) return;
           const n = importJson(text);
-          alert(`已匯入 ${n} 筆觀測紀錄`);
+          alert(t('obslog.imported').replace('N', String(n)));
           this.render();
         } catch (e) {
-          alert(`匯入失敗：${(e as Error).message}`);
+          alert(`${t('obslog.importFail')}: ${(e as Error).message}`);
         }
       };
       reader.readAsText(f);
@@ -186,7 +186,7 @@ export class ObservationLogPanel {
   private doClear(): void {
     const n = totalCount();
     if (n === 0) return;
-    if (!confirm(`${t('obslog.clearConfirm')}（${n} 筆）`)) return;
+    if (!confirm(`${t('obslog.clearConfirm')} (${n} ${t('obslog.clearConfirmCount')})`)) return;
     clearAll();
     this.render();
   }
