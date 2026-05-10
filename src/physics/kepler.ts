@@ -16,6 +16,16 @@ import { TWO_PI } from './constants';
  *     can't catapult E out of the convergence basin.
  */
 export function solveKepler(M: number, e: number, tol = 1e-12, maxIter = 60): number {
+  // Reject parabolic/hyperbolic orbits (e ≥ 1). Kepler's equation as
+  // written here is the elliptic form; a non-periodic comet (e.g.
+  // ʻOumuamua, e ≈ 1.2) needs the hyperbolic equation
+  //     e·sinh(F) − F = M
+  // which has a different solver entirely. Without this guard, the
+  // `1 − e·cos(E)` denominator can flirt with zero and the iteration
+  // returns garbage that downstream code (sqrt(1 − e²)) silently NaNs.
+  if (!(e >= 0 && e < 1)) {
+    throw new Error(`solveKepler: eccentricity must be in [0, 1); got e=${e}`);
+  }
   let m = ((M % TWO_PI) + TWO_PI) % TWO_PI;
   if (m > Math.PI) m -= TWO_PI;
 

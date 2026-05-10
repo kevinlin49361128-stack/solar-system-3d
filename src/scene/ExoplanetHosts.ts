@@ -113,17 +113,29 @@ export class ExoplanetHosts {
     this.group.visible = false;
 
     // Rebuild every host's label texture when the UI language changes.
-    // The cache is keyed on (text, colour); since the text changes, we
-    // also clear it so old per-language entries don't leak across
-    // switches.
+    // We drain the cache through proper disposal first, THEN clear, so
+    // shared textures (two hosts whose localised name + distance bucket
+    // produce the same cache key) aren't double-disposed when each
+    // entry's old material is freed below. Three.js is forgiving of
+    // double-dispose but the pattern is a footgun if the name
+    // normaliser ever produces collisions in future.
     onLanguageChange(() => {
+      // First: collect every cached texture and null the entries'
+      // material.map references so the per-entry dispose loop below
+      // doesn't touch a texture we're about to drain.
+      for (const e of this.entries) {
+        const oldMat = e.labelSprite.material as SpriteMaterial;
+        // Drop the reference; we'll dispose the texture via the cache
+        // drain below, exactly once per unique texture.
+        oldMat.map = null;
+        oldMat.dispose();
+      }
+      for (const tex of labelCache.values()) tex.dispose();
       labelCache.clear();
+      // Now build fresh per-entry materials with new-language textures.
       for (const e of this.entries) {
         const haloColor = haloColourForDistance(e.meta.distanceLy);
-        const oldMat = e.labelSprite.material as SpriteMaterial;
-        const oldOpacity = oldMat.opacity;
-        oldMat.map?.dispose();
-        oldMat.dispose();
+        const oldOpacity = (e.labelSprite.material as SpriteMaterial).opacity;
         const newTex = makeLabelTexture(localiseShort(e.meta), haloColor);
         e.labelSprite.material = new SpriteMaterial({
           map: newTex,

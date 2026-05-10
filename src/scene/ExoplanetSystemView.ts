@@ -64,6 +64,7 @@ export class ExoplanetSystemView {
       if (prev) prev.group.visible = false;
     }
     let build = this.cache.get(id);
+    const isFreshBuild = !build;
     if (!build) {
       build = this.buildSystem(meta);
       this.cache.set(id, build);
@@ -72,6 +73,15 @@ export class ExoplanetSystemView {
     build.group.visible = true;
     this.group.visible = true;
     this.activeId = id;
+    // For a cache-hit, the geometry was built at whatever scale was
+    // active back then. The current land-flow forces 'log' so most of
+    // the time this is a no-op, but to be defensive against future
+    // call paths (a debug toggle, a saved-state restore, an AB test
+    // that lets users land at real scale) re-rebuild against the
+    // current scaler. Cheap — just a few SphereGeometry + RingGeometry
+    // resizes for the host + ≤8 planets, and OrbitLine.rebuild reuses
+    // its buffer attribute in place.
+    if (!isFreshBuild) this.rebuild();
     return meta;
   }
 
