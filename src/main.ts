@@ -147,6 +147,15 @@ langSel.addEventListener('change', () => setLang(langSel.value as Lang));
 applyLanguage();
 
 scaleCtl.subscribe(() => {
+  // While landed on an exoplanet, override any user attempt to flip
+  // the scale-mode toggle. Log scale is required for the host + close-
+  // in worlds to render at usable sizes (real-mode TRAPPIST-1 is one
+  // pixel even point-blank). Snap back to log; the saved-mode-on-Land
+  // dance restores whatever the user had after Return.
+  if (solarSystem.isExoplanetSystemActive() && scaleCtl.getMode() !== 'log') {
+    scaleCtl.setMode('log');
+    return;  // setMode will re-fire this subscriber with mode='log'
+  }
   solarSystem.update(clock.getJd());
 });
 
@@ -481,7 +490,15 @@ window.addEventListener('sim:exo-visit', (e) => {
   // so we can restore it on Return — the user can re-pick a follow body
   // themselves if they want; that's simpler than plumbing the followId.
   savedCameraModeForExoVisit = cameraCtl.getMode();
-  if (savedCameraModeForExoVisit !== 'free') cameraCtl.setMode('free');
+  if (savedCameraModeForExoVisit !== 'free') {
+    cameraCtl.setMode('free');
+    // Sync the LeftPanel selectors so the UI doesn't lie about being
+    // "Follow Mercury" while we've actually flipped to free-flight.
+    const camModeSel = document.getElementById('camera-mode') as HTMLSelectElement | null;
+    if (camModeSel) camModeSel.value = 'free';
+    const followSel = document.getElementById('follow-body') as HTMLSelectElement | null;
+    if (followSel) followSel.value = '';
+  }
 
   const ok = solarSystem.activateExoplanetSystem(id);
   if (!ok) return;
@@ -524,6 +541,12 @@ window.addEventListener('keydown', (e) => {
   if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (cameraCtl.getMode() === 'observer') return;
+  // Don't allow tier shortcuts while landed on an exoplanet — pressing
+  // G mid-visit would tier-animate, which re-shows hidden layers (HYG
+  // cloud, other halos, the heliocentric group) and dissolves the
+  // climax. Force the user through the explicit Return-to-galaxy
+  // banner button, which deactivates cleanly.
+  if (solarSystem.isExoplanetSystemActive()) return;
 
   if (e.key === 'g' && !e.shiftKey) {
     tierCtl.zoomOut();
@@ -566,7 +589,20 @@ function applyUrlState(): void {
   if (!location.hash || location.hash.length < 2) return;
   const params = new URLSearchParams(location.hash.slice(1));
   const jd = params.get('jd');
-  if (jd) clock.setJd(parseFloat(jd));
+  if (jd) {
+    // Validate before applying — a malformed share URL with `?jd=foo`
+    // or `?jd=NaN` would otherwise propagate NaN into every body's
+    // propagator and grey-screen the whole sim. Also clamp to the
+    // documented JPL approximate-positions range (1800–2050) plus a
+    // generous buffer so people who want to wander further out still
+    // can, but a typo year of 9999999 doesn't break anything.
+    const parsed = parseFloat(jd);
+    const J1500 = 2268932.5;  // 1500-01-01
+    const J2500 = 2634167.5;  // 2500-01-01
+    if (Number.isFinite(parsed) && parsed >= J1500 && parsed <= J2500) {
+      clock.setJd(parsed);
+    }
+  }
   const scale = params.get('scale');
   if (scale === 'real' || scale === 'log' || scale === 'schematic') {
     scaleCtl.setMode(scale);
@@ -1286,10 +1322,19 @@ function tick(now: number): void {
       cameraCtl.camera.updateProjectionMatrix();
     }
     // Apply layer weights — solar system, HYG cloud, host halos, disk.
-    solarSystem.setSolarSystemOpacity(state.layerWeights.solarSystem);
-    solarSystem.setHygCloudOpacity(state.layerWeights.hygCloud);
-    solarSystem.setExoplanetHostsOpacity(state.layerWeights.hygCloud);
-    solarSystem.setGalacticDiskOpacity(state.layerWeights.milkyWayDisk);
+    // Skip while landed on an exoplanet system: activateExoplanetSystem
+    // captured a visibility snapshot of every distracting layer and set
+    // them all to invisible. Calling these setters here would stomp the
+    // snapshot (system-tier solarSystem weight = 1 → re-shows the whole
+    // heliocentric group inside the climax shot — exact bug the user
+    // reported in their first take, where HYG stars bled through the
+    // Kepler-90 close-up after a stray scroll-zoom triggered an animation).
+    if (!solarSystem.isExoplanetSystemActive()) {
+      solarSystem.setSolarSystemOpacity(state.layerWeights.solarSystem);
+      solarSystem.setHygCloudOpacity(state.layerWeights.hygCloud);
+      solarSystem.setExoplanetHostsOpacity(state.layerWeights.hygCloud);
+      solarSystem.setGalacticDiskOpacity(state.layerWeights.milkyWayDisk);
+    }
   } else {
     // Always advance internal state even when not driving the camera, so
     // subscribers and the controller's clock stay consistent.

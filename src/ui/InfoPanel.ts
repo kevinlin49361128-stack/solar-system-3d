@@ -20,6 +20,7 @@ import {
   markObserved, unmarkObserved, updateNotes, updateRating,
 } from '../data/observationLog';
 import { findStarHopPath, bearingCardinal } from '../physics/starHopping';
+import { EXOPLANET_SYSTEMS } from '../data/exoplanetSystems';
 import { Vector3 } from 'three';
 
 /**
@@ -198,7 +199,19 @@ export class InfoPanel {
 
     document.getElementById('info-close')!.addEventListener('click', () => this.hide());
     onLanguageChange(() => {
-      if (this.currentId) this.render();
+      if (!this.currentId) return;
+      // Exoplanet panels live outside the body registry, so render()
+      // — which dispatches on getBody(currentId) — would no-op for
+      // them. Re-call showExoplanetSystem with the cached meta so the
+      // host name, planet list, "Land on..." button, and per-row
+      // descriptions all pick up the new language.
+      if (this.currentId.startsWith('exo:')) {
+        const sysId = this.currentId.slice(4);
+        const meta = EXOPLANET_SYSTEMS.find(s => s.id === sysId);
+        if (meta) this.showExoplanetSystem(meta);
+        return;
+      }
+      this.render();
     });
 
     // GoTo: in observer mode, aim the observer's view at the selected
