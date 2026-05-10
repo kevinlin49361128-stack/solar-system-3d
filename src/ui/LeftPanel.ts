@@ -735,16 +735,44 @@ export class LeftPanel {
   }
 }
 
+function escapeForDescription(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function showSiteInfo(loc: ReturnType<typeof finder>): void {
   const panel = document.getElementById('site-info')!;
   panel.style.display = '';
-  document.getElementById('site-name')!.textContent = loc.name;
-  document.getElementById('site-subtitle')!.textContent = loc.nameEn ?? '';
+
+  // Title in current language (or fall back to zh-Hant), with subtitle
+  // showing the alternate spelling so cross-language observers can
+  // still recognise it.
+  const lang = (typeof window !== 'undefined' && window.localStorage.getItem('solarSysLang')) || 'zh-Hant';
+  const title = lang === 'en' ? (loc.nameEn ?? loc.name)
+              : lang === 'ja' ? (loc.nameJa ?? loc.nameEn ?? loc.name)
+              : loc.name;
+  // Subtitle: show the "other" language only if it differs from title.
+  const altOptions = [loc.name, loc.nameEn ?? '', loc.nameJa ?? ''].filter(s => s && s !== title);
+  document.getElementById('site-name')!.textContent = title;
+  document.getElementById('site-subtitle')!.textContent = altOptions[0] ?? '';
+
   const lat = Math.abs(loc.lat).toFixed(4) + (loc.lat >= 0 ? '°N' : '°S');
   const lon = Math.abs(loc.lon).toFixed(4) + (loc.lon >= 0 ? '°E' : '°W');
   const elev = loc.elevationM != null ? ` · ${t('lp.elevation')} ${loc.elevationM.toLocaleString()} m` : '';
   document.getElementById('site-meta')!.textContent = `${lat}, ${lon}${elev}`;
-  document.getElementById('site-description')!.textContent = loc.description ?? '';
+  // Observatory descriptions are only authored in zh-Hant for now —
+  // every entry has a paragraph of dense astro-history that we
+  // haven't translated. Render with a small notice when the user
+  // language differs, so non-Chinese readers know the prose is in CJK.
+  const descEl = document.getElementById('site-description')!;
+  const desc = loc.description ?? '';
+  if (lang !== 'zh-Hant' && desc) {
+    descEl.innerHTML = `<span style="color:var(--text-dim);font-style:italic;font-size:11px;">[Description in 繁體中文 only — translation TBD]</span><br>${escapeForDescription(desc)}`;
+  } else {
+    descEl.textContent = desc;
+  }
 
   // Image: hide first, then attempt load. If the URL 404s (or any other
   // error from Wikimedia Commons / a custom CDN) we leave the slot
