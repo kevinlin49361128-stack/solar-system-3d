@@ -1,6 +1,7 @@
 import {
   AdditiveBlending,
   CanvasTexture,
+  CircleGeometry,
   Color,
   Group,
   Mesh,
@@ -38,6 +39,9 @@ interface HostEntry {
   meta: ExoplanetSystemMeta;
   position: Vector3;       // scene units (= ly), in HYG equatorial frame
   haloMesh: Mesh;
+  /** Invisible filled-disc with the same userData; provides a generous
+   *  click target so the empty centre of the visible ring still picks. */
+  hitMesh: Mesh;
   labelSprite: Sprite;
 }
 
@@ -71,7 +75,25 @@ export class ExoplanetHosts {
       const halooScale = 0.5 + Math.log10(sys.distanceLy + 1) * 0.6;
       halo.scale.setScalar(halooScale);
       this.group.add(halo);
-      this.pickables.push(halo);
+
+      // Invisible filled-disc hit area, slightly larger than the visible
+      // ring. The ring itself has an empty centre — clicking the middle
+      // of the halo would otherwise raycast straight through. With this
+      // disc the entire halo (interior included) is clickable.
+      const hitGeom = new CircleGeometry(1.2, 32);
+      const hitMat = new MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0,    // invisible; only used for hit-testing
+        depthWrite: false,
+        side: 2,       // DoubleSide
+      });
+      const hit = new Mesh(hitGeom, hitMat);
+      hit.position.copy(pos);
+      hit.userData.exoplanetSystemId = sys.id;
+      hit.scale.setScalar(halooScale);
+      this.group.add(hit);
+      this.pickables.push(hit);
 
       // Text label
       const labelTex = makeLabelTexture(localiseShort(sys), haloColor);
@@ -86,7 +108,7 @@ export class ExoplanetHosts {
       label.scale.set(halooScale * 4, halooScale * 1.0, 1);
       this.group.add(label);
 
-      this.entries.push({ meta: sys, position: pos.clone(), haloMesh: halo, labelSprite: label });
+      this.entries.push({ meta: sys, position: pos.clone(), haloMesh: halo, hitMesh: hit, labelSprite: label });
     }
     this.group.visible = false;
 
@@ -130,14 +152,17 @@ export class ExoplanetHosts {
   update(cameraPos: Vector3): void {
     if (!this.group.visible) return;
     for (const e of this.entries) {
-      // Halo faces the camera.
+      // Halo + invisible hit-disc face the camera together (so the
+      // disc covers the visible ring no matter the viewing angle).
       e.haloMesh.lookAt(cameraPos);
+      e.hitMesh.lookAt(cameraPos);
       // Distance from camera in scene units. Scale up linearly with
       // distance so the halo's screen size stays roughly constant.
       const dist = e.haloMesh.position.distanceTo(cameraPos);
       const baseScale = 0.5 + Math.log10(e.meta.distanceLy + 1) * 0.6;
       const distFactor = Math.max(1, dist / 30);
       e.haloMesh.scale.setScalar(baseScale * distFactor);
+      e.hitMesh.scale.setScalar(baseScale * distFactor);
       e.labelSprite.scale.set(baseScale * distFactor * 4, baseScale * distFactor * 1.0, 1);
       // Keep label above the halo even after rescale.
       e.labelSprite.position.copy(e.position).add(new Vector3(0, baseScale * distFactor * 1.4, 0));
