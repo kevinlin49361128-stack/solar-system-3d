@@ -12,7 +12,7 @@ import {
 } from 'three';
 import { EXOPLANET_SYSTEMS, type ExoplanetSystemMeta } from '../data/exoplanetSystems';
 import { DEG2RAD } from '../physics/constants';
-import { langPick } from '../i18n';
+import { langPick, onLanguageChange } from '../i18n';
 
 /**
  * Halo + label sprites for the 12 curated exoplanet host stars,
@@ -89,6 +89,28 @@ export class ExoplanetHosts {
       this.entries.push({ meta: sys, position: pos.clone(), haloMesh: halo, labelSprite: label });
     }
     this.group.visible = false;
+
+    // Rebuild every host's label texture when the UI language changes.
+    // The cache is keyed on (text, colour); since the text changes, we
+    // also clear it so old per-language entries don't leak across
+    // switches.
+    onLanguageChange(() => {
+      labelCache.clear();
+      for (const e of this.entries) {
+        const haloColor = haloColourForDistance(e.meta.distanceLy);
+        const oldMat = e.labelSprite.material as SpriteMaterial;
+        const oldOpacity = oldMat.opacity;
+        oldMat.map?.dispose();
+        oldMat.dispose();
+        const newTex = makeLabelTexture(localiseShort(e.meta), haloColor);
+        e.labelSprite.material = new SpriteMaterial({
+          map: newTex,
+          transparent: true,
+          opacity: oldOpacity,
+          depthWrite: false,
+        });
+      }
+    });
   }
 
   /** Per-frame opacity. opacity < 0.02 hides the group entirely. */

@@ -24,7 +24,7 @@ import { CalcVectors } from './scene/CalcVectors';
 import { LongExposureCompositor } from './scene/LongExposureCompositor';
 import { skyColorForDayFactor, sunAltToDayFactor } from './scene/Skybox';
 import { TextureConfig } from './scene/textureConfig';
-import { applyLanguage, getLang, setLang, t, bodyName, type Lang } from './i18n';
+import { applyLanguage, getLang, setLang, t, bodyName, langPick, onLanguageChange, type Lang } from './i18n';
 import { toast } from './ui/toast';
 import { PerfHUD } from './ui/PerfHUD';
 import { OnboardingTour } from './ui/OnboardingTour';
@@ -407,42 +407,80 @@ const exoBanner = (() => {
     'font-size:12px', 'font-family:inherit', 'color:var(--text)',
     'box-shadow:0 4px 16px rgba(0,0,0,0.4)',
   ].join(';');
-  el.innerHTML = `
-    <span><span style="color:var(--text-dim);">${t('exo.activeBanner')}:</span>
-      <b id="exo-banner-name" style="color:var(--accent);"></b></span>
-    <button id="exo-banner-return" style="background:transparent;border:1px solid var(--accent);color:var(--accent);
-            padding:3px 10px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:11px;">
-      ${t('exo.returnToGalaxy')}
-    </button>
-  `;
+  // Static labels (the "Visiting" prefix and the "Return to galaxy"
+  // button) are translated through i18n. The banner is created once but
+  // its labels need to re-render whenever the user switches language;
+  // the body name (TRAPPIST-1, …) is filled in below at activate-time.
+  const renderBannerLabels = () => {
+    el.innerHTML = `
+      <span><span style="color:var(--text-dim);">${t('exo.activeBanner')}:</span>
+        <b id="exo-banner-name" style="color:var(--accent);"></b></span>
+      <button id="exo-banner-return" style="background:transparent;border:1px solid var(--accent);color:var(--accent);
+              padding:3px 10px;border-radius:14px;cursor:pointer;font-family:inherit;font-size:11px;">
+        ${t('exo.returnToGalaxy')}
+      </button>
+    `;
+    el.querySelector('#exo-banner-return')?.addEventListener('click', () => {
+      solarSystem.deactivateExoplanetSystem();
+      el.style.display = 'none';
+      // Restore the user's pre-landing scale mode.
+      if (savedScaleModeForExoVisit && scaleCtl.getMode() !== savedScaleModeForExoVisit) {
+        scaleCtl.setMode(savedScaleModeForExoVisit);
+      }
+      savedScaleModeForExoVisit = null;
+      // Camera zoom out: leave the system, head to neighbourhood tier.
+      tierCtl.setTier('neighbourhood', 3.0);
+    });
+    // Re-fill the host name in the new language if a system is currently
+    // active (so swapping language mid-visit updates "TRAPPIST-1" too).
+    if (el.style.display !== 'none') {
+      const id = solarSystem.getActiveExoplanetSystemId?.();
+      const sys = id ? solarSystem.getExoplanetHosts()?.resolvePick({ exoplanetSystemId: id }) : null;
+      const nameEl = el.querySelector('#exo-banner-name');
+      if (sys && nameEl) {
+        nameEl.textContent =
+          typeof sys.name === 'string' ? sys.name : langPick(sys.name);
+      }
+    }
+  };
+  renderBannerLabels();
   document.body.appendChild(el);
-  el.querySelector('#exo-banner-return')?.addEventListener('click', () => {
-    solarSystem.deactivateExoplanetSystem();
-    el.style.display = 'none';
-    // Camera zoom out: leave the system, head to neighbourhood tier.
-    tierCtl.setTier('neighbourhood', 3.0);
-  });
+  onLanguageChange(renderBannerLabels);
   return el;
 })();
+
+// Captured before we land on an exoplanet, so the return trip restores
+// whatever scale mode the user had picked beforehand.
+let savedScaleModeForExoVisit: 'real' | 'log' | 'schematic' | null = null;
 
 window.addEventListener('sim:exo-visit', (e) => {
   const id = (e as CustomEvent<{ id: string }>).detail?.id;
   if (!id) return;
+  // Force log scale before activate, so the host + close-in worlds
+  // render at sizes the user can actually see (real-mode TRAPPIST-1 is
+  // basically a single pixel even at point-blank camera distance). The
+  // mode change triggers ScaleController listeners which rebuild
+  // orbit-line geometry; activate() then mounts the exoplanet group on
+  // top of that fresh state.
+  savedScaleModeForExoVisit = scaleCtl.getMode() as 'real' | 'log' | 'schematic';
+  if (savedScaleModeForExoVisit !== 'log') scaleCtl.setMode('log');
+
   const ok = solarSystem.activateExoplanetSystem(id);
   if (!ok) return;
   // Snap camera to system tier so the host fills the view.
   tierCtl.snapTo('system');
-  // Place the camera at a small distance from origin so we can see
-  // the host star + a bit of the planet orbits.
-  cameraCtl.camera.position.set(0, 1.5, 4);
+  // Place the camera close to origin — the host is roughly 0.135
+  // scene-unit radius in log mode (Sun-like multiplier), and the
+  // closest planets are ~0.3–0.4 units out. Distance ≈ 1.2 keeps the
+  // host plus the inner few orbits in frame without clipping.
+  cameraCtl.camera.position.set(0, 0.3, 1.2);
   cameraCtl.camera.lookAt(0, 0, 0);
-  // Show the banner with the system name.
+  // Show the banner with the system name (language-aware).
   const sys = solarSystem.getExoplanetHosts()?.resolvePick({ exoplanetSystemId: id });
   const nameEl = exoBanner.querySelector('#exo-banner-name');
   if (sys && nameEl) {
-    nameEl.textContent = (
-      typeof sys.name === 'string' ? sys.name : (sys.name['zh-Hant'] ?? sys.name.en ?? id)
-    );
+    nameEl.textContent =
+      typeof sys.name === 'string' ? sys.name : langPick(sys.name);
   }
   exoBanner.style.display = 'flex';
 });

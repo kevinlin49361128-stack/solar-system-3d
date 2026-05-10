@@ -803,9 +803,45 @@ export class SolarSystem {
   }
 
   /**
+   * Layer-visibility snapshot captured the moment we land on an
+   * exoplanet system, so deactivate() can restore exactly what was on.
+   */
+  private exoVisibilitySnapshot: Map<string, boolean> | null = null;
+
+  /**
+   * All scene-level layers that distract from a clean exoplanet system
+   * close-up: HYG cloud, star labels, IAU boundaries, Messier markers,
+   * other host halos, the 3D Milky Way disk, etc. We hide them on
+   * activate() and restore on deactivate().
+   *
+   * Note: we deliberately keep `realStarfield` + the random `starfield`
+   * because some sparse stars in the background look better than total
+   * black, and they aren't labelled.
+   */
+  private getExoSceneLayers(): Array<{ key: string; obj: { visible: boolean } | null }> {
+    return [
+      { key: 'starMap.points', obj: this.starMap?.points ?? null },
+      { key: 'starMap.lines', obj: this.starMap?.lines ?? null },
+      { key: 'starMap.labels', obj: this.starMap?.labels ?? null },
+      { key: 'messierLayer', obj: this.messierLayer?.object ?? null },
+      { key: 'iauBoundaries', obj: this.iauBoundaries?.object ?? null },
+      { key: 'milkyWay', obj: this.milkyWay?.mesh ?? null },
+      { key: 'meteorShowers', obj: this.meteorShowers?.object ?? null },
+      { key: 'cometTails', obj: this.cometTails?.object ?? null },
+      { key: 'celestialGrids', obj: this.celestialGrids?.object ?? null },
+      { key: 'lunarMansions', obj: this.lunarMansions?.object ?? null },
+      { key: 'galacticDisk', obj: this.galacticDisk?.group ?? null },
+      { key: 'hygCloud', obj: this.hygCloud?.group ?? null },
+      { key: 'exoplanetHosts', obj: this.exoplanetHosts?.group ?? null },
+    ];
+  }
+
+  /**
    * Activate one of the 12 curated exoplanet systems (Trappist-1,
-   * Proxima, Kepler-90, etc.). Hides the solar-system meshes and
-   * shows the host + planets at scene origin in moon-distance scale.
+   * Proxima, Kepler-90, etc.). Hides the solar-system meshes AND every
+   * other scene-level layer that would clutter the view (HYG point
+   * cloud, star labels, other host halos, Milky Way disk, …) so the
+   * camera lands on a clean stage with just the host + its planets.
    */
   activateExoplanetSystem(id: string): boolean {
     if (!this.exoplanetView) return false;
@@ -813,6 +849,16 @@ export class SolarSystem {
     if (!meta) return false;
     // Hide our solar system while landed on someone else's.
     this.heliocentric.visible = false;
+    // Hide everything else that would otherwise sit between the camera
+    // and the host (the bug: HYG labels like 'α Cen' were stealing the
+    // visual focus from the actual M-dwarf at scene origin).
+    const snap = new Map<string, boolean>();
+    for (const { key, obj } of this.getExoSceneLayers()) {
+      if (!obj) continue;
+      snap.set(key, obj.visible);
+      obj.visible = false;
+    }
+    this.exoVisibilitySnapshot = snap;
     return true;
   }
 
@@ -820,6 +866,15 @@ export class SolarSystem {
   deactivateExoplanetSystem(): void {
     this.exoplanetView?.deactivate();
     this.heliocentric.visible = true;
+    // Restore every layer to whatever state it had before we landed.
+    if (this.exoVisibilitySnapshot) {
+      for (const { key, obj } of this.getExoSceneLayers()) {
+        if (!obj) continue;
+        const wasVisible = this.exoVisibilitySnapshot.get(key);
+        if (wasVisible !== undefined) obj.visible = wasVisible;
+      }
+      this.exoVisibilitySnapshot = null;
+    }
   }
 
   isExoplanetSystemActive(): boolean {

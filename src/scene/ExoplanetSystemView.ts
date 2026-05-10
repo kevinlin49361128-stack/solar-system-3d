@@ -126,8 +126,9 @@ export class ExoplanetSystemView {
     if (meta) {
       const r = this.scaler.radiusKm(meta.host.physical.radiusKm) * this.scaler.sunMultiplier();
       build.hostMesh.rebuildForRadius(r);
+      const PLANET_VISIBILITY_BOOST = 5;
       for (let i = 0; i < meta.planets.length; i++) {
-        const pr = this.scaler.radiusKm(meta.planets[i].physical.radiusKm);
+        const pr = this.scaler.radiusKm(meta.planets[i].physical.radiusKm) * PLANET_VISIBILITY_BOOST;
         build.planets[i].mesh.rebuildForRadius(pr);
       }
     }
@@ -145,8 +146,13 @@ export class ExoplanetSystemView {
     sysGroup.add(hostMesh.group);
 
     const planets: SystemBuild['planets'] = [];
+    // Earth-sized exoplanets at this scale would be 1–2 px; bump by 30×
+    // so the user can actually see them as discs orbiting the host.
+    // Picked empirically — large enough that TRAPPIST-1 b–h read as a
+    // chain of dots, small enough that they don't overlap the host.
+    const PLANET_VISIBILITY_BOOST = 5;
     for (const planet of meta.planets) {
-      const r = this.scaler.radiusKm(planet.physical.radiusKm);
+      const r = this.scaler.radiusKm(planet.physical.radiusKm) * PLANET_VISIBILITY_BOOST;
       const mesh = new BodyMesh(planet, r);
       hostMesh.group.add(mesh.group);
 
