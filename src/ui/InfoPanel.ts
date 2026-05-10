@@ -177,6 +177,8 @@ export class InfoPanel {
   private readonly planningEl: HTMLElement;
   private readonly extraEl: HTMLElement;
   private currentId: string | null = null;
+  /** Cached named-star object so the GoTo button can re-aim with proper motion. */
+  private lastNamedStar: import('../data/stars').NamedStar | null = null;
   private unsubscribe: (() => void) | null = null;
 
   private cameraCtl: CameraController | null = null;
@@ -198,23 +200,50 @@ export class InfoPanel {
       if (this.currentId) this.render();
     });
 
-    // GoTo: in observer mode, aim the observer's view at the selected body.
-    // In other modes, switch to follow-body. Button is hidden by render()
-    // when no body is selected.
+    // GoTo: in observer mode, aim the observer's view at the selected
+    // target. Handles four kinds of currentId:
+    //   "mars"               → body, use getBodyAltAz
+    //   "star:vega"          → named star, look up RA/Dec from NAMED_STARS
+    //   "messier:M31"        → DSO, look up from messier dataset
+    //   "unnamed:RA_Dec"     → catalogue HYG star, parse RA/Dec from dataset
+    // Outside observer mode, falls back to follow-body for the body case
+    // (the others have no analog).
     document.getElementById('info-goto')?.addEventListener('click', () => {
       if (!this.currentId) return;
       const cam = this.cameraCtl;
       if (!cam) return;
+      const id = this.currentId;
       if (cam.getMode() === 'observer') {
-        // One-shot aim — clear any prior follow lock so this is purely
-        // a "where is it right now" pointer.
         cam.setObserverFollow(null);
-        const altAz = cam.getBodyAltAz(this.currentId);
+        let altAz: { altDeg: number; azDeg: number } | null = null;
+
+        if (id.startsWith('unnamed:')) {
+          const ra = parseFloat((this.nameEl as HTMLElement).dataset.unnamedStarRa ?? '');
+          const dec = parseFloat((this.nameEl as HTMLElement).dataset.unnamedStarDec ?? '');
+          if (Number.isFinite(ra) && Number.isFinite(dec)) {
+            altAz = cam.getStarAltAz(ra, dec);
+          }
+        } else if (id.startsWith('star:')) {
+          const named = this.lastNamedStar;
+          if (named && this.currentId === `star:${named.id}`) {
+            altAz = cam.getStarAltAz(named.raHours, named.decDeg, named.pmRA, named.pmDec);
+          }
+        } else if (id.startsWith('messier:')) {
+          // showMessier reuses the unnamed-star dataset attrs.
+          const ra = parseFloat((this.nameEl as HTMLElement).dataset.unnamedStarRa ?? '');
+          const dec = parseFloat((this.nameEl as HTMLElement).dataset.unnamedStarDec ?? '');
+          if (Number.isFinite(ra) && Number.isFinite(dec)) {
+            altAz = cam.getStarAltAz(ra, dec);
+          }
+        } else {
+          // Plain body id.
+          altAz = cam.getBodyAltAz(id);
+        }
         if (altAz) cam.setObserverLook(altAz.azDeg, altAz.altDeg);
-      } else {
+      } else if (!id.includes(':')) {
         const sel = document.getElementById('follow-body') as HTMLSelectElement | null;
         if (sel) {
-          sel.value = this.currentId;
+          sel.value = id;
           sel.dispatchEvent(new Event('change'));
         }
       }
@@ -496,6 +525,7 @@ export class InfoPanel {
 
   showStar(star: import('../data/stars').NamedStar): void {
     this.currentId = `star:${star.id}`;
+    this.lastNamedStar = star;
     this.el.classList.add('visible');
     this.updateCompactState();
     const gotoBtn = document.getElementById('info-goto');
