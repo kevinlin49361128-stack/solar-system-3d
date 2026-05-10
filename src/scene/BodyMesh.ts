@@ -436,9 +436,18 @@ export class BodyMesh {
       side: DoubleSide,
       transparent: true,
       opacity: 0.7,
+      // Critical for ring/sphere overlap: without depthWrite=false the
+      // ring's back-face writes depth values that prevent the planet's
+      // far hemisphere from rendering correctly, leaving a giant
+      // tilted-disc-shaped "shadow" stamped into the scene that extends
+      // way beyond the planet's silhouette.
+      depthWrite: false,
     });
     const ring = new Mesh(geom, mat);
     ring.rotation.x = Math.PI / 2;
+    // Render after the planet's solid surface so transparency blends
+    // correctly with the body underneath.
+    ring.renderOrder = 1;
     this.rings = ring;
     this.tilt.add(ring);
   }
