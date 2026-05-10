@@ -87,7 +87,7 @@ animation.
 > the Lagrange Newton–Raphson solver, and the IAU galactic-frame
 > matrix. MIT licensed.
 >
-> Demo: https://solar-system-3d-pi.vercel.app/  (PWA-installable)
+> Demo: https://solar-system-3d-kappa.vercel.app/  (PWA-installable)
 > Repo: https://github.com/kevinlin49361128-stack/solar-system-3d
 >
 > Built on weekends. Roadmap is whatever I'm curious about next —
