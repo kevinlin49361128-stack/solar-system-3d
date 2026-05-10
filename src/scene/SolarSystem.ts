@@ -50,6 +50,7 @@ import { MeteorShowers } from './MeteorShowers';
 import { CometTails } from './CometTails';
 import { CelestialGrids } from './CelestialGrids';
 import { LunarMansionsLayer } from './LunarMansionsLayer';
+import { GalacticDisk } from './GalacticDisk';
 
 interface BodyEntry {
   descriptor: BodyDescriptor;
@@ -91,6 +92,7 @@ export class SolarSystem {
   private cometTails: CometTails | null = null;
   private celestialGrids: CelestialGrids | null = null;
   private lunarMansions: LunarMansionsLayer | null = null;
+  private galacticDisk: GalacticDisk | null = null;
   readonly realism = new RealismState();
   private originalPropagators = new Map<string, import('../physics/types').OrbitPropagator | null>();
 
@@ -173,6 +175,11 @@ export class SolarSystem {
     this.scene.add(this.celestialGrids.object);
     this.lunarMansions = new LunarMansionsLayer();
     this.scene.add(this.lunarMansions.object);
+    // 3D Milky Way disk — only visible at the galactic tier of the
+    // scale-tier zoom-out. Lazy-built once the layer is requested so it
+    // doesn't burn ~30k vertex-buffer entries on first paint.
+    this.galacticDisk = new GalacticDisk();
+    this.scene.add(this.galacticDisk.group);
     // Ambient kept low so the day/night terminator on textured planets is
     // visible, but high enough to make the night side faintly readable.
     this.scene.add(new AmbientLight(0x6878a0, 0.55));
@@ -735,6 +742,11 @@ export class SolarSystem {
    */
   setSolarSystemOpacity(opacity: number): void {
     this.heliocentric.visible = opacity > 0.05;
+  }
+
+  /** Galactic-tier 3D Milky Way disk visibility. */
+  setGalacticDiskOpacity(opacity: number): void {
+    this.galacticDisk?.setOpacity(opacity);
   }
 
   setLagrangePointsVisible(visible: boolean): void {

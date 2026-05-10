@@ -1147,9 +1147,10 @@ function tick(now: number): void {
       cameraCtl.camera.fov = state.cameraFov;
       cameraCtl.camera.updateProjectionMatrix();
     }
-    // Apply layer weights — solar-system fade is the only one wired today;
-    // hyg / mw-disk hooks land when those layers exist.
+    // Apply layer weights — solar-system + galactic disk wired today;
+    // HYG cloud hook lands once that layer exists.
     solarSystem.setSolarSystemOpacity(state.layerWeights.solarSystem);
+    solarSystem.setGalacticDiskOpacity(state.layerWeights.milkyWayDisk);
   } else {
     // Always advance internal state even when not driving the camera, so
     // subscribers and the controller's clock stay consistent.
