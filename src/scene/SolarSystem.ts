@@ -52,6 +52,7 @@ import { CelestialGrids } from './CelestialGrids';
 import { LunarMansionsLayer } from './LunarMansionsLayer';
 import { GalacticDisk } from './GalacticDisk';
 import { HygCloud } from './HygCloud';
+import { ExoplanetHosts } from './ExoplanetHosts';
 
 interface BodyEntry {
   descriptor: BodyDescriptor;
@@ -95,6 +96,7 @@ export class SolarSystem {
   private lunarMansions: LunarMansionsLayer | null = null;
   private galacticDisk: GalacticDisk | null = null;
   private hygCloud: HygCloud | null = null;
+  private exoplanetHosts: ExoplanetHosts | null = null;
   readonly realism = new RealismState();
   private originalPropagators = new Map<string, import('../physics/types').OrbitPropagator | null>();
 
@@ -186,6 +188,10 @@ export class SolarSystem {
     // first time the neighbourhood tier is requested (~600 KB JSON).
     this.hygCloud = new HygCloud();
     this.scene.add(this.hygCloud.group);
+    // Halos for the 12 curated exoplanet systems, drawn in the same
+    // HYG-cloud frame so they overlay the actual host star positions.
+    this.exoplanetHosts = new ExoplanetHosts();
+    this.scene.add(this.exoplanetHosts.group);
     // Ambient kept low so the day/night terminator on textured planets is
     // visible, but high enough to make the night side faintly readable.
     this.scene.add(new AmbientLight(0x6878a0, 0.55));
@@ -766,6 +772,25 @@ export class SolarSystem {
       void this.hygCloud.load();
     }
     this.hygCloud.setOpacity(opacity);
+  }
+
+  /** Exoplanet host halos — same opacity gate as the HYG cloud. */
+  setExoplanetHostsOpacity(opacity: number): void {
+    this.exoplanetHosts?.setOpacity(opacity);
+  }
+
+  /** Per-frame: keep host halos billboard-facing the camera. */
+  updateExoplanetHosts(cameraPos: Vector3): void {
+    this.exoplanetHosts?.update(cameraPos);
+  }
+
+  /** Pickable halo meshes for the main raycast handler. */
+  getExoplanetHostPickables(): import('three').Object3D[] {
+    return this.exoplanetHosts?.pickables ?? [];
+  }
+
+  getExoplanetHosts(): ExoplanetHosts | null {
+    return this.exoplanetHosts;
   }
 
   setLagrangePointsVisible(visible: boolean): void {

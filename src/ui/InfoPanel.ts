@@ -303,6 +303,58 @@ export class InfoPanel {
    * the body-driven `dataset.bodyId` path.
    */
   /**
+   * Show an exoplanet system summary. Reuses the standard data/extra
+   * panes — host star physics + a planet roster + system blurb. Each
+   * planet in the system is also added to the body registry on the
+   * fly via SolarSystem so that follow-up clicks (or future "fly
+   * here") work the same as for our own planets.
+   */
+  showExoplanetSystem(sys: import('../data/exoplanetSystems').ExoplanetSystemMeta): void {
+    this.currentId = `exo:${sys.id}`;
+    this.el.classList.add('visible');
+    this.updateCompactState();
+    const gotoBtn = document.getElementById('info-goto');
+    if (gotoBtn) gotoBtn.style.display = 'none';
+    const actionRow = document.getElementById('info-action-row');
+    if (actionRow) actionRow.style.display = 'none';
+    if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; }
+
+    const name = langPick(sys.name);
+    this.nameEl.textContent = name;
+    delete (this.nameEl as HTMLElement).dataset.bodyId;
+    delete (this.nameEl as HTMLElement).dataset.starId;
+    this.subtitleEl.textContent = `${t('info.cat.star')} · ${sys.planets.length} ${t('info.cat.planet')} · ${sys.distanceLy.toFixed(2)} ly`;
+
+    const rows: [string, string][] = [
+      [t('info.row.distFromEarth'), `${sys.distanceLy.toFixed(2)} ly`],
+      [t('info.row.ra2000'), `${sys.raHours.toFixed(4)} h`],
+      [t('info.row.dec2000'), `${sys.decDeg.toFixed(4)}°`],
+      [t('info.row.radius'), `${formatNumber(sys.host.physical.radiusKm, 0)} km (${(sys.host.physical.radiusKm / 695700).toFixed(3)} R☉)`],
+      [t('info.row.mass'), `${sys.host.physical.massKg.toExponential(3)} kg (${(sys.host.physical.massKg / 1.989e30).toFixed(3)} M☉)`],
+    ];
+    this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+
+    // Description + planet roster
+    const desc = `<div class="info-section"><div class="info-text">${escapeHtml(langPick(sys.description))}</div></div>`;
+    const planetList = sys.planets.length === 0
+      ? ''
+      : `<div class="info-section">
+           <div class="info-section-title">${escapeHtml(t('info.cat.planet'))} × ${sys.planets.length}</div>
+           ${sys.planets.map(p => `
+             <div style="font-size:11px;line-height:1.55;margin:4px 0;padding:4px 6px;background:rgba(93,177,255,0.04);border-left:2px solid var(--panel-border);border-radius:3px;">
+               <b>${escapeHtml(p.nameEn)}</b> &mdash; ${langPick(p.description ?? { 'zh-Hant': '', en: '', ja: '' })}
+               <div style="color:var(--text-dim);font-family:ui-monospace,monospace;font-size:10px;margin-top:2px;">
+                 a = ${p.propagator?.elements?.a.toFixed(5)} AU,
+                 P = ${formatPeriod(p.propagator?.elements?.periodDays ?? 0)},
+                 e = ${p.propagator?.elements?.e.toFixed(4) ?? '—'}
+               </div>
+             </div>`).join('')}
+         </div>`;
+    this.extraEl.innerHTML = desc + planetList;
+    this.planningEl.innerHTML = '';
+  }
+
+  /**
    * Lightweight info card for an unnamed catalog star (HYG/BSC). When
    * the user clicks an unidentified star in observer mode, this opens
    * the InfoPanel showing only the data we have: RA, Dec, magnitude.
