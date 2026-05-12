@@ -7,6 +7,7 @@ import type { CalcPanel } from './CalcPanel';
 import type { CalcVectors } from '../scene/CalcVectors';
 import type { EventsPanel } from './EventsPanel';
 import { OBSERVER_CITIES, OBSERVER_OBSERVATORIES, OBSERVER_PRESETS } from '../physics/topocentric';
+import { DARK_SKY_PLACES, nearestDarkSkyPlaces } from '../data/darkSkyPlaces';
 import { toast } from './toast';
 import { ASTRO_EVENTS } from '../data/events';
 import type { SimulationClock } from '../time/SimulationClock';
@@ -462,6 +463,21 @@ export class LeftPanel {
       }
       presetSel.appendChild(obsGroup);
 
+      const dspGroup = document.createElement('optgroup');
+      dspGroup.label = t('lp.darkSkyGroup');
+      for (const p of DARK_SKY_PLACES) {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        // Surface the Bortle class right in the option text so the user
+        // can pick visually ("oh, that one's Bortle 1") without having
+        // to commit and then read the SiteInfo card.
+        opt.textContent = p.bortle != null
+          ? `${localizedPresetName(p)} · B${p.bortle}`
+          : localizedPresetName(p);
+        dspGroup.appendChild(opt);
+      }
+      presetSel.appendChild(dspGroup);
+
       if (previousValue) presetSel.value = previousValue;
     };
     buildPresetGroups();
@@ -469,7 +485,7 @@ export class LeftPanel {
 
     // Default to Kaohsiung
     presetSel.value = 'kaohsiung';
-    const defaultLoc = OBSERVER_PRESETS.find(p => p.id === 'kaohsiung')!;
+    const defaultLoc = findPreset('kaohsiung')!;
     latInput.value = String(defaultLoc.lat);
     lonInput.value = String(defaultLoc.lon);
 
@@ -482,7 +498,7 @@ export class LeftPanel {
     };
 
     presetSel.addEventListener('change', () => {
-      const p = OBSERVER_PRESETS.find(x => x.id === presetSel.value);
+      const p = findPreset(presetSel.value);
       if (p) {
         latInput.value = String(p.lat);
         lonInput.value = String(p.lon);
@@ -594,6 +610,70 @@ export class LeftPanel {
       );
     });
 
+    // "Find nearest dark sky" — distance + Bortle-weighted top match
+    // from DARK_SKY_PLACES, jumps the observer there. If the current
+    // lat/lon inputs are valid we use those; otherwise we ask the
+    // browser for a quick geolocation read (the user may not have
+    // pinned a location yet — common entry path is "I just opened
+    // the simulator, where can I go observe?").
+    const findDarkSkyBtn = document.getElementById('observer-find-dark-sky') as HTMLButtonElement | null;
+    findDarkSkyBtn?.addEventListener('click', () => {
+      const useLocation = (lat: number, lon: number): void => {
+        const results = nearestDarkSkyPlaces(lat, lon, 1);
+        if (results.length === 0) {
+          toast.warn(t('darkSky.empty'));
+          return;
+        }
+        const top = results[0];
+        // Apply the same path as preset-select: update lat/lon inputs,
+        // jump the preset dropdown to the matching entry, and (if in
+        // observer mode) move the camera + reload local terrain.
+        latInput.value = top.place.lat.toFixed(4);
+        lonInput.value = top.place.lon.toFixed(4);
+        if (elevInput) elevInput.value = String(top.place.elevationM ?? 0);
+        presetSel.value = top.place.id;
+        updatePin();
+        if (cameraCtl.getMode() === 'observer') {
+          cameraCtl.setObserverLocation(top.place.lat, top.place.lon, top.place.elevationM ?? 0);
+          solarSystem.getLocalTerrain()?.loadForLocation(top.place.lat, top.place.lon);
+        }
+        // Auto-apply the Bortle slider if the place has one.
+        if (top.place.bortle != null) {
+          const bortleSlider = document.getElementById('bortle-slider') as HTMLInputElement | null;
+          if (bortleSlider) {
+            bortleSlider.value = String(top.place.bortle);
+            bortleSlider.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        }
+        const localName = localizedPresetName(top.place);
+        const distStr = top.distanceKm < 100
+          ? `${top.distanceKm.toFixed(0)} km`
+          : `${top.distanceKm.toFixed(0)} km`;
+        const bortleStr = top.place.bortle != null ? ` · Bortle ${top.place.bortle}` : '';
+        toast.info(`${t('darkSky.found')}: ${localName} (${distStr}${bortleStr})`);
+      };
+
+      const fromInputs = (): boolean => {
+        const lat = parseFloat(latInput.value);
+        const lon = parseFloat(lonInput.value);
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+        useLocation(lat, lon);
+        return true;
+      };
+
+      if (fromInputs()) return;
+      if (!('geolocation' in navigator)) {
+        toast.warn(t('gps.unsupported'));
+        return;
+      }
+      toast.info(t('gps.fetching'));
+      navigator.geolocation.getCurrentPosition(
+        (pos) => useLocation(pos.coords.latitude, pos.coords.longitude),
+        () => toast.warn(t('gps.unavailable')),
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
+      );
+    });
+
     // OSM map picker integration. Lazy-loaded: MapPicker brings in Leaflet
     // (~30 KB gz), so we don't pay that cost until the user actually clicks
     // "select on map". Cached in `mapPicker` after first instantiation.
@@ -677,7 +757,7 @@ export class LeftPanel {
       //      (e.g. own home / observation site not in preset list).
       //   2. Matched preset's elevationM (Mauna Kea 4205, Paranal 2635, …).
       //   3. 0 (sea level) as final fallback.
-      const matchedPreset = OBSERVER_PRESETS.find(p => p.id === presetSel.value);
+      const matchedPreset = findPreset(presetSel.value);
       const manualElev = elevInput ? parseFloat(elevInput.value) : NaN;
       const elevationM = !Number.isNaN(manualElev)
         ? manualElev
@@ -834,4 +914,16 @@ function hideSiteInfo(): void {
 }
 
 // Type helper so showSiteInfo's parameter type is sourced from the data file.
-const finder = (id: string) => OBSERVER_PRESETS.find(x => x.id === id)!;
+const finder = (id: string) => findPreset(id)!;
+
+/**
+ * Resolve a preset id across all three pools — cities, observatories,
+ * and Dark Sky Places. Used everywhere the LeftPanel previously did a
+ * plain `OBSERVER_PRESETS.find()`; that lookup missed the DSP entries
+ * because they live in a separate `data/` module to keep the physics
+ * layer free of curated lists.
+ */
+function findPreset(id: string) {
+  return OBSERVER_PRESETS.find(p => p.id === id)
+      ?? DARK_SKY_PLACES.find(p => p.id === id);
+}

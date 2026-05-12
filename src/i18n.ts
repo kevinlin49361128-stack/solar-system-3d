@@ -193,6 +193,9 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'observer.lockHorizon': { 'zh-Hant': '鎖定地平線以上', 'en': 'Lock above horizon', 'ja': '地平線以上に固定' },
   'observer.gps': { 'zh-Hant': '📡 目前位置', 'en': '📡 Current location', 'ja': '📡 現在位置' },
   'observer.mapPick': { 'zh-Hant': '📍 地圖選點', 'en': '📍 Pick on map', 'ja': '📍 地図で選ぶ' },
+  'observer.findDarkSky': { 'zh-Hant': '🌑 找最近暗空地點', 'en': '🌑 Find nearest dark sky', 'ja': '🌑 近くの暗い空を探す' },
+  'darkSky.found': { 'zh-Hant': '已跳至', 'en': 'Jumped to', 'ja': 'ジャンプ先' },
+  'darkSky.empty': { 'zh-Hant': '附近沒有暗空地點資料', 'en': 'No dark-sky places nearby', 'ja': '近くに暗空地点がありません' },
   'observer.gyroOn': { 'zh-Hant': '🧭 啟用陀螺儀 (AR)', 'en': '🧭 Enable gyroscope (AR)', 'ja': '🧭 ジャイロを有効に (AR)' },
   'observer.gyroOff': { 'zh-Hant': '🧭 陀螺儀已啟用，點此關閉', 'en': '🧭 Gyroscope ON, click to disable', 'ja': '🧭 ジャイロON、クリックで無効' },
   'observer.gyroCalibrate': { 'zh-Hant': '校準正北', 'en': 'Calibrate north', 'ja': '北を校正' },
@@ -596,6 +599,7 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'lp.now':                  { 'zh-Hant': '現在',                  'en': 'Now',                'ja': '現在' },
   'lp.cityGroup':            { 'zh-Hant': '城市',                  'en': 'Cities',             'ja': '都市' },
   'lp.observatoryGroup':     { 'zh-Hant': '歷史 / 著名天文台',     'en': 'Historic / famous observatories', 'ja': '歴史的・著名な天文台' },
+  'lp.darkSkyGroup':         { 'zh-Hant': '🌑 國際暗空認證地點',   'en': '🌑 Certified Dark Sky Places', 'ja': '🌑 国際ダークスカイ認定地' },
   'lp.elevation':            { 'zh-Hant': '海拔',                  'en': 'Elevation',          'ja': '標高' },
   'mp.loadFail':             { 'zh-Hant': '地圖載入失敗（請檢查網路）', 'en': 'Map failed to load (check your connection)', 'ja': '地図の読み込みに失敗しました（ネットワークをご確認ください）' },
 
