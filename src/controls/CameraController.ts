@@ -632,6 +632,9 @@ export class CameraController {
   }
 
   getMode(): CameraMode { return this.mode; }
+  /** Currently followed body id, or null if mode != 'follow'. Used by
+   *  the share-URL flow so a permalink to a Mars-follow view round-trips. */
+  getFollowId(): string | null { return this.followId; }
 
   update(): void {
     if (this.mode === 'observer') {

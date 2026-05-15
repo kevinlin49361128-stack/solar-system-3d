@@ -39,6 +39,20 @@ export interface PropagatorSource {
   url?: string;
   /** Optional short note, e.g. epoch or accuracy claim. */
   note?: string;
+  /**
+   * Documented JD range over which this propagator's accuracy claim
+   * holds. Outside this range positions still compute (you'd never want
+   * to grey-screen the sim just because the user asked for 1492 CE) but
+   * the InfoPanel surfaces a yellow disclaimer so the user knows the
+   * shown distance / RA / Dec may have drifted from physical reality.
+   *
+   * The window is the published "good" zone, not the absolute "this
+   * still kinda works" zone — e.g. NASA's approximate-positions table
+   * is documented good 1800–2050, but stays within a few arcminutes for
+   * 1500–2500.
+   */
+  validJdMin?: number;
+  validJdMax?: number;
 }
 
 export interface StaticOrbitalElements {

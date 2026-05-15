@@ -572,7 +572,26 @@ if (shareBtn) {
     if (cameraCtl.getMode() === 'observer') {
       const loc = cameraCtl.getObserverLocation();
       params.set('obs', `${loc.lat.toFixed(4)},${loc.lon.toFixed(4)}`);
+    } else {
+      // Encode non-observer camera state so a permalink survives a round
+      // trip. Observer mode is its own beast (auto-enters via the obs
+      // param above) and overrides whatever mode/follow we'd write.
+      const mode = cameraCtl.getMode();
+      if (mode !== 'free') params.set('mode', mode);
+      const followId = cameraCtl.getFollowId();
+      if (followId) params.set('follow', followId);
     }
+    // Active exoplanet system trumps everything visually — if the user
+    // is currently parked at TRAPPIST-1, the receiver of the share URL
+    // should land there too. Activation will force scale=log and
+    // mode=free internally; we don't need to also write those.
+    const exoId = solarSystem.getActiveExoplanetSystemId();
+    if (exoId) params.set('exo', exoId);
+    // Body selected in the InfoPanel — the right-side panel re-opens to
+    // that body on load. Supports the same id schemes as InfoPanel.show
+    // (plain body id, "star:X", "messier:M31", "unnamed:RA_Dec", "exo:Y").
+    const bodyId = infoPanel.getCurrentId();
+    if (bodyId) params.set('body', bodyId);
     const url = `${location.origin}${location.pathname}#${params.toString()}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -629,6 +648,63 @@ function applyUrlState(): void {
       // Auto-enter observer mode after a tick so all wiring is ready.
       setTimeout(() => document.getElementById('observer-enter')?.click(), 200);
     }
+  } else {
+    // No observer mode in URL — try free/follow/top camera params.
+    // Sequenced behind a microtask so other listeners have wired up.
+    const mode = params.get('mode');
+    const follow = params.get('follow');
+    if (mode === 'free' || mode === 'top' || mode === 'follow') {
+      setTimeout(() => {
+        cameraCtl.setMode(mode);
+        if (mode === 'follow' && follow) cameraCtl.setFollow(follow);
+        // Sync the LeftPanel <select>s so the UI doesn't lie.
+        const cms = document.getElementById('camera-mode') as HTMLSelectElement | null;
+        if (cms) cms.value = mode;
+        if (mode === 'follow' && follow) {
+          const fbs = document.getElementById('follow-body') as HTMLSelectElement | null;
+          if (fbs) fbs.value = follow;
+        }
+      }, 150);
+    }
+  }
+
+  // Exoplanet-system landing: dispatch the same event the InfoPanel's
+  // Land button fires, so a /#exo=trappist-1 permalink reproduces the
+  // climax shot exactly (HZ disc, Mercury overlay, scale=log forced,
+  // camera at host). Run AFTER the other params so the saved scale /
+  // mode are captured properly before the land flow overrides them.
+  const exo = params.get('exo');
+  if (exo) {
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('sim:exo-visit', { detail: { id: exo } }));
+    }, 300);
+  }
+
+  // Selected body — restore the InfoPanel to whatever the user had
+  // open when they hit Share. Supports the same id schemes as
+  // InfoPanel itself (body / star: / messier: / unnamed: / exo:).
+  // Delayed because InfoPanel.show consults solarSystem.getBody() which
+  // needs `solarSystem.update(jd)` to have run at least once after our
+  // jd write above.
+  const body = params.get('body');
+  if (body) {
+    setTimeout(() => {
+      if (body.startsWith('exo:')) {
+        // Exo InfoPanel doesn't have a public show-by-id; if /#exo=
+        // was set above it'll open the panel itself. Otherwise skip.
+        return;
+      }
+      if (body.startsWith('star:')) {
+        const id = body.slice(5);
+        const star = NAMED_STARS.find(s => s.id === id);
+        if (star) infoPanel.showStar(star);
+      } else if (body.startsWith('messier:') || body.startsWith('unnamed:')) {
+        // These open through dedicated paths; for now we skip them
+        // since they need data we don't pre-load. Future work.
+      } else {
+        infoPanel.show(body);
+      }
+    }, 350);
   }
 }
 applyUrlState();

@@ -374,6 +374,11 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'physics.distance':         { 'zh-Hant': '距離', 'en': 'Distance', 'ja': '距離' },
   'physics.speed':            { 'zh-Hant': '速度大小', 'en': 'Speed', 'ja': '速度' },
   'physics.source':           { 'zh-Hant': '▸ 資料來源', 'en': '▸ Data source', 'ja': '▸ データソース' },
+  'physics.precisionWarn':    {
+    'zh-Hant': '目前時間 {year} 已超出此 propagator 的精度窗（{min}–{max}）— 位置仍會計算但可能偏離數弧分到數度。',
+    'en': 'Current epoch {year} is outside this propagator\'s accuracy window ({min}–{max}). Positions still compute but may drift by arcminutes-to-degrees.',
+    'ja': '現在の年代 {year} はこの伝播モデルの精度範囲（{min}–{max}）の外です。位置は計算されますが、数分角〜数度のずれの可能性があります。',
+  },
   'physics.heliocentricPos':  { 'zh-Hant': '日心位置 (J2000 黃道)', 'en': 'Heliocentric position (J2000 ecliptic)', 'ja': '太陽中心位置 (J2000 黄道)' },
   'physics.relativePos':      { 'zh-Hant': '相對位置', 'en': 'Position relative to', 'ja': '相対位置' },
   'physics.kind.kepler':           { 'zh-Hant': 'Kepler 兩體解析解 (J2000)', 'en': 'Two-body analytic Kepler (J2000)', 'ja': 'ケプラー二体解析解 (J2000)' },
@@ -568,6 +573,14 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'sky.equationOfTime':     { 'zh-Hant': '時差', 'en': 'Eq. of time',        'ja': '均時差' },
   'sky.minutes':            { 'zh-Hant': '分',   'en': 'min',                'ja': '分' },
   'sky.lst':                { 'zh-Hant': '恆星時', 'en': 'Sidereal time',    'ja': '恒星時' },
+  // Open-Meteo weather opt-in
+  'weather.optinPitch':     { 'zh-Hant': '查看今晚雲量？資料來源 open-meteo.com（免費、不需帳號）。', 'en': 'Check tonight\'s cloud cover? Data from open-meteo.com (free, no account).', 'ja': '今夜の雲量を確認？データは open-meteo.com（無料・登録不要）。' },
+  'weather.optinAction':    { 'zh-Hant': '啟用', 'en': 'Enable', 'ja': '有効にする' },
+  'weather.fetching':       { 'zh-Hant': '雲量資料載入中…', 'en': 'Fetching cloud cover…', 'ja': '雲量データ取得中…' },
+  'weather.disable':        { 'zh-Hant': '停用', 'en': 'disable', 'ja': '無効化' },
+  'weather.clear':          { 'zh-Hant': '晴朗', 'en': 'clear', 'ja': '快晴' },
+  'weather.partly':         { 'zh-Hant': '部分多雲', 'en': 'partly cloudy', 'ja': '部分曇り' },
+  'weather.overcast':       { 'zh-Hant': '陰天', 'en': 'overcast', 'ja': '曇天' },
   'sky.dblClickCenter':     { 'zh-Hant': '雙擊置中',   'en': 'Double-click to center', 'ja': 'ダブルクリックで中心に' },
 
   // SearchBar

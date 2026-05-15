@@ -16,6 +16,8 @@ const JPL_APPROX_POS: PropagatorSource = {
   label: 'NASA JPL Approximate Positions of the Planets',
   url: 'https://ssd.jpl.nasa.gov/planets/approx_pos.html',
   note: 'J2000 elements + linear rates (1800–2050, error < 600 km)',
+  validJdMin: 2378497.5,  // 1800-01-01
+  validJdMax: 2469807.5,  // 2050-01-01
 };
 
 export const SUN: BodyDescriptor = {

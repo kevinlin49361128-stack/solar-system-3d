@@ -183,6 +183,10 @@ export class InfoPanel {
   private lastNamedStar: import('../data/stars').NamedStar | null = null;
   private unsubscribe: (() => void) | null = null;
 
+  /** Read-only accessor used by share-URL serialisation so a permalink
+   *  can encode "the user was looking at this body". */
+  getCurrentId(): string | null { return this.currentId; }
+
   private cameraCtl: CameraController | null = null;
   private eventsPanel: EventsPanel | null = null;
 
@@ -881,6 +885,31 @@ export class InfoPanel {
       `;
     }
 
+    // Out-of-range precision disclaimer. Console.warn (which gmstRad
+    // already does) is invisible to non-developers; surface a yellow
+    // pill in the InfoPanel when the user has time-jumped outside the
+    // propagator's documented accuracy window. Numbers still display
+    // and animate — the panel just owns the "but trust them less".
+    let precisionWarn = '';
+    const src = prop.source;
+    if (src?.validJdMin != null && src?.validJdMax != null
+        && (jd < src.validJdMin || jd > src.validJdMax)) {
+      const year = jdToYear(jd);
+      const minYear = jdToYear(src.validJdMin);
+      const maxYear = jdToYear(src.validJdMax);
+      precisionWarn = `
+        <div style="font-size:11px;margin-top:8px;padding:5px 8px;
+                     background:rgba(255,204,64,0.10);
+                     border:1px solid rgba(255,204,64,0.35);
+                     border-radius:4px;color:#ffcc40;line-height:1.4;">
+          ⚠ ${t('physics.precisionWarn')
+                .replace('{year}', year.toFixed(0))
+                .replace('{min}', minYear.toFixed(0))
+                .replace('{max}', maxYear.toFixed(0))}
+        </div>
+      `;
+    }
+
     return `
       <details class="info-section physics-details" style="margin-top:6px;background:rgba(93,177,255,0.05);border:1px solid rgba(93,177,255,0.18);border-radius:6px;padding:6px 10px;">
         <summary style="cursor:pointer;color:var(--accent);font-size:12px;font-weight:600;list-style:none;user-select:none;">
@@ -890,6 +919,7 @@ export class InfoPanel {
           ${elementsHtml}
           ${stateHtml}
           ${sourceHtml}
+          ${precisionWarn}
         </div>
       </details>
     `;
@@ -1228,6 +1258,12 @@ function formatHill(rAU: number): string {
 function formatMag(m: number): string {
   const sign = m < 0 ? '−' : '+';
   return `${sign}${Math.abs(m).toFixed(2)}`;
+}
+
+/** Quick JD → Gregorian year (integer). Used by the precision warning
+ *  to print "you're at 1650 CE, this propagator is good 1800–2050". */
+function jdToYear(jd: number): number {
+  return jdToDate(jd).getUTCFullYear();
 }
 
 /**

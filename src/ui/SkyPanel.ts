@@ -9,6 +9,10 @@ import { bodyObservables, moonObservables } from '../physics/bodyObservables';
 import { eclipticDirToRaDec } from '../physics/topocentric';
 import { constellationFor, constellationLabel, loadConstellationData } from '../physics/constellationLookup';
 import { getLang } from '../i18n';
+import {
+  fetchCurrentWeather, getOpenMeteoConsent, setOpenMeteoConsent,
+  type CurrentWeather,
+} from '../physics/openMeteoWeather';
 
 const PRIORITY_IDS = [
   'sun', 'moon',
@@ -26,6 +30,13 @@ export class SkyPanel {
   private readonly listEl: HTMLElement;
   private rafId: number | null = null;
   private lastUpdate: number = 0;
+  /** Last successful Open-Meteo response. Mutated by `refreshWeather`,
+   *  read by `renderTonightSection`. Null when consent not given or
+   *  network has failed. */
+  private weather: CurrentWeather | null = null;
+  /** Last lat/lon we fetched for; if the observer location changes we
+   *  re-fetch on next tick. */
+  private weatherFetchedForKey: string | null = null;
 
   private infoPanel: InfoPanel | null = null;
   setInfoPanel(p: InfoPanel): void { this.infoPanel = p; }
@@ -178,6 +189,12 @@ export class SkyPanel {
     bodyRows.sort(visibilitySort);
     starRows.sort(visibilitySort);
 
+    // Fire-and-forget weather fetch. The refresh function checks consent
+    // + the per-grid-cell 30 min cache, so calling on every tick (4 Hz)
+    // is fine — actual network requests fan out roughly once per half
+    // hour per location.
+    void this.refreshWeather();
+
     let html = this.renderTonightSection();
     html += `<div class="sky-section-title">${t('sky.solarSystem')}</div>`;
     html += bodyRows.map(r => this.bodyRowHtml(r.id, r.name, r.alt, r.az, r.mag, r.constellation)).join('');
@@ -187,6 +204,7 @@ export class SkyPanel {
     ).join('');
 
     this.listEl.innerHTML = html;
+    this.wireWeatherLinks();
   }
 
   /**
@@ -234,7 +252,115 @@ export class SkyPanel {
         <span class="lbl">${t('sky.equationOfTime')}</span><span class="val">${ev.equationOfTimeMin >= 0 ? '+' : ''}${ev.equationOfTimeMin.toFixed(1)} ${t('sky.minutes')}</span>
         <span class="lbl">${t('sky.lst')}</span><span class="val">${pad2(lstH)}:${pad2(lstM)}:${pad2(lstS)}</span>
       </div>
+      ${this.renderWeatherRow()}
     `;
+  }
+
+  /**
+   * Render the weather row at the bottom of the "Tonight" section.
+   * Has three visual states:
+   *   - no-consent: show a single-line opt-in nudge with a link to
+   *     toggle consent + a privacy footnote
+   *   - fetched: show cloud cover (the headline number for "is tonight
+   *     a go") + temp + wind
+   *   - consent-but-no-data: show "fetching…" or "unavailable" so the
+   *     user knows their toggle did something
+   */
+  private renderWeatherRow(): string {
+    const consent = getOpenMeteoConsent();
+    if (!consent) {
+      return `
+        <div class="weather-optin" style="margin-top:8px;padding:6px 8px;
+            background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+            border-radius:5px;font-size:11px;line-height:1.45;color:var(--text-dim);">
+          ☁ ${t('weather.optinPitch')}
+          <a href="#" id="weather-optin-link"
+             style="color:var(--accent);margin-left:6px;text-decoration:none;
+                    border-bottom:1px dotted var(--accent);">${t('weather.optinAction')}</a>
+        </div>
+      `;
+    }
+    const w = this.weather;
+    if (!w) {
+      return `
+        <div class="weather-row" style="margin-top:8px;padding:6px 8px;
+            background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+            border-radius:5px;font-size:11px;color:var(--text-dim);">
+          ☁ ${t('weather.fetching')}
+          <a href="#" id="weather-disable-link"
+             style="color:var(--text-dim);margin-left:6px;text-decoration:underline;font-size:10px;">${t('weather.disable')}</a>
+        </div>
+      `;
+    }
+    // Verdict colour: < 30% green, < 60% amber, ≥ 60% red. Pure UX
+    // shorthand — observers want a glance, not a number.
+    const cloud = w.cloudCoverPct;
+    const verdict = cloud < 30
+      ? { color: '#7cd4a0', txt: t('weather.clear') }
+      : cloud < 60
+      ? { color: '#e0c060', txt: t('weather.partly') }
+      : { color: '#e08080', txt: t('weather.overcast') };
+    return `
+      <div class="weather-row" style="margin-top:8px;padding:6px 8px;
+          background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+          border-radius:5px;font-size:11px;line-height:1.5;">
+        <span style="color:${verdict.color};font-weight:600;">☁ ${cloud.toFixed(0)}%</span>
+        <span style="color:var(--text-dim);margin-left:6px;">${verdict.txt}</span>
+        <span style="color:var(--text-dim);margin-left:10px;">🌡 ${w.tempC.toFixed(0)}°C</span>
+        <span style="color:var(--text-dim);margin-left:10px;">💨 ${w.windKph.toFixed(0)} km/h</span>
+        <a href="#" id="weather-disable-link"
+           style="color:var(--text-dim);margin-left:8px;text-decoration:underline;font-size:10px;">${t('weather.disable')}</a>
+      </div>
+    `;
+  }
+
+  /**
+   * Fetch + cache the current-hour weather for the observer's current
+   * lat/lon. Idempotent; respects the in-module 30-min cache. Triggers
+   * a re-render on success so the row swaps from "fetching…" to actual
+   * numbers without waiting for the next tick.
+   */
+  private async refreshWeather(): Promise<void> {
+    const consent = getOpenMeteoConsent();
+    if (!consent) {
+      this.weather = null;
+      this.weatherFetchedForKey = null;
+      return;
+    }
+    const { lat, lon } = this.cameraCtl.getObserverLocation();
+    const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+    // Same location as last fetch and we already have data — skip.
+    if (this.weatherFetchedForKey === key && this.weather) return;
+    const data = await fetchCurrentWeather(lat, lon, true);
+    if (data) {
+      this.weather = data;
+      this.weatherFetchedForKey = key;
+      // Re-render immediately so the user sees the numbers without
+      // waiting for the next 250ms tick. Avoid recursion: only call
+      // render if the panel is still open.
+      if (this.el.style.display !== 'none') this.render();
+    }
+  }
+
+  /**
+   * Wire the weather opt-in / disable links inside the rendered HTML.
+   * Called from the main render loop after every innerHTML write,
+   * because the links re-emerge with fresh handlers each cycle.
+   */
+  private wireWeatherLinks(): void {
+    document.getElementById('weather-optin-link')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      setOpenMeteoConsent(true);
+      void this.refreshWeather();
+      this.render();
+    });
+    document.getElementById('weather-disable-link')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      setOpenMeteoConsent(false);
+      this.weather = null;
+      this.weatherFetchedForKey = null;
+      this.render();
+    });
   }
 
   private bodyRowHtml(id: string, name: string, alt: number, az: number, mag: number, constellation: string | null): string {
