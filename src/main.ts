@@ -130,6 +130,11 @@ eventsPanel.setLunarEclipseMap({
 new LeftPanel(solarSystem, cameraCtl, scaleCtl, infoPanel, skyPanel, calcPanel, calcVectors, clock, eventsPanel);
 new SearchBar(solarSystem, cameraCtl, infoPanel);
 
+// Desktop layout-switch button (in LeftPanel's advanced tab).
+// Wires the "switch to mobile" affordance for desktop users.
+const { attachDesktopLayoutSwitch } = await import('./ui/layoutSwitchUI');
+attachDesktopLayoutSwitch();
+
 // Mobile chrome — only constructs interactivity when body.mobile-ui is
 // set (decided by initLayoutMode above). On desktop this is a no-op
 // constructor and no DOM is mutated.

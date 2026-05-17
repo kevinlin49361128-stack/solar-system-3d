@@ -52,14 +52,11 @@ export class MobileUI {
   }
 
   private wireTopBar(): void {
-    // Hamburger — placeholder for now; Phase D's "settings" sheet
-    // will own this. Wiring it to a toast keeps the button responsive
-    // so users don't think it's broken.
+    // Hamburger → settings sheet. Currently contains the layout-mode
+    // switcher; future settings (privacy, debug HUD, theme) plug in
+    // here.
     document.getElementById('mt-menu')?.addEventListener('click', () => {
-      // Lazy import to avoid circular dep on toast in the layout layer.
-      void import('./toast').then(({ toast }) => {
-        toast.info(t('mb.menuStub'));
-      });
+      void this.openSettingsSheet();
     });
 
     // Mirror the (now-hidden) #lang-select so language switches work
@@ -146,5 +143,33 @@ export class MobileUI {
    *  dynamic text. */
   private applyLanguage(): void {
     // No-op for now; topbar i18n labels are handled by data-i18n.
+  }
+
+  /**
+   * Cached settings sheet — created lazily on first hamburger tap.
+   * Reusing the instance preserves any state (scroll position,
+   * future expanded sections).
+   */
+  private settingsSheet: import('./BottomSheet').BottomSheet | null = null;
+
+  private async openSettingsSheet(): Promise<void> {
+    if (!this.settingsSheet) {
+      const { BottomSheet, toolbarSheets } = await import('./BottomSheet');
+      const { buildMobileLayoutSwitchPanel } = await import('./layoutSwitchUI');
+      this.settingsSheet = new BottomSheet({
+        id: 'settings',
+        title: t('mb.settings'),
+        initialSnap: 'closed',
+      });
+      this.settingsSheet.content.appendChild(buildMobileLayoutSwitchPanel());
+      // Use the same toolbar SheetManager so other sheets dismiss when
+      // settings opens (and vice versa) — only one sheet visible at a time.
+      const ts = toolbarSheets;
+      const openWith = () => ts.open(this.settingsSheet!, 'small');
+      openWith();
+      return;
+    }
+    const { toolbarSheets } = await import('./BottomSheet');
+    toolbarSheets.open(this.settingsSheet, 'small');
   }
 }
