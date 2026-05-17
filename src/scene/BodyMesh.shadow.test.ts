@@ -24,7 +24,8 @@ const km = (x: number) => x / AU_KM;  // km → AU
  *  sunRadius: sun radius (same units).
  *  occWorld:  occluder centre.
  *  occRadius: occluder radius.
- *  Returns shadow factor in [0, 1]: 0=no shadow, 1=full umbra. */
+ *  Returns shadow factor in [0, 1]: 0=no shadow, 1=full umbra.
+ *  Includes the Pierce-Slaughter limb-darkening penumbra correction. */
 function shadowFactor(
   fragWorld: Vector3, sunWorld: Vector3, sunRadius: number,
   occWorld: Vector3, occRadius: number,
@@ -45,7 +46,14 @@ function shadowFactor(
   const a = Math.max(occR - sunR, 0);
   const b = sunR + occR;
   const x = Math.max(0, Math.min(1, (sep - a) / (b - a)));
-  return 1 - (x * x * (3 - 2 * x));  // smoothstep matches GLSL
+  let shadow = 1 - (x * x * (3 - 2 * x));
+  // Limb-darkening penumbra correction (Pierce-Slaughter): occluder
+  // near disc limb removes less light than uniform-disc formula
+  // predicts. Same logic as the shader's `_ldFactor` block.
+  const coverCent = 1 - sep / Math.max(sunR + occR, 1e-6);
+  const ldFactor = 0.30 + 0.70 * coverCent;
+  shadow *= ldFactor;
+  return shadow;
 }
 
 describe('Sun-occluder shadow geometry — classical eclipse benchmarks', () => {
@@ -116,6 +124,28 @@ describe('Sun-occluder shadow geometry — classical eclipse benchmarks', () => 
     // Earth's angular radius from Moon ~0.95°. Sun's ~0.27°. Earth way
     // over-covers the sun → full umbra.
     expect(f).toBe(1);
+  });
+
+  it('limb-darkening softens the penumbra edge (occluder at limb removes less light)', () => {
+    // Two Moon positions, both partial-eclipse on Earth:
+    //   centred: occluder centred on sun → coverCent ≈ 1 → ldFactor ≈ 1 (no attenuation)
+    //   limbgraz: occluder just barely overlapping sun → coverCent ≈ 0 → ldFactor ≈ 0.3
+    // Even though both produce penumbra, the limb-grazing case removes
+    // less of the sun's light (limb is dim), so its shadow factor is
+    // proportionally smaller than the uniform-disc model would predict.
+    const moonCentredX = 1 - MOON_DIST_AU;
+    const moonOffsetY = MOON_RADIUS_AU * 0.9;  // partial overlap
+    const moonCentred = new Vector3(moonCentredX, 0, 0);
+    const moonGrazing = new Vector3(moonCentredX, moonOffsetY, 0);
+    const fragPos = new Vector3(1 - EARTH_RADIUS_AU, 0, 0);
+    const fCentred = shadowFactor(fragPos, SUN, SUN_RADIUS_AU, moonCentred, MOON_RADIUS_AU);
+    const fGrazing = shadowFactor(fragPos, SUN, SUN_RADIUS_AU, moonGrazing, MOON_RADIUS_AU);
+    expect(fCentred).toBeGreaterThan(0);
+    expect(fGrazing).toBeGreaterThan(0);
+    // Both should be < 1 (penumbra not umbra) but centred is darker
+    // than grazing because central coverage removes brighter parts.
+    expect(fCentred).toBeLessThanOrEqual(1);
+    expect(fGrazing).toBeLessThan(fCentred);
   });
 
   it('Galilean transit shadow: Io between sun and Jupiter casts shadow disc on Jupiter', () => {

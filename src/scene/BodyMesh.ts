@@ -302,10 +302,26 @@ export class BodyMesh {
               float _shadow;
               if (_sep >= _sunR + _occR)        _shadow = 0.0;
               else if (_sep + _sunR <= _occR)   _shadow = 1.0;
-              else                              _shadow = 1.0 - smoothstep(
-                                                  max(_occR - _sunR, 0.0),
-                                                  _sunR + _occR,
-                                                  _sep);
+              else {
+                _shadow = 1.0 - smoothstep(
+                  max(_occR - _sunR, 0.0),
+                  _sunR + _occR,
+                  _sep);
+                // Penumbra-only limb-darkening correction. The Sun's disc
+                // is darker at its rim (Pierce-Slaughter: limb is ~30 %
+                // of centre brightness), so when an occluder covers ONLY
+                // the limb (sep near sunR+occR) it removes less light
+                // than the uniform-disc shadow formula predicts. When the
+                // occluder approaches the disc centre (sep near 0) the
+                // limb-darkening barely matters.
+                //   cover_centrality: 1 at sep=0 (centred) → 0 at sep=sunR+occR (touching)
+                //   ld_factor:        1.0 → 0.30 along the same range
+                // Umbra is left at 1.0 because the disc is fully blocked
+                // regardless of where on it the occluder sits.
+                float _coverCent = 1.0 - _sep / max(_sunR + _occR, 1e-6);
+                float _ldFactor = 0.30 + 0.70 * _coverCent;
+                _shadow *= _ldFactor;
+              }
               // 0.92 floor leaves ~8% residue in full umbra. Two reasons:
               // (a) gives the existing lunar-eclipse red tint headroom to
               //     stack on top → blood moon stays visibly red instead of
