@@ -142,6 +142,13 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'optics.refractor80': { 'zh-Hant': '80mm 折射 + 25mm 目鏡 (1.56°)', 'en': '80mm refractor + 25mm eyepiece (1.56°)', 'ja': '80mm屈折 + 25mm接眼 (1.56°)' },
   'optics.sct8_25': { 'zh-Hant': '8" SCT + 25mm 目鏡 (0.63°)', 'en': '8" SCT + 25mm eyepiece (0.63°)', 'ja': '8" SCT + 25mm接眼 (0.63°)' },
   'optics.sct8_10': { 'zh-Hant': '8" SCT + 10mm 目鏡 (0.25°)', 'en': '8" SCT + 10mm eyepiece (0.25°)', 'ja': '8" SCT + 10mm接眼 (0.25°)' },
+  // Smart telescope FOV presets (v0.5 — Seestar / Vespera / Dwarf era)
+  'optics.group.visual': { 'zh-Hant': '👁️ 視覺觀測', 'en': '👁️ Visual observing', 'ja': '👁️ 眼視観測' },
+  'optics.group.smart':  { 'zh-Hant': '🤖 智慧望遠鏡', 'en': '🤖 Smart telescopes', 'ja': '🤖 スマート望遠鏡' },
+  'optics.seestar30':    { 'zh-Hant': 'Seestar S30 (1.6° × 0.9°)', 'en': 'Seestar S30 (1.6° × 0.9°)', 'ja': 'Seestar S30 (1.6° × 0.9°)' },
+  'optics.seestar50':    { 'zh-Hant': 'Seestar S50 (1.3° × 0.7°)', 'en': 'Seestar S50 (1.3° × 0.7°)', 'ja': 'Seestar S50 (1.3° × 0.7°)' },
+  'optics.vesperaPro':   { 'zh-Hant': 'Vespera Pro (2.5° × 1.5°)', 'en': 'Vespera Pro (2.5° × 1.5°)', 'ja': 'Vespera Pro (2.5° × 1.5°)' },
+  'optics.dwarf3':       { 'zh-Hant': 'Dwarf 3 (3.0° × 2.0°)', 'en': 'Dwarf 3 (3.0° × 2.0°)', 'ja': 'Dwarf 3 (3.0° × 2.0°)' },
   'optics.fov': { 'zh-Hant': '視場', 'en': 'FOV', 'ja': '視野' },
   'optics.mag': { 'zh-Hant': '放大', 'en': 'Magnification', 'ja': '倍率' },
   'optics.magLimit': { 'zh-Hant': '極限星等', 'en': 'Limiting mag', 'ja': '極限等級' },

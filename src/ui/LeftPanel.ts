@@ -261,6 +261,13 @@ export class LeftPanel {
     }
     // Limiting magnitude approx: 5 + 5·log10(D/7) where D = aperture in mm
     // (assumes trained dark-adapted eye, transparent sky).
+    //
+    // Smart-telescope entries use the DIAGONAL FOV (so the value we feed
+    // to setObserverFov is the angle of the longer-than-horizontal viewing
+    // cone). magLimit is the practical reach after a ~30 min stack with
+    // the device's own optics + sensor — Seestar S50 has hit mag 15.5 in
+    // suburban skies per published reviews, and the others are scaled by
+    // aperture × integration time.
     const presets: Record<string, OpticsPreset> = {
       naked:           { fovDeg: 50,   magLimit: 6.5,  magnification: '1×',  vignette: 'none' },
       binocular7x50:   { fovDeg: 7.5,  magLimit: 9.8,  magnification: '7×',  vignette: 'binocular' },
@@ -268,6 +275,13 @@ export class LeftPanel {
       '80mm-25mm':     { fovDeg: 1.56, magLimit: 10.3, magnification: '32×', vignette: 'circle' },
       '8inch-25mm':    { fovDeg: 0.625, magLimit: 12.5, magnification: '80×', vignette: 'circle' },
       '8inch-10mm':    { fovDeg: 0.25,  magLimit: 12.5, magnification: '200×', vignette: 'circle' },
+      // Smart telescopes — sensor-based, no eyepiece vignette.
+      // Specs from manufacturer datasheets cross-checked with Cloudy
+      // Nights reviews (2024-25).
+      'seestar-s30':   { fovDeg: 1.84, magLimit: 14.5, magnification: '30min stack', vignette: 'none' },
+      'seestar-s50':   { fovDeg: 1.46, magLimit: 15.5, magnification: '30min stack', vignette: 'none' },
+      'vespera-pro':   { fovDeg: 2.91, magLimit: 16.0, magnification: '30min stack', vignette: 'none' },
+      'dwarf-3':       { fovDeg: 3.61, magLimit: 15.0, magnification: '30min stack', vignette: 'none' },
     };
 
     const sel = document.getElementById('optics-preset') as HTMLSelectElement;
