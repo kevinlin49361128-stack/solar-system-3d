@@ -18,7 +18,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Bumped to 22 (current LTS) because rollup-plugin-visualizer
+          # 7.x in devDependencies requires node >=22. Node 20 worked
+          # functionally but flooded the install logs with
+          # EBADENGINE warnings on every push.
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
