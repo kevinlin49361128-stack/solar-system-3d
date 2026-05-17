@@ -633,6 +633,174 @@ export class InfoPanel {
       dyn.map(([k, v]) => `<dt data-dyn>${k}</dt><dd data-dyn>${v}</dd>`).join(''));
   }
 
+  /**
+   * Open the panel for a Sharpless 2 emission nebula picked via
+   * raycast on the SharplessLayer. Same structural shape as
+   * showMessier — populates the catalogue card + integrates with
+   * the observation-queue Add button.
+   *
+   * Tuple columns:
+   *   id, raHours, decDeg, diameterArcmin, brightnessClass, formClass
+   */
+  showSharpless(row: [number, number, number, number, number, number]): void {
+    this.hideQueueButton();
+    const [id, raHours, decDeg, diamArcmin, bright, form] = row;
+    const stableId = `sharpless:Sh2-${id}`;
+    this.currentId = stableId;
+    this.lastNamedStar = null;
+    this.el.classList.add('visible');
+    this.updateCompactState();
+    const gotoBtn = document.getElementById('info-goto');
+    if (gotoBtn) gotoBtn.style.display = '';
+    const actionRow = document.getElementById('info-action-row');
+    if (actionRow) actionRow.style.display = 'flex';
+    delete (this.nameEl as HTMLElement).dataset.bodyId;
+    delete (this.nameEl as HTMLElement).dataset.starId;
+    (this.nameEl as HTMLElement).dataset.unnamedStarRa = String(raHours);
+    (this.nameEl as HTMLElement).dataset.unnamedStarDec = String(decDeg);
+
+    this.nameEl.textContent = `Sh2-${id}`;
+    // Sharpless catalogue doesn't ship a visual magnitude — we'd need
+    // to compute it from photographic data. Show diameter + Sharpless
+    // brightness class instead; the "smart-scope users care about Hα
+    // surface brightness, not visual" framing fits this catalogue.
+    const formLabel = ['—', t('info.sharp.formCircular'), t('info.sharp.formEllip'), t('info.sharp.formIrreg')][form] ?? '—';
+    const brightLabel = ['—', t('info.sharp.brightFaint'), t('info.sharp.brightMed'), t('info.sharp.brightBright')][bright] ?? '—';
+    this.subtitleEl.textContent =
+      `${t('info.cat.sharpless')} · ${diamArcmin.toFixed(0)}′ · ${brightLabel}`;
+
+    const rows: [string, string][] = [];
+    rows.push([t('info.row.ra2000'), formatRA(raHours)]);
+    rows.push([t('info.row.dec2000'), `${decDeg >= 0 ? '+' : ''}${decDeg.toFixed(4)}°`]);
+    rows.push([t('info.row.apparentSize'), `${diamArcmin.toFixed(0)}′`]);
+    rows.push([t('info.row.brightnessClass'), `${bright}/3 · ${brightLabel}`]);
+    rows.push([t('info.row.form'), formLabel]);
+    this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    this.extraEl.innerHTML = `<div class="info-section"><div class="info-text" style="color:var(--text-dim);">${t('info.text.sharpless')}</div></div>`;
+    this.planningEl.innerHTML = '';
+
+    // Queue button — Sharpless surface brightness isn't published but
+    // we can estimate from Sharpless's discrete brightness class:
+    // class 1 (faintest, ~24 mag/⬚²) / 2 (~22) / 3 (~20). These
+    // numbers are rough — Sharpless used photographic plates with no
+    // calibration scale — but good enough for "is this 30 min or 90
+    // min" planning decisions.
+    const sbEstimate = bright === 3 ? 20.0 : bright === 2 ? 22.0 : 24.0;
+    const queueBtn = document.getElementById('info-queue-add') as HTMLButtonElement | null;
+    if (queueBtn) {
+      const target: import('../physics/observationQueue').QueueTarget = {
+        id: stableId,
+        label: `Sh2-${id} (${diamArcmin.toFixed(0)}′)`,
+        source: 'sharpless',
+        surfaceBrightness: sbEstimate,
+        magnitude: NaN,
+        raHours, decDeg,
+        scope: 'seestar-s50',
+        overrideMinutes: null,
+        addedAt: 0,
+      };
+      queueBtn.dataset.queueTarget = JSON.stringify(target);
+      queueBtn.style.display = '';
+    }
+
+    if (this.unsubscribe) this.unsubscribe();
+    this.unsubscribe = this.clock.subscribe(() => {
+      if (this.currentId === stableId && this.el.classList.contains('visible')) {
+        this.renderUnnamedDynamic(raHours, decDeg);
+      }
+    });
+    this.renderUnnamedDynamic(raHours, decDeg);
+    this.renderObservationBlock();
+  }
+
+  /**
+   * Open the panel for a bulk NGC/IC entry picked via raycast on
+   * NGCFullLayer. Same structural shape; queue button wired off the
+   * V-mag and major-axis when both are present.
+   *
+   * Tuple columns:
+   *   idShort, raHours, decDeg, mag, typeIdx, majorArcmin, minorArcmin
+   * idShort > 0 → NGC; < 0 → IC.
+   */
+  showNGCFull(row: [number, number, number, number, number, number, number]): void {
+    this.hideQueueButton();
+    const [idShort, raHours, decDeg, mag, typeIdx, major, minor] = row;
+    const prefix = idShort < 0 ? 'IC' : 'NGC';
+    const num = Math.abs(idShort);
+    const designation = `${prefix} ${num}`;
+    const stableId = `ngc:${designation}`;
+    this.currentId = stableId;
+    this.lastNamedStar = null;
+    this.el.classList.add('visible');
+    this.updateCompactState();
+    const gotoBtn = document.getElementById('info-goto');
+    if (gotoBtn) gotoBtn.style.display = '';
+    const actionRow = document.getElementById('info-action-row');
+    if (actionRow) actionRow.style.display = 'flex';
+    delete (this.nameEl as HTMLElement).dataset.bodyId;
+    delete (this.nameEl as HTMLElement).dataset.starId;
+    (this.nameEl as HTMLElement).dataset.unnamedStarRa = String(raHours);
+    (this.nameEl as HTMLElement).dataset.unnamedStarDec = String(decDeg);
+
+    const typeLabel = ['G', 'GC', 'OC', 'N', 'PN', 'SNR'][typeIdx] ?? '?';
+    this.nameEl.textContent = designation;
+    this.subtitleEl.textContent =
+      `${typeLabel} · m=${mag.toFixed(1)}` +
+      (major > 0 ? ` · ${major.toFixed(1)}′${minor && minor !== major ? ` × ${minor.toFixed(1)}′` : ''}` : '');
+
+    const rows: [string, string][] = [];
+    rows.push([t('info.row.type'), typeLabel]);
+    rows.push([t('info.row.ra2000'), formatRA(raHours)]);
+    rows.push([t('info.row.dec2000'), `${decDeg >= 0 ? '+' : ''}${decDeg.toFixed(4)}°`]);
+    rows.push([t('info.row.magnitude'), `${mag >= 0 ? '+' : ''}${mag.toFixed(2)}`]);
+    let sbValue = NaN;
+    if (major > 0 && minor > 0) {
+      const sizeStr = major === minor
+        ? `${major.toFixed(1)}′`
+        : `${major.toFixed(1)}′ × ${minor.toFixed(1)}′`;
+      rows.push([t('info.row.apparentSize'), sizeStr]);
+      // Same formula as messierSurfaceBrightness: SB = m + 2.5·log10(πab) with a,b in arcsec.
+      const a = major * 60, b = minor * 60;
+      sbValue = mag + 2.5 * Math.log10(Math.PI * a * b);
+      if (Number.isFinite(sbValue)) {
+        rows.push([t('info.row.surfaceBrightness'), `${sbValue.toFixed(1)} mag/arcsec²`]);
+      }
+    }
+    this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+    this.extraEl.innerHTML = `<div class="info-section"><div class="info-text" style="color:var(--text-dim);">${t('info.text.ngcBulk')}</div></div>`;
+    this.planningEl.innerHTML = '';
+
+    const queueBtn = document.getElementById('info-queue-add') as HTMLButtonElement | null;
+    if (queueBtn) {
+      if (Number.isFinite(sbValue)) {
+        const target: import('../physics/observationQueue').QueueTarget = {
+          id: stableId,
+          label: designation,
+          source: 'ngc',
+          surfaceBrightness: sbValue,
+          magnitude: mag,
+          raHours, decDeg,
+          scope: 'seestar-s50',
+          overrideMinutes: null,
+          addedAt: 0,
+        };
+        queueBtn.dataset.queueTarget = JSON.stringify(target);
+        queueBtn.style.display = '';
+      } else {
+        queueBtn.style.display = 'none';
+      }
+    }
+
+    if (this.unsubscribe) this.unsubscribe();
+    this.unsubscribe = this.clock.subscribe(() => {
+      if (this.currentId === stableId && this.el.classList.contains('visible')) {
+        this.renderUnnamedDynamic(raHours, decDeg);
+      }
+    });
+    this.renderUnnamedDynamic(raHours, decDeg);
+    this.renderObservationBlock();
+  }
+
   showStar(star: import('../data/stars').NamedStar): void {
     this.hideQueueButton();
     this.currentId = `star:${star.id}`;

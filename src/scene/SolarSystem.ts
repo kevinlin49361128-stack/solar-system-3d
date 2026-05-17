@@ -833,6 +833,11 @@ export class SolarSystem {
     this.sharpless.setOpacity(on ? 1.0 : 0);
   }
 
+  /** Accessor for the screen-space pick handler in main.ts. Returns
+   *  null when the toggle has never been turned on. */
+  getSharplessLayer(): SharplessLayer | null { return this.sharpless; }
+  getNGCFullLayer(): NGCFullLayer | null { return this.ngcFull; }
+
   /** Full NGC + IC catalogue (~11 000 entries, ~445 KB). Same lazy-
    *  load + opacity-toggle pattern as the Sharpless layer. */
   setNGCFullEnabled(on: boolean): void {

@@ -101,6 +101,7 @@ export class NGCFullLayer {
       const r = await fetch(url);
       if (!r.ok) throw new Error(`NGC full fetch failed: ${r.status}`);
       const data: Array<[number, number, number, number, number, number, number]> = await r.json();
+      this.rawData = data;
 
       const n = data.length;
       const positions = new Float32Array(n * 3);
@@ -148,4 +149,14 @@ export class NGCFullLayer {
   }
 
   isLoaded(): boolean { return this.loaded; }
+
+  /**
+   * Cached raw rows for screen-space picking. Tuple shape:
+   *   [idShort, raHours, decDeg, mag, typeIdx, majorArcmin, minorArcmin]
+   * idShort > 0 → NGC; < 0 → IC (sign-encoded).
+   */
+  private rawData: Array<[number, number, number, number, number, number, number]> = [];
+  getRawData(): Array<[number, number, number, number, number, number, number]> {
+    return this.rawData;
+  }
 }

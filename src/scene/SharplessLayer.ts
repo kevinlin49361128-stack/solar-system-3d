@@ -96,6 +96,8 @@ export class SharplessLayer {
       const r = await fetch(url);
       if (!r.ok) throw new Error(`Sharpless 2 fetch failed: ${r.status}`);
       const data: Array<[number, number, number, number, number, number]> = await r.json();
+      // Cache raw rows for screen-space picking.
+      this.rawData = data;
 
       const n = data.length;
       const positions = new Float32Array(n * 3);
@@ -138,4 +140,14 @@ export class SharplessLayer {
   }
 
   isLoaded(): boolean { return this.loaded; }
+
+  /**
+   * Cached raw catalogue rows for screen-space picking. Populated by
+   * load(); empty array before then. Tuple shape:
+   *   [id, raHours, decDeg, diameterArcmin, brightnessClass, formClass]
+   */
+  private rawData: Array<[number, number, number, number, number, number]> = [];
+  getRawData(): Array<[number, number, number, number, number, number]> {
+    return this.rawData;
+  }
 }
