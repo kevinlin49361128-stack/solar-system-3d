@@ -133,8 +133,21 @@ new SearchBar(solarSystem, cameraCtl, infoPanel);
 // Mobile chrome — only constructs interactivity when body.mobile-ui is
 // set (decided by initLayoutMode above). On desktop this is a no-op
 // constructor and no DOM is mutated.
-const { MobileUI } = await import('./ui/MobileUI');
-new MobileUI(clock);
+if (document.body.classList.contains('mobile-ui')) {
+  const { MobileUI } = await import('./ui/MobileUI');
+  const { buildMobileSheets } = await import('./ui/mobileSheets');
+  const mobile = new MobileUI(clock);
+  const sheetHandlers = buildMobileSheets();
+  // Wire each bottom-toolbar button to open its sheet. Done after a
+  // micro-defer so the DOM nodes the sheets want to reparent (e.g.
+  // #time-controls, #left-panel sections) have been fully populated
+  // by their respective constructors above.
+  queueMicrotask(() => {
+    (Object.keys(sheetHandlers) as Array<keyof typeof sheetHandlers>).forEach(id => {
+      mobile.setSheetHandler(id, sheetHandlers[id]);
+    });
+  });
+}
 
 // Realism state → live scene wiring. Each toggle pushes its value into the
 // relevant scene module's uniform / setter; per-frame updates (e.g. observer

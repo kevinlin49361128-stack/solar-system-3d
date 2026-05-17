@@ -1704,6 +1704,72 @@
         padding: 4px 16px 24px;
         -webkit-overflow-scrolling: touch;
       }
+      .bs-hint {
+        font-size: 11px;
+        color: var(--text-dim);
+        background: rgba(255, 255, 255, 0.04);
+        border-left: 3px solid rgba(93, 177, 255, 0.4);
+        padding: 6px 10px;
+        margin-bottom: 12px;
+        border-radius: 0 6px 6px 0;
+      }
+      .bs-empty {
+        text-align: center;
+        color: var(--text-dim);
+        font-size: 12px;
+        padding: 40px 20px;
+      }
+      /* Migrated LeftPanel sections inside a sheet — shed the panel's
+         fixed-position styling so they flow normally in the sheet body. */
+      body.mobile-ui .bs-body .section {
+        margin: 8px 0 16px;
+      }
+      body.mobile-ui .bs-body .tab-panel {
+        display: block !important;
+        padding: 0;
+      }
+      body.mobile-ui .bs-body .tab-panel[data-tab-panel] {
+        margin-top: 0;
+      }
+      /* When time-controls is reparented into the Time sheet, drop the
+         original fixed-top-bar styling and let it flow as a column. */
+      body.mobile-ui .bs-body #time-controls {
+        position: static !important;
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        display: flex !important;
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+        backdrop-filter: none !important;
+      }
+      body.mobile-ui .bs-body #time-controls button,
+      body.mobile-ui .bs-body #time-controls select,
+      body.mobile-ui .bs-body #time-controls input {
+        min-height: 44px;
+        font-size: 14px;
+      }
+      body.mobile-ui .bs-body #time-controls .time-step-group {
+        flex-wrap: wrap;
+        gap: 6px;
+        border-left: none !important;
+        padding-left: 0 !important;
+      }
+      body.mobile-ui .bs-body #time-controls .time-step-group button {
+        flex: 1 1 calc(20% - 6px);
+        min-width: 56px;
+      }
+      body.mobile-ui .bs-body #time-controls #lang-select,
+      body.mobile-ui .bs-body #time-controls #btn-screenshot,
+      body.mobile-ui .bs-body #time-controls #btn-share {
+        /* The lang switcher is already in the topbar; screenshot+share
+           remain but in their own row under everything else. */
+        align-self: flex-end;
+      }
+      body.mobile-ui .bs-body #time-controls #time-scrubber {
+        width: 100% !important;
+      }
     </style>
   </head>
   <body>
