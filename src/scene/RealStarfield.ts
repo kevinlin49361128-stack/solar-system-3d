@@ -101,7 +101,7 @@ export class RealStarfield {
         varying vec3 vColor;
         varying float vMag;
         varying float vExtinctMag;
-        varying float vTwinkleMul;
+        varying vec3  vTwinkleVec;
         uniform float uMagLimit;
         uniform float uExtinction;
         uniform vec3  uObserverZenith;
@@ -126,18 +126,31 @@ export class RealStarfield {
           vMag = effectiveMag;
           float visible = step(effectiveMag, uMagLimit) * mix(1.0, aboveHorizon, uExtinction);
 
-          // Atmospheric scintillation (twinkle). Amplitude grows with airmass
-          // so zenith stars are steady, horizon stars flicker. Phase per star
-          // is seeded from the position so neighbouring stars don't twinkle
-          // in lockstep. Frequency ~3 Hz feels natural.
+          // Atmospheric scintillation (twinkle) — both INTENSITY and
+          // CHROMATIC. Amplitude grows with airmass so zenith stars are
+          // steady, horizon stars flicker through colours. Three phase-
+          // offset (120°) oscillators at the same base frequency drive
+          // R/G/B independently — high-airmass stars momentarily redden
+          // / cyan / shift through prism colours, exactly the "Sirius
+          // rainbow near horizon" effect amateur photographers love.
+          // Phase per star seeded from position so neighbours don't
+          // pulse in lockstep.
           float twinkleAmp = uTwinkle * clamp((airmass - 1.0) * 0.6, 0.0, 0.6);
           float twinklePhase = uTime * 6.28 * 3.0
                              + position.x * 0.731
                              + position.y * 1.293
                              + position.z * 0.517;
-          float twinkle = 1.0 + twinkleAmp * sin(twinklePhase);
-          vTwinkleMul = twinkle;
-          gl_PointSize = size * visible * mix(1.0, twinkle, step(0.001, uTwinkle));
+          vec3 twinkleVec = vec3(
+            1.0 + twinkleAmp * sin(twinklePhase),
+            1.0 + twinkleAmp * sin(twinklePhase + 2.094),  // +120°
+            1.0 + twinkleAmp * sin(twinklePhase + 4.189)   // +240°
+          );
+          vTwinkleVec = twinkleVec;
+          // Point size modulated by the LUMINANCE component only (mean of
+          // the three) so the sprite doesn't pulse with colour — only the
+          // colour-channel modulation does that.
+          float twinkleMean = (twinkleVec.r + twinkleVec.g + twinkleVec.b) / 3.0;
+          gl_PointSize = size * visible * mix(1.0, twinkleMean, step(0.001, uTwinkle));
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
@@ -149,7 +162,7 @@ export class RealStarfield {
         varying vec3 vColor;
         varying float vMag;
         varying float vExtinctMag;
-        varying float vTwinkleMul;
+        varying vec3  vTwinkleVec;
         void main() {
           vec2 c = gl_PointCoord - 0.5;
           float r = length(c);
@@ -158,10 +171,13 @@ export class RealStarfield {
           float headroom = uMagLimit - vMag;
           float bortleFactor = mix(1.0, smoothstep(0.0, 1.0, headroom), (uBortle - 1.0) / 8.0);
           float extinctAlphaScale = pow(2.512, -vExtinctMag);
-          // Twinkle modulates alpha too (intensity scintillation).
-          float twinkleAlpha = mix(1.0, vTwinkleMul, 0.7);
+          // Twinkle modulates colour per-channel (chromatic scintillation)
+          // and alpha through the channel mean (intensity scintillation).
+          float twinkleMean = (vTwinkleVec.r + vTwinkleVec.g + vTwinkleVec.b) / 3.0;
+          float twinkleAlpha = mix(1.0, twinkleMean, 0.7);
           float lum = dot(vColor, vec3(0.299, 0.587, 0.114));
           vec3 col = mix(vec3(lum), vColor, uBVColorMix);
+          col *= vTwinkleVec;
           gl_FragColor = vec4(col, a * uOpacity * bortleFactor * extinctAlphaScale * twinkleAlpha);
         }
       `,
