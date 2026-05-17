@@ -278,16 +278,21 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   if (cameraCtl.getMode() === 'observer') {
     const starHit = pickNamedStarAtScreen(e.clientX, e.clientY, rect, 14);
     if (starHit) { infoPanel.showStar(starHit); return; }
-    // 3b) NGC + Sharpless pick — only checks against currently-loaded
-    //     bulk catalogues. Tighter tolerance (10 px) than stars
-    //     because there are 11k+ candidates and we don't want a
-    //     random click to land on something far away. NGC has
-    //     priority over Sharpless because galaxies are usually the
-    //     intended target when both layers are on.
-    const ngcHit = pickNGCAtScreen(e.clientX, e.clientY, rect, 10);
-    if (ngcHit) { infoPanel.showNGCFull(ngcHit); return; }
-    const shHit = pickSharplessAtScreen(e.clientX, e.clientY, rect, 10);
-    if (shHit) { infoPanel.showSharpless(shHit); return; }
+    // 3b) Bulk-catalogue picks — checks the loaded NGC / Sharpless /
+    //     Abell layers in priority order. Tolerance widens
+    //     progressively (8 → 14 → 20 px) so a tight click lands on
+    //     the *nearest* candidate without misfires, and a slightly
+    //     sloppy click still finds something in dense regions.
+    //     Priority: NGC (galaxies the user is most likely looking
+    //     for) > Sharpless (emission nebulae) > Abell (faint clusters).
+    for (const tol of [8, 14, 20]) {
+      const ngcHit = pickNGCAtScreen(e.clientX, e.clientY, rect, tol);
+      if (ngcHit) { infoPanel.showNGCFull(ngcHit); return; }
+      const shHit = pickSharplessAtScreen(e.clientX, e.clientY, rect, tol);
+      if (shHit) { infoPanel.showSharpless(shHit); return; }
+      const abHit = pickAbellAtScreen(e.clientX, e.clientY, rect, tol);
+      if (abHit) { infoPanel.showAbell(abHit); return; }
+    }
     const rsf = solarSystem.getRealStarfield();
     if (rsf) {
       const hyg = rsf.pickAtScreen(e.clientX, e.clientY, cameraCtl.camera, rect, 14);
@@ -334,6 +339,34 @@ function pickSharplessAtScreen(
   clientX: number, clientY: number, rect: DOMRect, tolerancePx: number,
 ): [number, number, number, number, number, number] | null {
   const layer = solarSystem.getSharplessLayer();
+  if (!layer || !layer.isLoaded()) return null;
+  const data = layer.getRawData();
+  if (data.length === 0) return null;
+  const cssX = clientX - rect.left;
+  const cssY = clientY - rect.top;
+  const W = rect.width, H = rect.height;
+  const v = new Vector3();
+  let best: { row: typeof data[number]; dist: number } | null = null;
+  for (const row of data) {
+    const [, raH, decD] = row;
+    const dirEcl = raDecToEcliptic(raH, decD);
+    v.copy(eclipticToScene(dirEcl)).multiplyScalar(4000).project(cameraCtl.camera);
+    if (v.z > 1 || v.z < -1) continue;
+    const sx = (v.x * 0.5 + 0.5) * W;
+    const sy = (-v.y * 0.5 + 0.5) * H;
+    const d = Math.hypot(sx - cssX, sy - cssY);
+    if (d < tolerancePx && (!best || d < best.dist)) {
+      best = { row, dist: d };
+    }
+  }
+  return best?.row ?? null;
+}
+
+/** Screen-space pick over the Abell galaxy-cluster catalogue. */
+function pickAbellAtScreen(
+  clientX: number, clientY: number, rect: DOMRect, tolerancePx: number,
+): [number, number, number, number, number, number] | null {
+  const layer = solarSystem.getAbellLayer();
   if (!layer || !layer.isLoaded()) return null;
   const data = layer.getRawData();
   if (data.length === 0) return null;

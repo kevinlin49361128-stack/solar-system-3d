@@ -856,6 +856,104 @@ export class InfoPanel {
     this.renderObservationBlock();
   }
 
+  /**
+   * Open the panel for an Abell rich-galaxy-cluster pick. Abell entries
+   * don't carry a per-cluster magnitude (the catalogue is a counts-based
+   * survey), so we estimate surface brightness from the distance class
+   * and label the cluster by ACO number + member count.
+   *
+   * Tuple columns:
+   *   aclo, raHours, decDeg, distClass (1..7), richness (0..5), count
+   */
+  showAbell(row: [number, number, number, number, number, number]): void {
+    this.hideQueueButton();
+    const [aclo, raHours, decDeg, distClass, richness, count] = row;
+    const designation = `A ${aclo}`;
+    const stableId = `abell:A${aclo}`;
+    this.currentId = stableId;
+    this.lastNamedStar = null;
+    this.el.classList.add('visible');
+    this.updateCompactState();
+    const gotoBtn = document.getElementById('info-goto');
+    if (gotoBtn) gotoBtn.style.display = '';
+    const actionRow = document.getElementById('info-action-row');
+    if (actionRow) actionRow.style.display = 'flex';
+    delete (this.nameEl as HTMLElement).dataset.bodyId;
+    delete (this.nameEl as HTMLElement).dataset.starId;
+    (this.nameEl as HTMLElement).dataset.unnamedStarRa = String(raHours);
+    (this.nameEl as HTMLElement).dataset.unnamedStarDec = String(decDeg);
+
+    this.nameEl.textContent = designation;
+    // Distance class → rough redshift (Abell 1989, Table 5):
+    // 1→z≈0.027, 2→0.038, 3→0.067, 4→0.090, 5→0.140, 6→0.180, 7→≥0.200
+    const redshiftHints = ['—', '~0.027', '~0.038', '~0.067', '~0.090', '~0.14', '~0.18', '≥0.20'];
+    const zHint = redshiftHints[distClass] ?? '—';
+    this.subtitleEl.textContent =
+      `${t('info.cat.abell')} · R=${richness} · z${zHint}`;
+
+    // Apparent diameter shrinks with distance class — Abell clusters
+    // span ~3 Mpc, so angular size ≈ 3 Mpc / d_A. Rough table:
+    const diamArcminByClass = [30, 30, 22, 15, 11, 7, 5, 4];
+    const diamArcmin = diamArcminByClass[distClass] ?? 6;
+
+    const rows: [string, string][] = [];
+    rows.push([t('info.row.type'), 'GCl']);
+    rows.push([t('info.row.ra2000'), formatRA(raHours)]);
+    rows.push([t('info.row.dec2000'), `${decDeg >= 0 ? '+' : ''}${decDeg.toFixed(4)}°`]);
+    rows.push([t('info.row.distClass'), `${distClass}/7 · z${zHint}`]);
+    rows.push([t('info.row.richness'), `${richness}/5`]);
+    rows.push([t('info.row.memberCount'), `${count}`]);
+    rows.push([t('info.row.apparentSize'), `~${diamArcmin}′`]);
+    // Surface brightness estimate from distance class: closer clusters
+    // are brighter per unit area. Rough scale, dim enough to set
+    // realistic integration-time expectations.
+    const sbValue = 21.5 + (distClass - 1) * 0.6;
+    rows.push([t('info.row.surfaceBrightness'), `~${sbValue.toFixed(1)} mag/arcsec²`]);
+    this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+
+    const abellPreview = renderStackedPreview({
+      kind: 'galaxy',
+      majorArcmin: diamArcmin,
+      minorArcmin: diamArcmin * 0.8,
+      magnitude: 14 + distClass * 0.5,
+      paDeg: 0,
+      seed: aclo,
+    });
+    this.extraEl.innerHTML =
+      `<div class="info-section info-preview-wrap">` +
+      `<div class="info-preview-label">${t('info.preview.label')}</div>` +
+      `<img class="info-preview-thumb" src="${abellPreview}" alt="simulated preview" title="${t('info.preview.tooltip')}" />` +
+      `</div>` +
+      `<div class="info-section"><div class="info-text" style="color:var(--text-dim);">${t('info.text.abell')}</div></div>`;
+    this.planningEl.innerHTML = '';
+
+    const queueBtn = document.getElementById('info-queue-add') as HTMLButtonElement | null;
+    if (queueBtn) {
+      const target: import('../physics/observationQueue').QueueTarget = {
+        id: stableId,
+        label: `${designation} (R=${richness}, ${count} mem)`,
+        source: 'abell',
+        surfaceBrightness: sbValue,
+        magnitude: NaN,
+        raHours, decDeg,
+        scope: 'seestar-s50',
+        overrideMinutes: null,
+        addedAt: 0,
+      };
+      queueBtn.dataset.queueTarget = JSON.stringify(target);
+      queueBtn.style.display = '';
+    }
+
+    if (this.unsubscribe) this.unsubscribe();
+    this.unsubscribe = this.clock.subscribe(() => {
+      if (this.currentId === stableId && this.el.classList.contains('visible')) {
+        this.renderUnnamedDynamic(raHours, decDeg);
+      }
+    });
+    this.renderUnnamedDynamic(raHours, decDeg);
+    this.renderObservationBlock();
+  }
+
   showStar(star: import('../data/stars').NamedStar): void {
     this.hideQueueButton();
     this.currentId = `star:${star.id}`;

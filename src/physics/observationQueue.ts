@@ -90,7 +90,7 @@ export interface QueueTarget {
    *  flicker on language change. */
   label: string;
   /** Catalogue source — drives where to look up surface brightness. */
-  source: 'messier' | 'ngc' | 'sharpless' | 'other';
+  source: 'messier' | 'ngc' | 'sharpless' | 'abell' | 'other';
   /** Target's mean surface brightness, mag/arcsec². May be NaN if the
    *  catalogue doesn't list angular size. */
   surfaceBrightness: number;

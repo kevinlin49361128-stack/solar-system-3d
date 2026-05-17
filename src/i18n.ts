@@ -471,6 +471,12 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'info.sharp.brightBright':   { 'zh-Hant': '最亮', 'en': 'brightest', 'ja': '最明' },
   'info.text.sharpless':       { 'zh-Hant': 'Hα 發射星雲（HII 區）。視覺極暗，但智慧望遠鏡 30 min stack + 窄頻濾鏡可清楚拍出。', 'en': 'Hα emission nebula (HII region). Faint visually, but stacks out in 30 min with a smart-scope + narrowband filter.', 'ja': 'Hα散光星雲（HII領域）。眼視は暗いが、スマート望遠鏡＋ナローバンド30分積分で写る。' },
   'info.text.ngcBulk':         { 'zh-Hant': 'NGC/IC 全集條目。資料來源：OpenNGC v2。點 📋 加入觀測隊列。', 'en': 'NGC/IC bulk catalogue entry. Source: OpenNGC v2. Tap 📋 to queue for tonight.', 'ja': 'NGC/IC 全カタログのエントリ。出典：OpenNGC v2。📋 でキューに追加。' },
+  // Abell rich-galaxy-cluster catalogue (v0.6 deep-sky tier)
+  'info.cat.abell':            { 'zh-Hant': 'Abell 富星系團', 'en': 'Abell rich galaxy cluster', 'ja': 'Abell 銀河団' },
+  'info.row.distClass':        { 'zh-Hant': '距離級', 'en': 'Distance class', 'ja': '距離クラス' },
+  'info.row.richness':         { 'zh-Hant': '豐富度', 'en': 'Richness', 'ja': '富有度' },
+  'info.row.memberCount':      { 'zh-Hant': '成員星系數', 'en': 'Member galaxies', 'ja': 'メンバー銀河数' },
+  'info.text.abell':           { 'zh-Hant': 'Abell 1989 富星系團。多在 mag 15–18，眼視幾乎不可見，但 30 cm 智慧望遠鏡 2–4 小時積分可拍出星系團場景。', 'en': 'Abell 1989 rich galaxy cluster. Typically mag 15–18 — invisible visually, but 2–4 h of stacking on a 30 cm smart-scope reveals the cluster field.', 'ja': 'Abell 1989 銀河団。通常 15〜18 等で眼視ほぼ不可視。30 cm スマート望遠鏡で2〜4時間積分すれば銀河団の姿が浮かぶ。' },
   'info.preview.label':        { 'zh-Hant': '智慧望遠鏡疊圖預覽（模擬）', 'en': 'Smart-scope stacked preview (simulated)', 'ja': 'スマート望遠鏡スタックプレビュー（模擬）' },
   'info.preview.tooltip':      { 'zh-Hant': '程序生成的視覺示意 — 非真實天文影像。要看真實影像請使用 Aladin Lite / PanSTARRS。', 'en': 'Procedural visual hint — NOT a real image. For real previews, use Aladin Lite / PanSTARRS.', 'ja': 'プロシージャル生成のイメージ — 実天体写真ではありません。実画像は Aladin Lite / PanSTARRS で。' },
   // Observation queue (smart-scope session planner, v0.5)
