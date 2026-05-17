@@ -1,8 +1,27 @@
-# Hosek-Wilkie atmosphere shader — future work
+# Hosek-Wilkie atmosphere shader
 
-> Status: deferred. Current implementation uses Three.js's vanilla Preetham
-> Sky with sun-altitude-dependent turbidity / rayleigh tuning as a cheap
-> approximation (see `AtmosphereSky.applyTwilightTuning`).
+> Status (v0.7): **Partial implementation shipped**. A custom shader
+> using the HW analytical formula (Eq. 6 of HW 2012) is now selectable
+> via the Realism panel ("大氣散射模型 → Hosek-Wilkie"). The Preetham
+> baseline remains the default. See `src/scene/HosekWilkieSky.ts`.
+>
+> **What's done:**
+> - Exact HW radiance function F(θ, γ) in the fragment shader, including
+>   the χ(H, γ) anisotropy term with correct denominator pow(·, 1.5).
+> - Per-channel A..I coefficients (9 × 3 = 27 floats) interpolated by
+>   sun altitude.
+> - Below-horizon fix (smoothstep mask) — addresses the bright-white
+>   bleed past LocalTerrain edges that the stock Three.js Sky had.
+> - Twilight zenith luminance bias toward warm at golden hour, blue at
+>   noon, near-black after astronomical twilight.
+> - Toggle wired to UI (radio buttons in Realism panel) + scene swap
+>   one-frame with no allocation.
+>
+> **What's still approximate** (full LUT remains as follow-up):
+> - Coefficient values are hand-tuned, calibrated against HW Figure 4
+>   reference images — not loaded from the official 3240-float LUT.
+> - Single turbidity baseline (~T=4 clear sky). No haze knob yet.
+> - Single albedo (~0.3 vegetation). No ocean/snow variants.
 
 ## What's missing
 

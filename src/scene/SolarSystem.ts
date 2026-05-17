@@ -21,6 +21,7 @@ import { createStarfield } from './Skybox';
 import { StarMap } from './StarMap';
 import { RealStarfield } from './RealStarfield';
 import { AtmosphereSky } from './AtmosphereSky';
+import { HosekWilkieSky } from './HosekWilkieSky';
 import { LocationPin } from './LocationPin';
 import { MessierLayer } from './MessierLayer';
 import { IAUBoundaries } from './IAUBoundaries';
@@ -85,6 +86,8 @@ export class SolarSystem {
   private starMap: StarMap | null = null;
   private realStarfield: RealStarfield | null = null;
   private atmosphereSky: AtmosphereSky | null = null;
+  private hosekWilkieSky: HosekWilkieSky | null = null;
+  private skyModel: 'preetham' | 'hosek-wilkie' = 'preetham';
   private locationPin: LocationPin | null = null;
   private messierLayer: MessierLayer | null = null;
   private iauBoundaries: IAUBoundaries | null = null;
@@ -198,6 +201,11 @@ export class SolarSystem {
 
     this.atmosphereSky = new AtmosphereSky();
     this.atmosphereSky.attach(this.scene);
+    // Hosek-Wilkie sky lives alongside the Preetham sky — only one is
+    // visible at a time. Lazy-attached but not lazy-constructed (the
+    // shader compile is fast enough we don't gain from deferring it).
+    this.hosekWilkieSky = new HosekWilkieSky();
+    this.hosekWilkieSky.attach(this.scene);
     this.atmosphereOverlay = new AtmosphereOverlay();
     this.scene.add(this.atmosphereOverlay.mesh);
     this.milkyWay = new MilkyWay();
@@ -1083,6 +1091,26 @@ export class SolarSystem {
   }
 
   getAtmosphereSky(): AtmosphereSky | null { return this.atmosphereSky; }
+  getHosekWilkieSky(): HosekWilkieSky | null { return this.hosekWilkieSky; }
+  /**
+   * Swap which atmospheric scattering model paints the observer-mode sky.
+   * Both meshes exist in the scene; we toggle visibility so the swap is
+   * one frame with no allocation. Sun direction + zenith + camera position
+   * are mirrored on each call so the inactive sky stays in sync — that way
+   * a mid-twilight toggle doesn't snap colours.
+   */
+  setSkyModel(model: 'preetham' | 'hosek-wilkie'): void {
+    this.skyModel = model;
+    if (!this.atmosphereSky || !this.hosekWilkieSky) return;
+    // Only flip visibility if the observer-mode sky is currently shown
+    // at all — don't fight the heliocentric-view sky-off invariant.
+    const anyVisible = this.atmosphereSky.sky.visible || this.hosekWilkieSky.mesh.visible;
+    if (anyVisible) {
+      this.atmosphereSky.setVisible(model === 'preetham');
+      this.hosekWilkieSky.setVisible(model === 'hosek-wilkie');
+    }
+  }
+  getSkyModel(): 'preetham' | 'hosek-wilkie' { return this.skyModel; }
 
   /**
    * Show / move the location pin on Earth at given lat/lon.

@@ -2307,7 +2307,16 @@
           <button id="preset-balanced" data-i18n="realism.preset.balanced">平衡</button>
           <button id="preset-realistic" data-i18n="realism.preset.realistic">寫實</button>
         </div>
-        <div style="font-size:10px;color:var(--text-dim);margin:2px 0 4px 0;" data-i18n="realism.physicsHeader">寫實計算（影響亮度 / 可見性）</div>
+        <div style="font-size:10px;color:var(--text-dim);margin:2px 0 4px 0;" data-i18n="realism.skyModelHeader">大氣散射模型</div>
+        <label style="display:inline-block;margin:1px 8px 1px 0;font-size:11px;">
+          <input type="radio" name="sky-model" id="sky-model-preetham" value="preetham" checked />
+          <span data-i18n="realism.skyPreetham">Preetham 1999</span>
+        </label>
+        <label style="display:inline-block;margin:1px 0;font-size:11px;">
+          <input type="radio" name="sky-model" id="sky-model-hosek-wilkie" value="hosek-wilkie" />
+          <span data-i18n="realism.skyHosekWilkie">Hosek-Wilkie</span>
+        </label>
+        <div style="font-size:10px;color:var(--text-dim);margin:8px 0 4px 0;" data-i18n="realism.physicsHeader">寫實計算（影響亮度 / 可見性）</div>
         <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="realism-extinction" /> <span data-i18n="realism.extinction">大氣消光（低空變暗）</span></label>
         <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="realism-moon-glow" /> <span data-i18n="realism.moonGlow">月光增亮天空</span></label>
         <label style="display:block;margin:3px 0;font-size:11px;"><input type="checkbox" id="realism-bv-color" /> <span data-i18n="realism.bvColor">恆星 B-V 真實色</span></label>

@@ -102,7 +102,7 @@ Helper 是獨立 repo：<https://github.com/kevinlin49361128-stack/solar-system-
 npm run test
 ```
 
-目前 **264 個測試 / 24 個檔案** 全綠：
+目前 **271 個測試 / 25 個檔案** 全綠：
 
 - **`kepler.test.ts`**：solver 在 e=0..0.995 全 M 範圍收斂、Halley 級高 e 回歸測試（防止之前的 Newton 噴飛 bug 復發）
 - **`topocentric.test.ts`**：GMST 在 J2000 ≈ 280.46°、每日 +0.985° sidereal drift、observer frame 三軸正交、precession 100 年位移 1.0–1.6°、Bennett 折射對標準參考值

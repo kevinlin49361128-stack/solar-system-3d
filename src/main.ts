@@ -2176,6 +2176,7 @@ function updateSkyForObserver(): void {
   const atmoOverlay = solarSystem.getAtmosphereOverlay();
   if (cameraCtl.getMode() !== 'observer') {
     if (atmo) atmo.setVisible(false);
+    solarSystem.getHosekWilkieSky()?.setVisible(false);
     if (terrain) terrain.setVisible(false);
     // AtmosphereOverlay (Belt of Venus + airglow + moon-glow dome) is
     // observer-mode-only; without this hide, leaving observer mode at any
@@ -2352,13 +2353,24 @@ function updateSkyForObserver(): void {
   });
 
   if (atmo) {
-    atmo.setVisible(true);
+    const skyModel = solarSystem.getSkyModel();
+    const hosek = solarSystem.getHosekWilkieSky();
+    const usePreetham = skyModel === 'preetham';
+    // Drive BOTH skies every frame regardless of which is active — that
+    // way a mid-twilight toggle doesn't snap colours, and any latent
+    // sun-direction/zenith state stays consistent. Cheap: each setter
+    // is one uniform-write.
+    atmo.setVisible(usePreetham);
     atmo.setSunDirection(sunDir);
     atmo.setCenter(ctx.cameraPos);
     atmo.setUp(ctx.zenith);
-    // Adjust turbidity / rayleigh by sun altitude — softer horizon during
-    // twilight (cheap Preetham → quasi-Hosek-Wilkie approximation).
     atmo.applyTwilightTuning(sunAlt * 180 / Math.PI);
+    if (hosek) {
+      hosek.setVisible(!usePreetham);
+      hosek.setSunDirection(sunDir);
+      hosek.setCenter(ctx.cameraPos);
+      hosek.setUp(ctx.zenith);
+    }
     // Background should be black so sky shader is the only sky source.
     renderer.setClearColor(NIGHT_BG, 1);
     solarSystem.setBackgroundColor(NIGHT_BG);

@@ -186,6 +186,19 @@ export class LeftPanel {
         solarSystem.realism.set(key, cb.checked);
       });
     }
+    // Sky-model picker (Preetham vs Hosek-Wilkie). Lives outside the
+    // RealismSettings store because the two options aren't independent
+    // toggles — they're a mutually-exclusive choice. Persistence is
+    // handled by the generic input-state restore in main.ts (radio inputs
+    // get their checked state stored in localStorage).
+    const skyModelRadios = document.querySelectorAll<HTMLInputElement>('input[name="sky-model"]');
+    for (const radio of skyModelRadios) {
+      radio.addEventListener('change', () => {
+        if (radio.checked) {
+          solarSystem.setSkyModel(radio.value as 'preetham' | 'hosek-wilkie');
+        }
+      });
+    }
     const presetButtons: Array<{ id: string; preset: RealismPreset }> = [
       { id: 'preset-stylized',  preset: 'stylized' },
       { id: 'preset-balanced',  preset: 'balanced' },
