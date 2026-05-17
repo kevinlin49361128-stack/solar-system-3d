@@ -581,6 +581,15 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'picker.mobile.title':    { 'zh-Hant': '手機版', 'en': 'Mobile', 'ja': 'モバイル版' },
   'picker.mobile.subtitle': { 'zh-Hant': '觸控、全螢幕、底部工具列', 'en': 'Touch, full-screen, bottom toolbar', 'ja': 'タッチ・全画面・下部ツールバー' },
   'picker.remember':        { 'zh-Hant': '記住我的選擇', 'en': 'Remember my choice', 'ja': '選択を記憶' },
+  // Mobile bottom toolbar labels (5 icons)
+  'mb.scale':               { 'zh-Hant': '尺度', 'en': 'Scale',  'ja': 'スケール' },
+  'mb.time':                { 'zh-Hant': '時間', 'en': 'Time',   'ja': '時間' },
+  'mb.camera':              { 'zh-Hant': '鏡頭', 'en': 'Camera', 'ja': 'カメラ' },
+  'mb.view':                { 'zh-Hant': '顯示', 'en': 'View',   'ja': '表示' },
+  'mb.find':                { 'zh-Hant': '搜尋', 'en': 'Find',   'ja': '探す' },
+  // Mobile chrome placeholder messages (until Phase D fills sheets)
+  'mb.menuStub':            { 'zh-Hant': '設定面板開發中 — Phase D', 'en': 'Settings sheet coming in Phase D', 'ja': '設定シートは Phase D で実装予定' },
+  'mb.sheetStub':           { 'zh-Hant': '「{name}」面板開發中 — Phase D', 'en': '"{name}" sheet coming in Phase D', 'ja': '「{name}」シートは Phase D で実装予定' },
   // Open-Meteo weather opt-in
   'weather.optinPitch':     { 'zh-Hant': '查看今晚雲量？資料來源 open-meteo.com（免費、不需帳號）。', 'en': 'Check tonight\'s cloud cover? Data from open-meteo.com (free, no account).', 'ja': '今夜の雲量を確認？データは open-meteo.com（無料・登録不要）。' },
   'weather.optinAction':    { 'zh-Hant': '啟用', 'en': 'Enable', 'ja': '有効にする' },

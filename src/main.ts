@@ -130,6 +130,12 @@ eventsPanel.setLunarEclipseMap({
 new LeftPanel(solarSystem, cameraCtl, scaleCtl, infoPanel, skyPanel, calcPanel, calcVectors, clock, eventsPanel);
 new SearchBar(solarSystem, cameraCtl, infoPanel);
 
+// Mobile chrome — only constructs interactivity when body.mobile-ui is
+// set (decided by initLayoutMode above). On desktop this is a no-op
+// constructor and no DOM is mutated.
+const { MobileUI } = await import('./ui/MobileUI');
+new MobileUI(clock);
+
 // Realism state → live scene wiring. Each toggle pushes its value into the
 // relevant scene module's uniform / setter; per-frame updates (e.g. observer
 // zenith for extinction, moon glow factor) live inside updateSkyForObserver.
