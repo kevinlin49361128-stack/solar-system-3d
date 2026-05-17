@@ -1884,6 +1884,70 @@
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);
       }
+
+      /* ─────────────────────────────────────────────────────────
+         Phase G — global tap-target audit for mobile mode.
+
+         Apple HIG / Material Design both recommend ≥ 44pt² for
+         touch targets. Many of our existing buttons are smaller
+         because they were sized for mouse precision. Rather than
+         touch every component, this single block raises minimum
+         dimensions on all interactive elements inside body.mobile-ui.
+
+         The selectors deliberately exclude:
+           - .bs-handle (the sheet drag grip; visually 36×4 by design,
+             but the entire .bs-header above it is the actual tap zone
+             and already > 44pt)
+           - Elements in tooltip / disclosure-only states that aren't
+             primary touch targets (covered case-by-case).
+         ──────────────────────────────────────────────────────── */
+      body.mobile-ui button,
+      body.mobile-ui select,
+      body.mobile-ui input[type="checkbox"],
+      body.mobile-ui input[type="radio"],
+      body.mobile-ui input[type="range"],
+      body.mobile-ui input[type="text"],
+      body.mobile-ui input[type="number"],
+      body.mobile-ui input[type="datetime-local"],
+      body.mobile-ui a {
+        min-height: 44px;
+      }
+      body.mobile-ui button {
+        min-width: 44px;
+      }
+      /* Checkboxes / radios are squares — give them enough scale that
+         the tappable region is comfortable, but don't size up the
+         visual indicator itself disproportionately. */
+      body.mobile-ui input[type="checkbox"],
+      body.mobile-ui input[type="radio"] {
+        min-width: 22px;
+        transform: scale(1.3);
+        transform-origin: left center;
+        margin-right: 6px;
+      }
+      body.mobile-ui label {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      /* Reset for layouts that need compact rows (e.g. tabular
+         alt/az data in InfoPanel). Opt in to compact via class. */
+      body.mobile-ui .compact-row,
+      body.mobile-ui .compact-row * {
+        min-height: 0 !important;
+      }
+      /* The bs-handle is decorative — don't expand it. */
+      body.mobile-ui .bs-handle {
+        min-height: 4px !important;
+        min-width: 36px !important;
+      }
+      /* Bottom-toolbar already sized in Phase B; reinforce that the
+         icons inside don't get pushed by the audit rules. */
+      body.mobile-ui .mobile-bottombar .mb-icon,
+      body.mobile-ui .mobile-bottombar .mb-label {
+        min-height: 0 !important;
+      }
     </style>
   </head>
   <body>
