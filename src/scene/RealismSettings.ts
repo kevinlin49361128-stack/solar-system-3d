@@ -36,6 +36,9 @@ export interface RealismSettings {
   // Opt-in for the same reason: most NGC objects are invisible to
   // visual observers and only become useful with a smart scope.
   ngcFull: boolean;
+  // Abell rich-galaxy-cluster catalogue (v0.6) — 2712 entries
+  // (80 KB JSON). The deep-imaging extreme: most clusters mag 15-18.
+  abell: boolean;
 }
 
 export type RealismPreset = 'stylized' | 'balanced' | 'realistic';
@@ -44,17 +47,17 @@ export const PRESET_VALUES: Record<RealismPreset, RealismSettings> = {
   stylized: {
     extinction: false, moonGlow: false, bvColor: false, satShadow: false, dsoRealSize: false,
     milkyway: false, beltOfVenus: false, zodiacal: false, airglow: false, meteors: false,
-    deepStars: false, sharpless2: false, ngcFull: false,
+    deepStars: false, sharpless2: false, ngcFull: false, abell: false,
   },
   balanced: {
     extinction: true, moonGlow: true, bvColor: true, satShadow: true, dsoRealSize: false,
     milkyway: true, beltOfVenus: true, zodiacal: false, airglow: false, meteors: false,
-    deepStars: false, sharpless2: false, ngcFull: false,
+    deepStars: false, sharpless2: false, ngcFull: false, abell: false,
   },
   realistic: {
     extinction: true, moonGlow: true, bvColor: true, satShadow: true, dsoRealSize: true,
     milkyway: true, beltOfVenus: true, zodiacal: true, airglow: true, meteors: true,
-    deepStars: true, sharpless2: true, ngcFull: true,
+    deepStars: true, sharpless2: true, ngcFull: true, abell: true,
   },
 };
 

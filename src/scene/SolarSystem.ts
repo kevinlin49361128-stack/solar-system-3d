@@ -54,6 +54,7 @@ import { GalacticDisk } from './GalacticDisk';
 import { LocalGroupGalaxies } from './LocalGroupGalaxies';
 import { SharplessLayer } from './SharplessLayer';
 import { NGCFullLayer } from './NGCFullLayer';
+import { AbellLayer } from './AbellLayer';
 import { HygCloud } from './HygCloud';
 import { ExoplanetHosts } from './ExoplanetHosts';
 import { ExoplanetSystemView } from './ExoplanetSystemView';
@@ -102,6 +103,7 @@ export class SolarSystem {
   private localGroup: LocalGroupGalaxies | null = null;
   private sharpless: SharplessLayer | null = null;
   private ngcFull: NGCFullLayer | null = null;
+  private abell: AbellLayer | null = null;
   private hygCloud: HygCloud | null = null;
   private exoplanetHosts: ExoplanetHosts | null = null;
   private exoplanetView: ExoplanetSystemView | null = null;
@@ -173,6 +175,10 @@ export class SolarSystem {
     // Full NGC + IC catalogue layer — also opt-in (445 KB on first enable).
     this.ngcFull = new NGCFullLayer();
     this.scene.add(this.ngcFull.object);
+
+    // Abell galaxy-cluster catalogue (v0.6) — 2712 entries, ~80 KB.
+    this.abell = new AbellLayer();
+    this.scene.add(this.abell.object);
 
     this.iauBoundaries = new IAUBoundaries();
     this.scene.add(this.iauBoundaries.object);
@@ -847,6 +853,16 @@ export class SolarSystem {
     }
     this.ngcFull.setOpacity(on ? 0.85 : 0);
   }
+
+  /** Abell galaxy-cluster catalogue (2712 entries, ~80 KB). */
+  setAbellEnabled(on: boolean): void {
+    if (!this.abell) return;
+    if (on && !this.abell.isLoaded()) {
+      void this.abell.load();
+    }
+    this.abell.setOpacity(on ? 0.8 : 0);
+  }
+  getAbellLayer(): AbellLayer | null { return this.abell; }
 
   /**
    * Toggle between the default (mag ≤ 7) and deep (mag ≤ 9) HYG

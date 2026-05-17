@@ -172,6 +172,7 @@ export class LeftPanel {
       { id: 'realism-deep-stars',     key: 'deepStars' },
       { id: 'realism-sharpless2',     key: 'sharpless2' },
       { id: 'realism-ngc-full',       key: 'ngcFull' },
+      { id: 'realism-abell',          key: 'abell' },
       { id: 'vfx-milkyway',           key: 'milkyway' },
       { id: 'vfx-belt-of-venus',      key: 'beltOfVenus' },
       { id: 'vfx-zodiacal',           key: 'zodiacal' },

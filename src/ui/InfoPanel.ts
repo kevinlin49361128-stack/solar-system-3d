@@ -22,6 +22,7 @@ import {
 import { findStarHopPath, bearingCardinal } from '../physics/starHopping';
 import { EXOPLANET_SYSTEMS } from '../data/exoplanetSystems';
 import { MESSIER_ANG_SIZES, messierSurfaceBrightness } from '../data/messier';
+import { renderStackedPreview, type DSOKind } from './stackedPreview';
 import { Vector3 } from 'three';
 
 /**
@@ -194,6 +195,10 @@ export class InfoPanel {
     const btn = document.getElementById('info-queue-add');
     if (btn) (btn as HTMLElement).style.display = 'none';
   }
+
+  /** Stacked-preview HTML stashed by the DSO show methods; rendered
+   *  ahead of star-hop hints in extraEl. Cleared by hideQueueButton. */
+  private previewHtmlForExtra = '';
 
   private cameraCtl: CameraController | null = null;
   private eventsPanel: EventsPanel | null = null;
@@ -556,6 +561,30 @@ export class InfoPanel {
     }
     this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
 
+    // Stacked-preview thumbnail — what a smart-scope's 30 min stack
+    // would roughly look like. Prepend to the existing extraHtml that
+    // showMessier's caller (star-hop hint) builds further down.
+    const previewKind = messierTypeToKind(m.type);
+    const previewSize = axes?.[0] ?? 8;
+    const previewMinor = axes?.[1];
+    const seed = numericSeedFromId(m.id);
+    const previewSrc = renderStackedPreview({
+      kind: previewKind,
+      majorArcmin: previewSize,
+      minorArcmin: previewMinor,
+      paDeg: 0,
+      magnitude: m.magnitude,
+      seed,
+    });
+    this.previewHtmlForExtra = `
+      <div class="info-section info-preview-wrap">
+        <div class="info-preview-label">${t('info.preview.label')}</div>
+        <img class="info-preview-thumb" src="${previewSrc}"
+             alt="simulated preview"
+             title="${t('info.preview.tooltip')}" />
+      </div>
+    `;
+
     // Stash a serialised QueueTarget on the add-to-queue button so
     // its click handler doesn't need to re-resolve catalogue data.
     // Only show the button when surface brightness is computable
@@ -606,7 +635,8 @@ export class InfoPanel {
         </div>`;
       }
     }
-    this.extraEl.innerHTML = hopHtml;
+    this.extraEl.innerHTML = this.previewHtmlForExtra + hopHtml;
+    this.previewHtmlForExtra = '';
     this.planningEl.innerHTML = '';
 
     if (this.unsubscribe) this.unsubscribe();
@@ -676,7 +706,18 @@ export class InfoPanel {
     rows.push([t('info.row.brightnessClass'), `${bright}/3 · ${brightLabel}`]);
     rows.push([t('info.row.form'), formLabel]);
     this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-    this.extraEl.innerHTML = `<div class="info-section"><div class="info-text" style="color:var(--text-dim);">${t('info.text.sharpless')}</div></div>`;
+    const sharpPreview = renderStackedPreview({
+      kind: 'nebula',
+      majorArcmin: diamArcmin,
+      paDeg: 0,
+      seed: id,
+    });
+    this.extraEl.innerHTML =
+      `<div class="info-section info-preview-wrap">` +
+      `<div class="info-preview-label">${t('info.preview.label')}</div>` +
+      `<img class="info-preview-thumb" src="${sharpPreview}" alt="simulated preview" title="${t('info.preview.tooltip')}" />` +
+      `</div>` +
+      `<div class="info-section"><div class="info-text" style="color:var(--text-dim);">${t('info.text.sharpless')}</div></div>`;
     this.planningEl.innerHTML = '';
 
     // Queue button — Sharpless surface brightness isn't published but
@@ -767,7 +808,21 @@ export class InfoPanel {
       }
     }
     this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
-    this.extraEl.innerHTML = `<div class="info-section"><div class="info-text" style="color:var(--text-dim);">${t('info.text.ngcBulk')}</div></div>`;
+    const ngcKind = ngcTypeIdxToKind(typeIdx);
+    const ngcPreview = renderStackedPreview({
+      kind: ngcKind,
+      majorArcmin: major > 0 ? major : 3,
+      minorArcmin: minor > 0 ? minor : undefined,
+      magnitude: mag,
+      paDeg: 0,
+      seed: Math.abs(idShort),
+    });
+    this.extraEl.innerHTML =
+      `<div class="info-section info-preview-wrap">` +
+      `<div class="info-preview-label">${t('info.preview.label')}</div>` +
+      `<img class="info-preview-thumb" src="${ngcPreview}" alt="simulated preview" title="${t('info.preview.tooltip')}" />` +
+      `</div>` +
+      `<div class="info-section"><div class="info-text" style="color:var(--text-dim);">${t('info.text.ngcBulk')}</div></div>`;
     this.planningEl.innerHTML = '';
 
     const queueBtn = document.getElementById('info-queue-add') as HTMLButtonElement | null;
@@ -1523,6 +1578,39 @@ function formatMag(m: number): string {
 
 /** Quick JD → Gregorian year (integer). Used by the precision warning
  *  to print "you're at 1650 CE, this propagator is good 1800–2050". */
+/**
+ * Map MessierObject.type to the DSOKind enum the stacked-preview
+ * renderer expects. Used for the Messier and named-NGC paths
+ * (NGCFullLayer uses ngcTypeIdxToKind for the integer index variant).
+ */
+function messierTypeToKind(t: import('../data/messier').MessierType): DSOKind {
+  switch (t) {
+    case 'G':  return 'galaxy';
+    case 'GC': return 'cluster-globular';
+    case 'OC': return 'cluster-open';
+    case 'N':  return 'nebula';
+    case 'PN': return 'planetary';
+    case 'SNR': return 'snr';
+    default:   return 'unknown';
+  }
+}
+
+/** Same mapping for the NGCFullLayer's integer typeIdx (0..5). */
+function ngcTypeIdxToKind(idx: number): DSOKind {
+  return (['galaxy', 'cluster-globular', 'cluster-open', 'nebula', 'planetary', 'snr'] as const)[idx] ?? 'unknown';
+}
+
+/** Deterministic numeric seed from a catalogue id string. Used so the
+ *  same object renders the same background-star speckle pattern every
+ *  time it's opened. */
+function numericSeedFromId(id: string): number {
+  let h = 5381;
+  for (let i = 0; i < id.length; i++) {
+    h = ((h << 5) + h) ^ id.charCodeAt(i);
+  }
+  return h >>> 0;
+}
+
 function jdToYear(jd: number): number {
   return jdToDate(jd).getUTCFullYear();
 }

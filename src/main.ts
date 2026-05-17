@@ -198,6 +198,8 @@ solarSystem.realism.subscribe((s) => {
   solarSystem.setSharpless2Enabled(s.sharpless2);
   // Full NGC + IC catalogue overlay (v0.5).
   solarSystem.setNGCFullEnabled(s.ngcFull);
+  // Abell galaxy-cluster overlay (v0.6).
+  solarSystem.setAbellEnabled(s.abell);
   const sat = solarSystem.getSatelliteLayer() as unknown as
     { setEarthShadowFilter?: (b: boolean) => void } | null;
   sat?.setEarthShadowFilter?.(s.satShadow);

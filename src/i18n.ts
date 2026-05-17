@@ -73,6 +73,7 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'realism.deepStars': { 'zh-Hant': '深空星表 (mag 9，~3 MB)', 'en': 'Deep star field (mag 9, ~3 MB)', 'ja': '深空星カタログ (mag 9, ~3 MB)' },
   'realism.sharpless2': { 'zh-Hant': 'Sharpless 2 發射星雲 (313 個)', 'en': 'Sharpless 2 emission nebulae (313)', 'ja': 'Sharpless 2 散光星雲 (313)' },
   'realism.ngcFull': { 'zh-Hant': 'NGC 全集 (~11k，~445 KB)', 'en': 'NGC full catalogue (~11k, ~445 KB)', 'ja': 'NGC 全カタログ (~11k, ~445 KB)' },
+  'realism.abell':   { 'zh-Hant': 'Abell 星系團 (2712 個，~80 KB)', 'en': 'Abell galaxy clusters (2712, ~80 KB)', 'ja': 'Abell 銀河団 (2712, ~80 KB)' },
   'realism.milkyway': { 'zh-Hant': '銀河帶', 'en': 'Milky Way', 'ja': '天の川' },
   'realism.beltOfVenus': { 'zh-Hant': '暮光反日點 (Belt of Venus)', 'en': 'Belt of Venus / Earth shadow', 'ja': 'ヴィーナスの帯 / 地球影' },
   'realism.zodiacal': { 'zh-Hant': '黃道光', 'en': 'Zodiacal light', 'ja': '黄道光' },
@@ -470,6 +471,8 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'info.sharp.brightBright':   { 'zh-Hant': '最亮', 'en': 'brightest', 'ja': '最明' },
   'info.text.sharpless':       { 'zh-Hant': 'Hα 發射星雲（HII 區）。視覺極暗，但智慧望遠鏡 30 min stack + 窄頻濾鏡可清楚拍出。', 'en': 'Hα emission nebula (HII region). Faint visually, but stacks out in 30 min with a smart-scope + narrowband filter.', 'ja': 'Hα散光星雲（HII領域）。眼視は暗いが、スマート望遠鏡＋ナローバンド30分積分で写る。' },
   'info.text.ngcBulk':         { 'zh-Hant': 'NGC/IC 全集條目。資料來源：OpenNGC v2。點 📋 加入觀測隊列。', 'en': 'NGC/IC bulk catalogue entry. Source: OpenNGC v2. Tap 📋 to queue for tonight.', 'ja': 'NGC/IC 全カタログのエントリ。出典：OpenNGC v2。📋 でキューに追加。' },
+  'info.preview.label':        { 'zh-Hant': '智慧望遠鏡疊圖預覽（模擬）', 'en': 'Smart-scope stacked preview (simulated)', 'ja': 'スマート望遠鏡スタックプレビュー（模擬）' },
+  'info.preview.tooltip':      { 'zh-Hant': '程序生成的視覺示意 — 非真實天文影像。要看真實影像請使用 Aladin Lite / PanSTARRS。', 'en': 'Procedural visual hint — NOT a real image. For real previews, use Aladin Lite / PanSTARRS.', 'ja': 'プロシージャル生成のイメージ — 実天体写真ではありません。実画像は Aladin Lite / PanSTARRS で。' },
   // Observation queue (smart-scope session planner, v0.5)
   'info.queueTitle':          { 'zh-Hant': '加入觀測隊列', 'en': 'Add to observation queue', 'ja': '観測キューに追加' },
   'queue.title':              { 'zh-Hant': '📋 觀測隊列', 'en': '📋 Observation Queue', 'ja': '📋 観測キュー' },
