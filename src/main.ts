@@ -34,6 +34,34 @@ import { TonightPlanPanel } from './ui/TonightPlanPanel';
 import { ObservationLogPanel } from './ui/ObservationLogPanel';
 import { setupNightVision } from './ui/NightVision';
 import { formatDMS } from './ui/formatAngles';
+import {
+  getStoredLayoutMode, setStoredLayoutMode,
+  autoDetectLayoutMode, applyLayoutMode, showLayoutPicker,
+} from './ui/layoutMode';
+
+// Choose the layout mode before anything else mounts. If the user
+// has a saved preference, apply silently; otherwise show the picker
+// modal and wait for their choice. Either way the body class lands
+// before any UI module reads its layout-dependent state.
+async function initLayoutMode(): Promise<void> {
+  const stored = getStoredLayoutMode();
+  if (stored) {
+    applyLayoutMode(stored);
+    return;
+  }
+  // First visit: pre-select the auto-detected choice as the visual
+  // default, then let the user confirm or override.
+  const detected = autoDetectLayoutMode();
+  applyLayoutMode(detected);
+  const { mode, remember } = await showLayoutPicker();
+  applyLayoutMode(mode);
+  if (remember) setStoredLayoutMode(mode);
+}
+// Block initial DOM wiring on the picker. Top-level await is supported
+// by Vite's ES2022 target so the rest of the file runs after the user
+// has made the choice. The 3D scene constructed below sees the right
+// body class from the start.
+await initLayoutMode();
 
 const canvasContainer = document.getElementById('app')!;
 

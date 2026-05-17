@@ -1471,6 +1471,74 @@
     <div id="loading">載入中…</div>
     <div id="app"></div>
 
+    <!--
+      Layout-mode picker. Shown on first visit (or when localStorage
+      `sim:layoutMode` is unset) so the user explicitly chooses
+      Desktop vs Mobile UI rather than getting a responsive layout
+      that's trying to be both and failing at both. Hidden by
+      default; main.ts decides whether to reveal at startup based
+      on saved preference + the auto-detect default.
+    -->
+    <div id="layout-picker" style="display:none;
+         position:fixed;inset:0;z-index:9999;
+         background:rgba(8,12,24,0.96);backdrop-filter:blur(8px);
+         display:none;flex-direction:column;align-items:center;
+         justify-content:center;padding:32px;color:var(--text,#e8eef8);
+         font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+      <div style="text-align:center;margin-bottom:32px;max-width:380px;">
+        <div style="font-size:32px;font-weight:600;margin-bottom:8px;">
+          <span data-i18n="picker.title">太陽系 3D</span>
+        </div>
+        <div style="color:rgba(232,238,248,0.7);font-size:14px;line-height:1.5;"
+             data-i18n="picker.subtitle">
+          選擇適合你裝置的介面風格 — 之後可從選單裡切換。
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;width:100%;max-width:380px;">
+        <button id="layout-pick-desktop" class="layout-pick-btn"
+                data-mode="desktop"
+                style="background:rgba(255,255,255,0.05);
+                       border:1px solid rgba(255,255,255,0.15);
+                       border-radius:12px;padding:18px 20px;cursor:pointer;
+                       color:inherit;font-family:inherit;text-align:left;
+                       display:flex;align-items:center;gap:16px;
+                       transition:background 0.15s, border-color 0.15s;">
+          <span style="font-size:32px;">🖥️</span>
+          <span style="flex:1;">
+            <span style="display:block;font-size:16px;font-weight:600;"
+                  data-i18n="picker.desktop.title">桌機版</span>
+            <span style="display:block;font-size:12px;color:rgba(232,238,248,0.65);margin-top:2px;"
+                  data-i18n="picker.desktop.subtitle">鍵盤、滑鼠、寬螢幕</span>
+          </span>
+          <span style="font-size:18px;color:rgba(232,238,248,0.5);">→</span>
+        </button>
+        <button id="layout-pick-mobile" class="layout-pick-btn"
+                data-mode="mobile"
+                style="background:rgba(255,255,255,0.05);
+                       border:1px solid rgba(255,255,255,0.15);
+                       border-radius:12px;padding:18px 20px;cursor:pointer;
+                       color:inherit;font-family:inherit;text-align:left;
+                       display:flex;align-items:center;gap:16px;
+                       transition:background 0.15s, border-color 0.15s;">
+          <span style="font-size:32px;">📱</span>
+          <span style="flex:1;">
+            <span style="display:block;font-size:16px;font-weight:600;"
+                  data-i18n="picker.mobile.title">手機版</span>
+            <span style="display:block;font-size:12px;color:rgba(232,238,248,0.65);margin-top:2px;"
+                  data-i18n="picker.mobile.subtitle">觸控、全螢幕、底部工具列</span>
+          </span>
+          <span style="font-size:18px;color:rgba(232,238,248,0.5);">→</span>
+        </button>
+        <label style="display:flex;align-items:center;gap:8px;
+                      margin-top:12px;font-size:12px;
+                      color:rgba(232,238,248,0.6);cursor:pointer;">
+          <input id="layout-pick-remember" type="checkbox" checked
+                 style="accent-color:var(--accent,#5db1ff);">
+          <span data-i18n="picker.remember">記住我的選擇</span>
+        </label>
+      </div>
+    </div>
+
     <button id="panel-toggle" aria-label="Toggle controls">☰</button>
     <button id="night-vision-toggle" aria-label="Toggle night vision (red light)" title="夜視（紅光）模式 · R">🌙</button>
 

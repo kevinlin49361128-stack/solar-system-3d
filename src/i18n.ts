@@ -573,6 +573,14 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'sky.equationOfTime':     { 'zh-Hant': '時差', 'en': 'Eq. of time',        'ja': '均時差' },
   'sky.minutes':            { 'zh-Hant': '分',   'en': 'min',                'ja': '分' },
   'sky.lst':                { 'zh-Hant': '恆星時', 'en': 'Sidereal time',    'ja': '恒星時' },
+  // Layout-mode picker (shown on first visit; reachable later in settings)
+  'picker.title':           { 'zh-Hant': '太陽系 3D', 'en': 'Solar System 3D', 'ja': '太陽系 3D' },
+  'picker.subtitle':        { 'zh-Hant': '選擇適合你裝置的介面風格 — 之後可從選單裡切換。', 'en': 'Pick the UI that fits your device — you can switch later in the menu.', 'ja': 'デバイスに合うUIを選択 — 後でメニューから切替可能。' },
+  'picker.desktop.title':   { 'zh-Hant': '桌機版', 'en': 'Desktop', 'ja': 'デスクトップ版' },
+  'picker.desktop.subtitle':{ 'zh-Hant': '鍵盤、滑鼠、寬螢幕', 'en': 'Keyboard, mouse, wide screen', 'ja': 'キーボード・マウス・広い画面' },
+  'picker.mobile.title':    { 'zh-Hant': '手機版', 'en': 'Mobile', 'ja': 'モバイル版' },
+  'picker.mobile.subtitle': { 'zh-Hant': '觸控、全螢幕、底部工具列', 'en': 'Touch, full-screen, bottom toolbar', 'ja': 'タッチ・全画面・下部ツールバー' },
+  'picker.remember':        { 'zh-Hant': '記住我的選擇', 'en': 'Remember my choice', 'ja': '選択を記憶' },
   // Open-Meteo weather opt-in
   'weather.optinPitch':     { 'zh-Hant': '查看今晚雲量？資料來源 open-meteo.com（免費、不需帳號）。', 'en': 'Check tonight\'s cloud cover? Data from open-meteo.com (free, no account).', 'ja': '今夜の雲量を確認？データは open-meteo.com（無料・登録不要）。' },
   'weather.optinAction':    { 'zh-Hant': '啟用', 'en': 'Enable', 'ja': '有効にする' },
