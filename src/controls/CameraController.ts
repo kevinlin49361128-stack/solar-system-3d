@@ -515,7 +515,16 @@ export class CameraController {
       // (which Android may report relative to last-known-up unless the event
       // is `deviceorientationabsolute`).
       const rawAz = ev.webkitCompassHeading ?? ev.alpha ?? 0;
-      const rawAlt = 90 - (ev.beta ?? 0);
+      // `beta` is the front-to-back tilt in degrees per the W3C
+      // DeviceOrientationEvent spec:
+      //   beta =   0  → phone flat on table, screen up    → looking at floor (alt ≈ −90°)
+      //   beta =  90  → phone upright, screen vertical    → looking at horizon (alt = 0°)
+      //   beta = 180  → phone tilted past upright         → looking at zenith (alt ≈ +90°)
+      //
+      // So apparent altitude = beta − 90 (NOT 90 − beta — that's the
+      // inverted formula we shipped pre-v0.4 which made "look up" require
+      // tilting the phone down).
+      const rawAlt = (ev.beta ?? 90) - 90;
       // Low-pass filter to suppress noise without adding lag.
       const a = 0.18;
       if (!this.gyroInitialised) {
