@@ -1000,6 +1000,12 @@ export class SolarSystem {
     return this.exoplanetView?.isActive() ?? false;
   }
 
+  /** Show/hide habitable-zone discs across every cached exoplanet system.
+   *  Driven by the Realism panel "Habitable zone overlay" checkbox. */
+  setExoplanetHabitableZoneVisible(visible: boolean): void {
+    this.exoplanetView?.setHabitableZoneVisible(visible);
+  }
+
   getActiveExoplanetSystemId(): string | null {
     return this.exoplanetView?.getActiveId() ?? null;
   }

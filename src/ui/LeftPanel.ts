@@ -186,6 +186,20 @@ export class LeftPanel {
         solarSystem.realism.set(key, cb.checked);
       });
     }
+    // Habitable-zone overlay toggle — lives outside RealismSettings since
+    // it's exoplanet-system-specific (not part of the main observer-mode
+    // realism layer). Default ON because the green disc is one of the
+    // educational hooks for the climax flythrough.
+    const hzCb = document.getElementById('vfx-hz') as HTMLInputElement | null;
+    if (hzCb) {
+      hzCb.addEventListener('change', () => {
+        solarSystem.setExoplanetHabitableZoneVisible(hzCb.checked);
+      });
+      // Apply initial state so the user's persisted preference takes effect
+      // on the cached exoplanet system view.
+      solarSystem.setExoplanetHabitableZoneVisible(hzCb.checked);
+    }
+
     // Sky-model picker (Preetham vs Hosek-Wilkie). Lives outside the
     // RealismSettings store because the two options aren't independent
     // toggles — they're a mutually-exclusive choice. Persistence is

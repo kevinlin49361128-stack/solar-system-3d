@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { habitableZoneAU, classifyHabitability } from './habitableZone';
+import { habitableZoneAU, habitableZoneAUExtended, classifyHabitability } from './habitableZone';
 
 /**
  * Reference values from Kopparapu+2013 Table 3 plus the online
@@ -58,12 +58,9 @@ describe('classifyHabitability — per-planet bucket', () => {
     expect(classifyHabitability(1.0, hz)).toBe('in-hz');
   });
 
-  it('Mars (1.524 AU) classifies as in-hz under conservative bounds', () => {
-    // Surprising-to-laypeople fact: Mars IS inside the conservative HZ.
-    // It's not habitable because it lost its atmosphere — the HZ is a
-    // necessary but not sufficient condition. Worth surfacing visually
-    // so the user sees that orbits inside the green ring still aren't
-    // automatically Earth analogues.
+  it('Mars (1.524 AU) classifies as in-hz under the legacy single-band path', () => {
+    // The legacy {innerAU, outerAU} shape uses the optimistic bounds
+    // (Recent Venus / Early Mars); Mars at 1.524 AU sits inside.
     expect(classifyHabitability(1.524, hz)).toBe('in-hz');
   });
 
@@ -82,5 +79,45 @@ describe('classifyHabitability — per-planet bucket', () => {
 
   it('returns unknown when HZ data missing', () => {
     expect(classifyHabitability(1.0, null)).toBe('unknown');
+  });
+});
+
+describe('habitableZoneAUExtended — Kopparapu conservative bounds', () => {
+  it('Sol conservative HZ ≈ 0.99 → 1.69 AU (Runaway / Maximum Greenhouse)', () => {
+    const ex = habitableZoneAUExtended(695700, 5778);
+    expect(ex).not.toBeNull();
+    // Earth at 1.0 AU sits right at the inner edge of the conservative
+    // band — the "we're closer to the runaway-greenhouse cliff than we
+    // think" pop-sci fact that's worth being able to surface in UI.
+    expect(ex!.conservativeInnerAU).toBeGreaterThan(0.95);
+    expect(ex!.conservativeInnerAU).toBeLessThan(1.05);
+    expect(ex!.conservativeOuterAU).toBeGreaterThan(1.60);
+    expect(ex!.conservativeOuterAU).toBeLessThan(1.78);
+    // Conservative band sits strictly inside optimistic.
+    expect(ex!.conservativeInnerAU).toBeGreaterThan(ex!.optimisticInnerAU);
+    expect(ex!.conservativeOuterAU).toBeLessThan(ex!.optimisticOuterAU);
+  });
+
+  it('a planet at 0.85 AU sits in the inner optimistic-only band', () => {
+    // Sol: optimistic inner (Recent Venus) ≈ 0.75 AU,
+    //      conservative inner (Runaway Greenhouse) ≈ 0.98 AU.
+    // 0.85 AU is between them — the "Venus-analogue" sliver where a
+    // planet would be habitable under generous cloud-feedback models
+    // but not the strict Runaway-Greenhouse calculation. Mars (1.524)
+    // is actually INSIDE the conservative band per Kopparapu+2013
+    // (outer ~1.71 AU); we don't use Mars for this test because of it.
+    const ex = habitableZoneAUExtended(695700, 5778);
+    expect(ex).not.toBeNull();
+    expect(0.85).toBeGreaterThan(ex!.optimisticInnerAU);
+    expect(0.85).toBeLessThan(ex!.conservativeInnerAU);
+  });
+
+  it('classifier flags 0.85 AU around Sol as in-hz-opt; Earth in-hz', () => {
+    const ex = habitableZoneAUExtended(695700, 5778);
+    expect(classifyHabitability(0.85,  ex)).toBe('in-hz-opt');  // optimistic-only
+    expect(classifyHabitability(1.0,   ex)).toBe('in-hz');       // Earth conservative
+    expect(classifyHabitability(1.524, ex)).toBe('in-hz');       // Mars conservative
+    expect(classifyHabitability(5.2,   ex)).toBe('too-cold');    // Jupiter
+    expect(classifyHabitability(0.39,  ex)).toBe('too-hot');     // Mercury
   });
 });

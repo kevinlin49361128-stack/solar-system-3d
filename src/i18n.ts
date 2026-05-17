@@ -82,6 +82,7 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'realism.zodiacal': { 'zh-Hant': '黃道光', 'en': 'Zodiacal light', 'ja': '黄道光' },
   'realism.airglow': { 'zh-Hant': '氣輝 + 光害方向', 'en': 'Airglow + light pollution dome', 'ja': '大気光 + 光害ドーム' },
   'realism.meteors': { 'zh-Hant': '流星雨（依已知 shower）', 'en': 'Meteor showers (known showers)', 'ja': '流星群（既知のもの）' },
+  'realism.hzOverlay': { 'zh-Hant': '系外行星宜居帶 overlay（Kopparapu）', 'en': 'Exoplanet habitable-zone overlay (Kopparapu)', 'ja': '系外惑星ハビタブルゾーン overlay (Kopparapu)' },
   'left.events': { 'zh-Hant': '天文事件', 'en': 'Astro Events', 'ja': '天文イベント' },
   'nbody.yoshida4': { 'zh-Hant': 'Yoshida 4 階積分', 'en': 'Yoshida 4th-order integrator', 'ja': '吉田4次積分' },
   'nbody.relativistic': { 'zh-Hant': '廣義相對論修正（水星進動）', 'en': 'GR correction (Mercury precession)', 'ja': '一般相対論補正（水星近日点移動）' },
@@ -642,12 +643,15 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'exo.returnToGalaxy':    { 'zh-Hant': '↩ 回到銀河', 'en': '↩ Return to galaxy', 'ja': '↩ 銀河に戻る' },
   'exo.activeBanner':      { 'zh-Hant': '正在參觀', 'en': 'Currently visiting', 'ja': '訪問中' },
   // Habitable-zone classification badges (Kopparapu+2013 conservative HZ)
-  'exo.hz.inHz':           { 'zh-Hant': '宜居帶內', 'en': 'In HZ', 'ja': 'HZ内' },
+  'exo.hz.inHz':           { 'zh-Hant': '宜居帶內（保守）', 'en': 'In HZ (conservative)', 'ja': 'HZ内（保守）' },
+  'exo.hz.inHzOpt':        { 'zh-Hant': '宜居帶內（樂觀）', 'en': 'In HZ (optimistic only)', 'ja': 'HZ内（楽観のみ）' },
   'exo.hz.hotEdge':        { 'zh-Hant': '高溫邊緣', 'en': 'Hot edge', 'ja': '高温端' },
   'exo.hz.coldEdge':       { 'zh-Hant': '低溫邊緣', 'en': 'Cold edge', 'ja': '低温端' },
   'exo.hz.tooHot':         { 'zh-Hant': '過熱', 'en': 'Too hot', 'ja': '高温過ぎ' },
   'exo.hz.tooCold':        { 'zh-Hant': '過冷', 'en': 'Too cold', 'ja': '低温過ぎ' },
   'info.row.hzRange':      { 'zh-Hant': '宜居帶範圍 (Kopparapu)', 'en': 'Habitable zone (Kopparapu)', 'ja': 'ハビタブルゾーン (Kopparapu)' },
+  'info.row.hzRangeOpt':   { 'zh-Hant': '樂觀 HZ (Recent Venus / Early Mars)', 'en': 'Optimistic HZ (Recent Venus / Early Mars)', 'ja': '楽観 HZ（Recent Venus / Early Mars）' },
+  'info.row.hzRangeCon':   { 'zh-Hant': '保守 HZ (Runaway / Maximum Greenhouse)', 'en': 'Conservative HZ (Runaway / Max Greenhouse)', 'ja': '保守 HZ（Runaway / Max Greenhouse）' },
 
   // SkyPanel — sun/moon events
   'sky.polarNight':         { 'zh-Hant': '極夜/極晝',     'en': 'Polar night/day',         'ja': '極夜/白夜' },

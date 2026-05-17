@@ -31,6 +31,8 @@ interface KopparapuCoeffs {
   d: number;
 }
 
+// "Optimistic" HZ bounds — widest set, based on geological evidence of
+// liquid water on Venus (Recent Venus) and Mars (Early Mars).
 const RECENT_VENUS: KopparapuCoeffs = {
   sEffSun: 1.7763,
   a: 1.4335e-4,
@@ -45,6 +47,27 @@ const EARLY_MARS: KopparapuCoeffs = {
   b: 1.5275e-9,
   c: -2.1709e-12,
   d: -3.8282e-16,
+};
+
+// "Conservative" HZ bounds — narrower set, based on theoretical climate
+// models. Runaway Greenhouse is where a wet Earth analogue loses its
+// oceans; Maximum Greenhouse is where even a CO₂-thick atmosphere can't
+// keep liquid water from freezing out. Numbers from Kopparapu+2013
+// Table 3, same paper as the optimistic bounds.
+const RUNAWAY_GREENHOUSE: KopparapuCoeffs = {
+  sEffSun: 1.0512,
+  a: 1.3242e-4,
+  b: 1.5418e-8,
+  c: -7.9895e-12,
+  d: -1.8328e-15,
+};
+
+const MAXIMUM_GREENHOUSE: KopparapuCoeffs = {
+  sEffSun: 0.3438,
+  a: 5.8942e-5,
+  b: 1.6558e-9,
+  c: -3.0045e-12,
+  d: -5.2983e-16,
 };
 
 function sEff(coeffs: KopparapuCoeffs, teffK: number): number {
@@ -85,36 +108,90 @@ export function habitableZoneAU(
   starRadiusKm: number,
   starTeffK: number,
 ): { innerAU: number; outerAU: number } | null {
+  const ex = habitableZoneAUExtended(starRadiusKm, starTeffK);
+  return ex ? { innerAU: ex.optimisticInnerAU, outerAU: ex.optimisticOuterAU } : null;
+}
+
+/**
+ * Compute both Kopparapu HZ pairs in AU at once.
+ *
+ *   optimisticInner / optimisticOuter — Recent Venus / Early Mars
+ *     (the widest plausible band; what habitableZoneAU returns)
+ *   conservativeInner / conservativeOuter — Runaway / Maximum Greenhouse
+ *     (theoretical climate-model bounds; tighter)
+ *
+ * For Sol: optimistic ≈ 0.75 → 1.77 AU, conservative ≈ 0.99 → 1.69 AU.
+ * Earth sits at the inner edge of the conservative band; Mars (1.524 AU)
+ * is in the optimistic band but outside the conservative one. Both
+ * facts come up in pop-science exoplanet discussion, so we surface them.
+ */
+export function habitableZoneAUExtended(
+  starRadiusKm: number,
+  starTeffK: number,
+): {
+  optimisticInnerAU: number; optimisticOuterAU: number;
+  conservativeInnerAU: number; conservativeOuterAU: number;
+} | null {
   if (starTeffK < 2300 || starTeffK > 8000) return null;
   const L = luminositySolar(starRadiusKm, starTeffK);
-  const sInner = sEff(RECENT_VENUS, starTeffK);
-  const sOuter = sEff(EARLY_MARS, starTeffK);
-  if (sInner <= 0 || sOuter <= 0) return null;
-  const innerAU = Math.sqrt(L / sInner);
-  const outerAU = Math.sqrt(L / sOuter);
-  return { innerAU, outerAU };
+  const sOptIn  = sEff(RECENT_VENUS, starTeffK);
+  const sOptOut = sEff(EARLY_MARS, starTeffK);
+  const sConIn  = sEff(RUNAWAY_GREENHOUSE, starTeffK);
+  const sConOut = sEff(MAXIMUM_GREENHOUSE, starTeffK);
+  if (sOptIn <= 0 || sOptOut <= 0 || sConIn <= 0 || sConOut <= 0) return null;
+  return {
+    optimisticInnerAU:   Math.sqrt(L / sOptIn),
+    optimisticOuterAU:   Math.sqrt(L / sOptOut),
+    conservativeInnerAU: Math.sqrt(L / sConIn),
+    conservativeOuterAU: Math.sqrt(L / sConOut),
+  };
 }
 
 /**
  * Classification of a planet's semi-major axis relative to its host's
  * habitable zone. Used by InfoPanel to badge each exoplanet with a
- * visual hint (🟢 in HZ, 🟠 too hot, 🔵 too cold). The "edge" buckets
- * give a 10 % grace either side of the conservative HZ — these are
- * planets that brush the boundaries and might be habitable under more
- * optimistic assumptions (e.g. cloud feedback, atmospheric H₂).
+ * visual hint:
+ *
+ *   🟢 in-hz       — inside the Runaway/Max Greenhouse conservative HZ
+ *                    (the strongest case for "could host liquid water")
+ *   🟡 in-hz-opt   — in optimistic but NOT conservative HZ — habitable
+ *                    only under cloud-feedback / extra-CO₂ models
+ *   🔥 too-hot     — closer than the optimistic inner edge
+ *   ❄️ too-cold    — beyond the optimistic outer edge
+ *   ❓ unknown     — host Teff outside Kopparapu calibration range
+ *
+ * If the caller passes the legacy `{innerAU, outerAU}` shape (the old
+ * `habitableZoneAU` return), it's treated as the optimistic bounds and
+ * the conservative ones are unavailable — falls back to a single 'in-hz'
+ * bucket with edge classifications by ±10 % of the optimistic edges.
  */
 export type HabitabilityBucket =
-  | 'in-hz'        // strictly inside the conservative HZ
-  | 'hot-edge'     // 0–10 % closer than inner edge
-  | 'cold-edge'    // 0–10 % beyond outer edge
-  | 'too-hot'      // > 10 % closer than inner edge
-  | 'too-cold'     // > 10 % beyond outer edge
-  | 'unknown';     // host Teff outside Kopparapu calibration range
+  | 'in-hz'        // inside conservative HZ
+  | 'in-hz-opt'    // inside optimistic only
+  | 'hot-edge'     // brushing inner edge of optimistic
+  | 'cold-edge'    // brushing outer edge of optimistic
+  | 'too-hot'      // closer than optimistic inner
+  | 'too-cold'     // beyond optimistic outer
+  | 'unknown';
 
 export function classifyHabitability(
-  planetAU: number, hz: { innerAU: number; outerAU: number } | null,
+  planetAU: number,
+  hz:
+    | { innerAU: number; outerAU: number }
+    | { optimisticInnerAU: number; optimisticOuterAU: number;
+        conservativeInnerAU: number; conservativeOuterAU: number; }
+    | null,
 ): HabitabilityBucket {
   if (!hz) return 'unknown';
+  if ('conservativeInnerAU' in hz) {
+    if (planetAU >= hz.conservativeInnerAU && planetAU <= hz.conservativeOuterAU) return 'in-hz';
+    if (planetAU >= hz.optimisticInnerAU   && planetAU <= hz.optimisticOuterAU)   return 'in-hz-opt';
+    if (planetAU < hz.optimisticInnerAU) {
+      return planetAU > hz.optimisticInnerAU * 0.90 ? 'hot-edge' : 'too-hot';
+    }
+    return planetAU < hz.optimisticOuterAU * 1.10 ? 'cold-edge' : 'too-cold';
+  }
+  // Legacy single-band shape — treat as optimistic only.
   if (planetAU >= hz.innerAU && planetAU <= hz.outerAU) return 'in-hz';
   if (planetAU < hz.innerAU) {
     return planetAU > hz.innerAU * 0.90 ? 'hot-edge' : 'too-hot';

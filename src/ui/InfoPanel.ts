@@ -5,7 +5,7 @@ import type { CameraController } from '../controls/CameraController';
 import type { EventsPanel } from './EventsPanel';
 import { AU_KM } from '../physics/constants';
 import { J2_BODIES, computeJ2SecularRates, J2PerturbedKeplerPropagator } from '../physics/j2Perturbation';
-import { habitableZoneAU, classifyHabitability, type HabitabilityBucket } from '../physics/habitableZone';
+import { habitableZoneAUExtended, classifyHabitability, type HabitabilityBucket } from '../physics/habitableZone';
 import { pieChartSvg, compositionListHtml, tempGaugeHtml } from './charts';
 import { langPick, bodyName, onLanguageChange, t } from '../i18n';
 import {
@@ -431,11 +431,15 @@ export class InfoPanel {
       [t('info.row.radius'), `${formatNumber(sys.host.physical.radiusKm, 0)} km (${(sys.host.physical.radiusKm / 695700).toFixed(3)} R☉)`],
       [t('info.row.mass'), `${sys.host.physical.massKg.toExponential(3)} kg (${(sys.host.physical.massKg / 1.989e30).toFixed(3)} M☉)`],
     ];
-    // Surface the Kopparapu HZ bounds when we can compute them — feeds
-    // directly into the per-planet 🟢 / 🟠 / 🔵 badges further down.
-    const hz = habitableZoneAU(sys.host.physical.radiusKm, sys.hostTeffK);
+    // Surface BOTH Kopparapu HZ bound pairs when we can compute them.
+    // Optimistic = Recent Venus → Early Mars (Mars-included for Sol).
+    // Conservative = Runaway Greenhouse → Maximum Greenhouse (the
+    // strictly liquid-water case). These feed the per-planet 🟢 / 🟡
+    // badges further down.
+    const hz = habitableZoneAUExtended(sys.host.physical.radiusKm, sys.hostTeffK);
     if (hz) {
-      rows.push([t('info.row.hzRange'), `${hz.innerAU.toFixed(3)} – ${hz.outerAU.toFixed(3)} AU`]);
+      rows.push([t('info.row.hzRangeOpt'), `${hz.optimisticInnerAU.toFixed(3)} – ${hz.optimisticOuterAU.toFixed(3)} AU`]);
+      rows.push([t('info.row.hzRangeCon'), `${hz.conservativeInnerAU.toFixed(3)} – ${hz.conservativeOuterAU.toFixed(3)} AU`]);
     }
     this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
 
@@ -1710,12 +1714,13 @@ function formatPeriod(days: number): string {
  */
 function hzBadge(bucket: HabitabilityBucket): { emoji: string; label: string; color: string } {
   switch (bucket) {
-    case 'in-hz':    return { emoji: '🟢', label: t('exo.hz.inHz'),    color: '#7fffa0' };
-    case 'hot-edge': return { emoji: '🟠', label: t('exo.hz.hotEdge'), color: '#ffc070' };
-    case 'cold-edge':return { emoji: '🔵', label: t('exo.hz.coldEdge'),color: '#9fd8ff' };
-    case 'too-hot':  return { emoji: '🔥', label: t('exo.hz.tooHot'),  color: '#ff8060' };
-    case 'too-cold': return { emoji: '❄️', label: t('exo.hz.tooCold'), color: '#a0c0ff' };
-    case 'unknown':  return { emoji: '',   label: '',                  color: 'transparent' };
+    case 'in-hz':     return { emoji: '🟢', label: t('exo.hz.inHz'),     color: '#7fffa0' };
+    case 'in-hz-opt': return { emoji: '🟡', label: t('exo.hz.inHzOpt'),  color: '#fce47a' };
+    case 'hot-edge':  return { emoji: '🟠', label: t('exo.hz.hotEdge'),  color: '#ffc070' };
+    case 'cold-edge': return { emoji: '🔵', label: t('exo.hz.coldEdge'), color: '#9fd8ff' };
+    case 'too-hot':   return { emoji: '🔥', label: t('exo.hz.tooHot'),   color: '#ff8060' };
+    case 'too-cold':  return { emoji: '❄️', label: t('exo.hz.tooCold'),  color: '#a0c0ff' };
+    case 'unknown':   return { emoji: '',   label: '',                   color: 'transparent' };
   }
 }
 

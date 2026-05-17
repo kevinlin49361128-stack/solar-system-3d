@@ -11,7 +11,7 @@ import {
   getExoplanetSystem,
   type ExoplanetSystemMeta,
 } from '../data/exoplanetSystems';
-import { habitableZoneAU } from '../physics/habitableZone';
+import { habitableZoneAUExtended } from '../physics/habitableZone';
 import type { ScaleController } from '../controls/ScaleController';
 
 /**
@@ -40,9 +40,13 @@ interface SystemBuild {
     orbit: OrbitLine | null;
     propagator: ReturnType<typeof Object>;
   }>;
-  /** Habitable-zone disc (Recent Venus → Early Mars), or null if Teff
-   *  outside the calibrated range or system has no defined HZ. */
+  /** Optimistic HZ annulus (Recent Venus → Early Mars), null if Teff
+   *  is outside the Kopparapu polynomial range. */
   hzDisc: Mesh | null;
+  /** Conservative HZ annulus (Runaway Greenhouse → Maximum Greenhouse) —
+   *  a darker green band nested INSIDE hzDisc. Strongest case for liquid
+   *  water. Null if same condition as hzDisc. */
+  hzDiscConservative: Mesh | null;
   /** Mercury's orbit projected into this system's frame, as a dashed
    *  line at 0.387 AU radius — gives an instant "compare to our solar
    *  system" sense of scale. Null if scale information unavailable. */
@@ -192,34 +196,53 @@ export class ExoplanetSystemView {
       planets.push({ mesh, orbit, propagator: planet.propagator });
     }
 
-    // Habitable-zone disc (Kopparapu+2013 conservative bounds).
-    // Renders as a faint green annulus on the orbital plane between
-    // the Recent Venus and Early Mars edges. Sits behind the planet
-    // dots (renderOrder = -1) so it doesn't fight the orbit lines.
+    // Habitable-zone discs (Kopparapu+2013). Two nested annuli:
+    //   outer = optimistic (Recent Venus → Early Mars)  — faint green
+    //   inner = conservative (Runaway Greenhouse → Maximum Greenhouse)
+    //           — slightly brighter green, sits INSIDE the outer one
+    // Both lay flat on the orbital plane. renderOrder -1 keeps them
+    // behind the orbit lines + planet dots.
     let hzDisc: Mesh | null = null;
-    const hz = habitableZoneAU(meta.host.physical.radiusKm, meta.hostTeffK);
-    if (hz) {
-      // Same moon-distance scaling as the planet orbits, so the disc
-      // lines up with which planet is "in" the green ring.
-      const innerScene = this.scaler.moonDistanceAU(hz.innerAU);
-      const outerScene = this.scaler.moonDistanceAU(hz.outerAU);
-      const hzGeom = new RingGeometry(innerScene, outerScene, 96, 1);
-      const hzMat = new MeshBasicMaterial({
+    let hzDiscConservative: Mesh | null = null;
+    const hzEx = habitableZoneAUExtended(meta.host.physical.radiusKm, meta.hostTeffK);
+    if (hzEx) {
+      const inOpt = this.scaler.moonDistanceAU(hzEx.optimisticInnerAU);
+      const outOpt = this.scaler.moonDistanceAU(hzEx.optimisticOuterAU);
+      const inCon = this.scaler.moonDistanceAU(hzEx.conservativeInnerAU);
+      const outCon = this.scaler.moonDistanceAU(hzEx.conservativeOuterAU);
+
+      const optGeom = new RingGeometry(inOpt, outOpt, 96, 1);
+      const optMat = new MeshBasicMaterial({
         color: 0x46d97a,
         transparent: true,
-        opacity: 0.15,
+        opacity: 0.10,           // dimmer than the conservative band
         depthWrite: false,
-        side: 2,  // DoubleSide
+        side: 2,                 // DoubleSide
         blending: AdditiveBlending,
       });
-      hzDisc = new Mesh(hzGeom, hzMat);
-      // Lay the disc flat on the orbital plane (XY in scene = ecliptic
-      // XY in our convention; Three.js Y-up means we want the disc
-      // normal to be Y, so rotate the default XY-plane geometry by
-      // -π/2 around X).
+      hzDisc = new Mesh(optGeom, optMat);
       hzDisc.rotation.x = -Math.PI / 2;
       hzDisc.renderOrder = -1;
       hostMesh.group.add(hzDisc);
+
+      // Conservative band, nested inside. Guard against the degenerate
+      // case where conservative bounds collapse to a sliver narrower
+      // than ring geometry can render — fall back to skipping it.
+      if (outCon > inCon * 1.01) {
+        const conGeom = new RingGeometry(inCon, outCon, 96, 1);
+        const conMat = new MeshBasicMaterial({
+          color: 0x6effa0,
+          transparent: true,
+          opacity: 0.20,
+          depthWrite: false,
+          side: 2,
+          blending: AdditiveBlending,
+        });
+        hzDiscConservative = new Mesh(conGeom, conMat);
+        hzDiscConservative.rotation.x = -Math.PI / 2;
+        hzDiscConservative.renderOrder = -1;
+        hostMesh.group.add(hzDiscConservative);
+      }
     }
 
     // Mercury's orbit overlay: dashed grey ring at 0.387 AU. Lets
@@ -233,7 +256,19 @@ export class ExoplanetSystemView {
     if (mercuryOrbitOverlay) hostMesh.group.add(mercuryOrbitOverlay);
 
     sysGroup.visible = false;
-    return { group: sysGroup, hostMesh, planets, hzDisc, mercuryOrbitOverlay };
+    return { group: sysGroup, hostMesh, planets, hzDisc, hzDiscConservative, mercuryOrbitOverlay };
+  }
+
+  /**
+   * Toggle visibility of both HZ discs (optimistic + conservative)
+   * across every cached system. Called from the Realism panel
+   * checkbox so the user can declutter the orbital-plane view.
+   */
+  setHabitableZoneVisible(visible: boolean): void {
+    for (const build of this.cache.values()) {
+      if (build.hzDisc) build.hzDisc.visible = visible;
+      if (build.hzDiscConservative) build.hzDiscConservative.visible = visible;
+    }
   }
 
   /** Total system count — used for diagnostics / future menu. */
