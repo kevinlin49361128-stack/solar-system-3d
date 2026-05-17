@@ -9,6 +9,7 @@ import {
   CanvasTexture,
   Color,
   Vector3,
+  Quaternion,
   RingGeometry,
   DoubleSide,
   BackSide,
@@ -19,6 +20,7 @@ import {
 } from 'three';
 import type { BodyDescriptor } from '../physics/types';
 import { DEG2RAD } from '../physics/constants';
+import { iauPoleToSceneDir } from '../physics/iauPole';
 import { TextureConfig } from './textureConfig';
 import { bodyName, onLanguageChange } from '../i18n';
 
@@ -156,11 +158,25 @@ export class BodyMesh {
     this.bodyRadius = sceneRadius;
 
     this.tilt = new Group();
-    // Axial tilt: rotate around scene-X axis. Combined with the
-    // ecliptic→scene transform this yields a spin axis tilted ε from scene-Y
-    // (ecliptic north) toward +Z, matching the IAU convention used by the
-    // topocentric math.
-    this.tilt.rotation.x = -descriptor.physical.axialTiltDeg * DEG2RAD;
+    // Axial tilt: by default just a rotation around scene-X axis (simple
+    // but doesn't pin the spin-axis AZIMUTH in inertial space — so ring
+    // planes phase wrong relative to real dates). If physical.poleRaJ2000Deg
+    // + poleDecJ2000Deg are set, we instead build a quaternion that
+    // orients the body's local +Y axis to point along the IAU-published
+    // pole direction in scene coords. This fixes Saturn's 14.7-year
+    // ring-edge-on cycle (real edge-on March 2025, Aug 2009, …).
+    const pRa = descriptor.physical.poleRaJ2000Deg;
+    const pDec = descriptor.physical.poleDecJ2000Deg;
+    if (pRa !== undefined && pDec !== undefined) {
+      const poleDir = iauPoleToSceneDir(pRa, pDec);
+      const q = new Quaternion().setFromUnitVectors(
+        new Vector3(0, 1, 0),  // body's local +Y spin pole
+        poleDir,
+      );
+      this.tilt.quaternion.copy(q);
+    } else {
+      this.tilt.rotation.x = -descriptor.physical.axialTiltDeg * DEG2RAD;
+    }
     this.group.add(this.tilt);
 
     // Earth (and other bodies the user is likely to view up close) get a far

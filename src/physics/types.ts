@@ -70,6 +70,13 @@ export interface PhysicalProperties {
   massKg: number;
   rotationPeriodDays: number;
   axialTiltDeg: number;
+  /** IAU J2000 north-pole RA in degrees. If set together with
+   *  poleDecJ2000Deg, the body's spin axis is oriented along this
+   *  direction in inertial space (overriding the simpler axialTiltDeg
+   *  rotation around scene-X). Important for bodies where ring-plane-
+   *  crossing geometry has to match real-world dates (Saturn). */
+  poleRaJ2000Deg?: number;
+  poleDecJ2000Deg?: number;
 }
 
 export interface Appearance {

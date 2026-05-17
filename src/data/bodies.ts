@@ -144,7 +144,13 @@ export const JUPITER: BodyDescriptor = {
   nameJa: '木星',
   parentId: null,
   category: 'planet',
-  physical: { radiusKm: 69911, massKg: 1.8982e27, rotationPeriodDays: 0.41354, axialTiltDeg: 3.13 },
+  physical: {
+    radiusKm: 69911, massKg: 1.8982e27, rotationPeriodDays: 0.41354, axialTiltDeg: 3.13,
+    // IAU WGCCRE 2015 — pinning the spin axis in inertial space so the
+    // Galilean transit / occultation geometry phases correctly relative
+    // to real-world dates.
+    poleRaJ2000Deg: 268.057, poleDecJ2000Deg: 64.495,
+  },
   propagator: new KeplerPropagator({
     a: 5.20288700, aDot: -0.00011607,
     e: 0.04838624, eDot: -0.00013253,
@@ -169,7 +175,13 @@ export const SATURN: BodyDescriptor = {
   nameJa: '土星',
   parentId: null,
   category: 'planet',
-  physical: { radiusKm: 58232, massKg: 5.6834e26, rotationPeriodDays: 0.43958, axialTiltDeg: 26.73 },
+  physical: {
+    radiusKm: 58232, massKg: 5.6834e26, rotationPeriodDays: 0.43958, axialTiltDeg: 26.73,
+    // IAU WGCCRE 2015 — Saturn's pole orientation is what makes the
+    // ring opening angle phase correctly across the 14.7-year edge-on
+    // cycle (real edge-on crossings: Mar 2025, Aug 2009, May 1995, …).
+    poleRaJ2000Deg: 40.589, poleDecJ2000Deg: 83.537,
+  },
   propagator: new KeplerPropagator({
     a: 9.53667594, aDot: -0.00125060,
     e: 0.05386179, eDot: -0.00050991,
