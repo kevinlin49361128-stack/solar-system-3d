@@ -4,6 +4,7 @@ import type { SimulationClock } from '../time/SimulationClock';
 import type { CameraController } from '../controls/CameraController';
 import type { EventsPanel } from './EventsPanel';
 import { AU_KM } from '../physics/constants';
+import { J2_BODIES, computeJ2SecularRates, J2PerturbedKeplerPropagator } from '../physics/j2Perturbation';
 import { pieChartSvg, compositionListHtml, tempGaugeHtml } from './charts';
 import { langPick, bodyName, onLanguageChange, t } from '../i18n';
 import {
@@ -1283,6 +1284,30 @@ export class InfoPanel {
       `;
     }
 
+    // J2 secular-drift diagnostic — for any body whose parent has a known
+    // oblateness coefficient. Shows the textbook Brouwer/Kozai rates so
+    // the user can see "Io's node drifts 47°/yr from Jupiter's bulge",
+    // "ISS regresses 5°/day from Earth's bulge", etc. Doesn't affect the
+    // propagator unless it's actually a J2PerturbedKeplerPropagator —
+    // this is a "what-would-happen" diagnostic.
+    let j2Html = '';
+    const parentJ2 = d.parentId ? J2_BODIES[d.parentId] : null;
+    if (prop.elements && parentJ2) {
+      const r = computeJ2SecularRates(prop.elements.a, prop.elements.e, prop.elements.iDeg, parentJ2);
+      const appliedNote = prop instanceof J2PerturbedKeplerPropagator
+        ? t('physics.j2.applied')
+        : t('physics.j2.diagnostic');
+      const parentLabel = this.bodyShort(d.parentId!);
+      j2Html = `
+        <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.55;font-family:ui-monospace,monospace;">
+          <div style="color:var(--accent);margin-bottom:2px;">${t('physics.j2.title').replace('{parent}', parentLabel)}</div>
+          <div>Ω̇ = ${formatJ2Rate(r.OmegaDotDegPerDay, r.OmegaDotDegPerYear)}</div>
+          <div>ω̇ = ${formatJ2Rate(r.omegaDotDegPerDay, r.omegaDotDegPerDay * 365.25)}</div>
+          <div style="opacity:0.7;font-style:italic;">${appliedNote}</div>
+        </div>
+      `;
+    }
+
     // Source attribution
     let sourceHtml = '';
     if (prop.source) {
@@ -1331,6 +1356,7 @@ export class InfoPanel {
         </summary>
         <div style="padding:4px 0 2px 0;margin-top:4px;border-top:1px dashed rgba(93,177,255,0.18);">
           ${elementsHtml}
+          ${j2Html}
           ${stateHtml}
           ${sourceHtml}
           ${precisionWarn}
@@ -1659,6 +1685,26 @@ function formatPeriod(days: number): string {
   if (days < 1000) return `${formatNumber(days, 2)} ${t('info.unit.day')}`;
   const years = days / 365.256;
   return `${formatNumber(years, 2)} ${t('info.unit.year')}`;
+}
+
+/**
+ * Format a J2 secular rate (deg/day, deg/year) — pick the unit that gives
+ * the user a number they can hold in their head. LEO sats want deg/day
+ * (~5°/day); GEO sats want deg/year (~0.04°/yr); moons want deg/yr.
+ * Always shows the sign explicitly because the sign convention (regression
+ * vs advance) is the whole story for "is this orbit pro/retrograde".
+ */
+function formatJ2Rate(perDay: number, perYear: number): string {
+  const abs = Math.abs(perDay);
+  if (abs >= 1) {
+    return `${perDay >= 0 ? '+' : ''}${perDay.toFixed(3)}°/${t('info.unit.day')}`;
+  }
+  if (abs >= 0.01) {
+    // 1 deg/day = 365.25 deg/year, so abs<1 deg/day might still be a
+    // meaningful number in /day for orbits like GPS. Show both.
+    return `${perDay >= 0 ? '+' : ''}${perDay.toFixed(4)}°/${t('info.unit.day')} (${perYear >= 0 ? '+' : ''}${perYear.toFixed(1)}°/${t('info.unit.year')})`;
+  }
+  return `${perYear >= 0 ? '+' : ''}${perYear.toFixed(3)}°/${t('info.unit.year')}`;
 }
 
 function formatHill(rAU: number): string {

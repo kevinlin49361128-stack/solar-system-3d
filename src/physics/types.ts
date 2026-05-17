@@ -25,12 +25,13 @@ export interface OrbitPropagator {
 }
 
 export type PropagatorKind =
-  | 'kepler'         // analytic two-body Kepler
-  | 'kepler-perturbed' // Kepler with secular drift terms
-  | 'sampled'        // table of (jd, state) samples interpolated
-  | 'horizons'       // queried from JPL Horizons
-  | 'nbody'          // member of an N-body simulation
-  | 'lunar-elp';     // lunar series (ELP / Meeus)
+  | 'kepler'             // analytic two-body Kepler
+  | 'kepler-perturbed'   // Kepler with constant secular drift terms (from data tables)
+  | 'kepler-perturbed-j2'// Kepler decorated with J2 oblateness secular rates (computed)
+  | 'sampled'            // table of (jd, state) samples interpolated
+  | 'horizons'           // queried from JPL Horizons
+  | 'nbody'              // member of an N-body simulation
+  | 'lunar-elp';         // lunar series (ELP / Meeus)
 
 export interface PropagatorSource {
   /** Short human label, e.g. "NASA JPL Approx. Positions". */
