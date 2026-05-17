@@ -6,6 +6,7 @@ import {
   observerEcliptic, dirToAltAz, raDecToEcliptic, atmosphericRefractionDeg,
   applyProperMotion, applyAberration,
 } from '../physics/topocentric';
+import { magneticDeclinationDeg } from '../physics/magneticDeclination';
 import { eclipticToScene } from '../physics/frame';
 import { AU_KM } from '../physics/constants';
 
@@ -95,6 +96,12 @@ export class CameraController {
   private gyroSmoothAltDeg: number = 0;
   private gyroInitialised: boolean = false;
   private gyroHandler: ((e: DeviceOrientationEvent) => void) | null = null;
+  /** Magnetic-declination correction (true heading = magnetic + declination).
+   *  Recomputed when the observer's lat/lon changes; applied to every gyro
+   *  azimuth reading. Toggle off via setMagneticCorrectionEnabled(false) if
+   *  the user wants the raw compass reading. */
+  private magneticCorrectionEnabled: boolean = true;
+  private magneticDeclinationCacheDeg: number = 0;
 
   private readonly tmpTarget = new Vector3();
   private prevTarget = new Vector3();
@@ -243,7 +250,17 @@ export class CameraController {
     this.observerLat = latDeg;
     this.observerLon = lonDeg;
     this.observerElevationM = elevationM;
+    // Recompute local magnetic declination so gyro-mode headings are
+    // corrected from magnetic → true north at this lat/lon.
+    this.magneticDeclinationCacheDeg = magneticDeclinationDeg(latDeg, lonDeg);
   }
+
+  /** Toggle magnetic-declination correction on gyro azimuth readings.
+   *  Disable to see the raw magnetic compass heading the phone reports. */
+  setMagneticCorrectionEnabled(on: boolean): void { this.magneticCorrectionEnabled = on; }
+  isMagneticCorrectionEnabled(): boolean { return this.magneticCorrectionEnabled; }
+  /** Current cached magnetic declination at the observer location, deg. */
+  getMagneticDeclinationDeg(): number { return this.magneticDeclinationCacheDeg; }
 
   getObserverElevationM(): number { return this.observerElevationM; }
 
@@ -535,7 +552,17 @@ export class CameraController {
         this.gyroSmoothAzDeg = this.gyroSmoothAzDeg * (1 - a) + rawAz * a;
         this.gyroSmoothAltDeg = this.gyroSmoothAltDeg * (1 - a) + rawAlt * a;
       }
-      const azDeg = ((this.gyroSmoothAzDeg - this.gyroOffsetAzDeg) % 360 + 360) % 360;
+      // Phone reports MAGNETIC heading (webkitCompassHeading on iOS,
+      // alpha on Android). Convert to TRUE heading by adding local
+      // declination, so the rendered sky aligns with the actual sky
+      // overhead — without this, observer mode in Vancouver (~+16°)
+      // or Cape Town (~-25°) is visibly rotated. Manual offset via
+      // calibrateGyroNorth() stacks on top of the declination
+      // correction so the user can still nudge for residual error.
+      const declination = this.magneticCorrectionEnabled
+        ? this.magneticDeclinationCacheDeg
+        : 0;
+      const azDeg = ((this.gyroSmoothAzDeg + declination - this.gyroOffsetAzDeg) % 360 + 360) % 360;
       const altDeg = Math.max(-89, Math.min(89, this.gyroSmoothAltDeg));
       this.observerAz = (azDeg * Math.PI) / 180;
       this.observerAlt = (altDeg * Math.PI) / 180;
