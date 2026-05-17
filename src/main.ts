@@ -1796,7 +1796,20 @@ function tick(now: number): void {
   lastTime = now;
 
   clock.tick(realDt);
-  solarSystem.update(clock.getJd());
+  const currentJd = clock.getJd();
+  solarSystem.update(currentJd);
+
+  // Apply proper motion + annual aberration to the named-star sprites
+  // and constellation lines. StarMap.setEpoch internally throttles to
+  // every ~10 sim-days so 60 Hz playback at 1× sim-speed doesn't
+  // re-evaluate every frame — PM is sub-arcsec/day so updates that
+  // coarse are visually indistinguishable from per-frame.
+  const starMap = solarSystem.getStarMap();
+  if (starMap) {
+    const earth = solarSystem.getBody('earth')?.descriptor.propagator;
+    const earthSunDirEcl = earth ? earth.stateAt(currentJd).position.clone().normalize() : null;
+    starMap.setEpoch(currentJd, earthSunDirEcl);
+  }
 
   // Drive the scale-tier camera dolly when a transition is animating.
   // Outside an animation the user can freely orbit-zoom; we only take over

@@ -11,11 +11,13 @@ import {
   Sprite,
   SpriteMaterial,
 } from 'three';
+import { Vector3 } from 'three';
 import { NAMED_STARS, type NamedStar } from '../data/stars';
 import { CONSTELLATIONS } from '../data/constellations';
-import { raDecToEcliptic } from '../physics/topocentric';
+import { raDecToEcliptic, applyProperMotion, applyAberration } from '../physics/topocentric';
 import { eclipticToScene } from '../physics/frame';
 import { getLang, onLanguageChange } from '../i18n';
+import { J2000_JD } from '../physics/constants';
 
 const STAR_DOME_RADIUS = 4000;
 const STAR_LABEL_SCALE = 60; // sprite size in dome units; tuned for ~12 px on screen
@@ -33,6 +35,17 @@ export class StarMap {
   private readonly idIndex = new Map<string, number>();
   private linesUserVisible = false;
   private labelsUserVisible = false;
+  /** JD of the most recent setEpoch() call. We throttle re-evaluation
+   *  so per-frame 60 Hz playback doesn't redo the whole loop every
+   *  frame — PM is hundredths of an arcsec per day, so updates every
+   *  ~10 sim-days are visually indistinguishable from per-frame. */
+  private lastEpochJd = J2000_JD;
+  /** Cached for label re-positioning when language changes mid-session. */
+  private currentEarthSunDirEcl: Vector3 | null = null;
+  /** Per-star scene positions at the current epoch — cached so the
+   *  label-rebuild path (triggered by language change) doesn't have to
+   *  redo PM math. */
+  private scenePositions: Vector3[] = [];
 
   constructor() {
     const positions: number[] = [];
@@ -41,8 +54,11 @@ export class StarMap {
     const tmp = new Color();
 
     NAMED_STARS.forEach((s, i) => {
-      const dirEcl = raDecToEcliptic(s.raHours, s.decDeg);
-      const dirScene = eclipticToScene(dirEcl).multiplyScalar(STAR_DOME_RADIUS);
+      // J2000 reference positions at construction time. setEpoch(jd) will
+      // overwrite this buffer with proper-motion-corrected positions on
+      // each meaningful sim-time change.
+      const dirScene = starScenePosition(s, J2000_JD, null);
+      this.scenePositions.push(dirScene);
       positions.push(dirScene.x, dirScene.y, dirScene.z);
 
       // Brighter (lower mag) → larger + whiter; faint (higher mag) → smaller + dimmer.
@@ -75,16 +91,17 @@ export class StarMap {
     this.points = new Points(pointsGeom, pointsMat);
     this.points.frustumCulled = false;
 
-    // Constellation lines
+    // Constellation lines — uses the same scenePositions array so the
+    // lines automatically stay anchored to their stars under PM updates.
     const linePositions: number[] = [];
     for (const c of CONSTELLATIONS) {
       for (const polyline of c.lines) {
         for (let k = 0; k < polyline.length - 1; k++) {
-          const a = NAMED_STARS[this.idIndex.get(polyline[k]) ?? -1];
-          const b = NAMED_STARS[this.idIndex.get(polyline[k + 1]) ?? -1];
-          if (!a || !b) continue;
-          const da = eclipticToScene(raDecToEcliptic(a.raHours, a.decDeg)).multiplyScalar(STAR_DOME_RADIUS);
-          const db = eclipticToScene(raDecToEcliptic(b.raHours, b.decDeg)).multiplyScalar(STAR_DOME_RADIUS);
+          const ia = this.idIndex.get(polyline[k]) ?? -1;
+          const ib = this.idIndex.get(polyline[k + 1]) ?? -1;
+          if (ia < 0 || ib < 0) continue;
+          const da = this.scenePositions[ia];
+          const db = this.scenePositions[ib];
           linePositions.push(da.x, da.y, da.z, db.x, db.y, db.z);
         }
       }
@@ -120,9 +137,11 @@ export class StarMap {
         }
       }
       const lang = getLang();
-      NAMED_STARS.forEach((s) => {
-        const dirEcl = raDecToEcliptic(s.raHours, s.decDeg);
-        const dirScene = eclipticToScene(dirEcl).multiplyScalar(STAR_DOME_RADIUS * 0.99);
+      NAMED_STARS.forEach((s, i) => {
+        // Use the cached scenePositions (already PM-corrected if setEpoch
+        // has been called) and scale just slightly inside the dome so
+        // labels render in front of the constellation lines.
+        const dirScene = this.scenePositions[i].clone().multiplyScalar(0.99);
         const labelText = lang === 'en' ? s.nameEn
                         : lang === 'ja' ? (s.nameJa ?? s.nameEn)
                         : s.name;
@@ -132,8 +151,87 @@ export class StarMap {
       });
     };
     buildLabels();
+    // Language change rebuilds labels using whatever positions the
+    // scenePositions array holds at that moment — already PM-corrected
+    // if setEpoch has been called since startup.
     onLanguageChange(buildLabels);
   }
+
+  /**
+   * Recompute star positions for a new epoch — applies proper motion
+   * (from each NamedStar's pmRA/pmDec, mas/yr Hipparcos values) and
+   * optionally annual aberration (using Earth's heliocentric direction
+   * as passed in). Called from the per-frame hook in main.ts but
+   * throttled internally so 60 Hz playback doesn't recompute every
+   * frame — PM is sub-arcsec per day, so updates every ~10 sim-days
+   * are visually indistinguishable from per-frame.
+   *
+   * Drives THREE buffer updates:
+   *   - this.points (BufferGeometry.position)
+   *   - this.lines  (BufferGeometry.position, constellation lines)
+   *   - this.labels (Sprite positions, one per named star)
+   *
+   * Sub-arcsec accuracy for ±500 yr; linear-PM approximation drifts
+   * at the second-derivative-of-PM scale past that (Barnard's Star
+   * accumulates ~1° secular error by ±1000 yr). Good enough for
+   * "scrub the clock and watch the sky shift" visualisation.
+   */
+  setEpoch(jd: number, earthSunDirEcl: Vector3 | null = null): void {
+    // Throttle: 10 sim-days ≈ Barnard's Star moves 0.014 px on a 4000-unit
+    // dome at 1080p — well below pixel rounding. For PM purposes this is
+    // imperceptible; aberration cycles annually so it's also fine at 10 d.
+    const earthChanged = !!earthSunDirEcl && (
+      !this.currentEarthSunDirEcl
+      || this.currentEarthSunDirEcl.distanceToSquared(earthSunDirEcl) > 1e-6
+    );
+    if (Math.abs(jd - this.lastEpochJd) < 10 && !earthChanged) return;
+    this.lastEpochJd = jd;
+    if (earthSunDirEcl) {
+      this.currentEarthSunDirEcl = this.currentEarthSunDirEcl ?? new Vector3();
+      this.currentEarthSunDirEcl.copy(earthSunDirEcl);
+    }
+
+    // Recompute every named-star scene position with PM + aberration.
+    for (let i = 0; i < NAMED_STARS.length; i++) {
+      const s = NAMED_STARS[i];
+      const next = starScenePosition(s, jd, earthSunDirEcl);
+      this.scenePositions[i].copy(next);
+    }
+
+    // Push to the Points geometry buffer.
+    const posAttr = this.points.geometry.getAttribute('position') as Float32BufferAttribute;
+    for (let i = 0; i < NAMED_STARS.length; i++) {
+      const p = this.scenePositions[i];
+      posAttr.setXYZ(i, p.x, p.y, p.z);
+    }
+    posAttr.needsUpdate = true;
+
+    // Push to the constellation-line geometry buffer.
+    const lineAttr = this.lines.geometry.getAttribute('position') as Float32BufferAttribute;
+    let writeIndex = 0;
+    for (const c of CONSTELLATIONS) {
+      for (const polyline of c.lines) {
+        for (let k = 0; k < polyline.length - 1; k++) {
+          const ia = this.idIndex.get(polyline[k]) ?? -1;
+          const ib = this.idIndex.get(polyline[k + 1]) ?? -1;
+          if (ia < 0 || ib < 0) continue;
+          const da = this.scenePositions[ia];
+          const db = this.scenePositions[ib];
+          lineAttr.setXYZ(writeIndex++, da.x, da.y, da.z);
+          lineAttr.setXYZ(writeIndex++, db.x, db.y, db.z);
+        }
+      }
+    }
+    lineAttr.needsUpdate = true;
+
+    // Push to the label sprites — they're individual Object3Ds, no buffer.
+    for (let i = 0; i < this.labels.children.length && i < NAMED_STARS.length; i++) {
+      this.labels.children[i].position.copy(this.scenePositions[i]).multiplyScalar(0.99);
+    }
+  }
+
+  /** Current epoch (JD) the star positions were computed at. */
+  getEpoch(): number { return this.lastEpochJd; }
 
   setOpacity(opacity: number): void {
     (this.points.material as PointsMaterial).opacity = opacity;
@@ -157,6 +255,35 @@ export class StarMap {
   static getStar(id: string): NamedStar | undefined {
     return NAMED_STARS.find(s => s.id === id);
   }
+}
+
+/**
+ * Compute a named star's scene position at a given epoch, with optional
+ * annual aberration applied.
+ *
+ *   - Proper motion: classical linear approximation, valid to sub-arcsec
+ *     for ±500 yr from J2000. Catalogue pmRA / pmDec are the Hipparcos
+ *     mas/yr values (pmRA is already cos(dec)-corrected).
+ *   - Aberration: shift toward Earth's heliocentric velocity. Skipped if
+ *     no Earth direction is supplied (e.g. at module load time).
+ *
+ * Returns a Vector3 on the STAR_DOME_RADIUS sphere in scene coordinates.
+ */
+export function starScenePosition(
+  star: NamedStar, jd: number, earthSunDirEcl: Vector3 | null,
+): Vector3 {
+  let raHours = star.raHours;
+  let decDeg = star.decDeg;
+  if (star.pmRA !== undefined && star.pmDec !== undefined && jd !== J2000_JD) {
+    const corr = applyProperMotion(raHours, decDeg, jd, star.pmRA, star.pmDec);
+    raHours = corr.raHours;
+    decDeg = corr.decDeg;
+  }
+  let dirEcl = raDecToEcliptic(raHours, decDeg, jd);
+  if (earthSunDirEcl) {
+    dirEcl = applyAberration(dirEcl, earthSunDirEcl);
+  }
+  return eclipticToScene(dirEcl).multiplyScalar(STAR_DOME_RADIUS);
 }
 
 /**

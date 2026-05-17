@@ -755,6 +755,10 @@ export class SolarSystem {
     if (this.starMap) this.starMap.setLabelsVisible(visible);
   }
 
+  /** Access the named-star map (for the per-frame epoch update that drives
+   *  proper motion + annual aberration on star + constellation positions). */
+  getStarMap(): StarMap | null { return this.starMap; }
+
   setStarfieldMagnitudeLimit(magLimit: number): void {
     if (this.realStarfield) this.realStarfield.setMagnitudeLimit(magLimit);
   }
