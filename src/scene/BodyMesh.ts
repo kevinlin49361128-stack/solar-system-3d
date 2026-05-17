@@ -122,6 +122,33 @@ export class BodyMesh {
     uDriftPhase: { value: 0.0 },
   };
 
+  /**
+   * Planet-on-planet shadow uniforms — real eclipses on body surfaces.
+   *
+   * For each surface fragment, we treat the sun as a finite disc (not a
+   * point) and check angular overlap with each of up to MAX_OCCLUDERS
+   * spheres in world space. Standard occultation geometry: if the
+   * angular distance between sun-centre and occluder-centre as seen
+   * from the fragment is less than the sum of their angular radii, the
+   * fragment is in penumbra; if less than the difference, full umbra.
+   *
+   * Receivers: every non-emissive BodyMesh.
+   * Occluders: in practice just the receiver's parent + same-parent
+   * siblings (Galilean moons cast shadows on Jupiter; Earth's shadow
+   * eclipses the Moon during lunar eclipses). Cross-system shadows
+   * are geometrically negligible.
+   *
+   * All positions / radii in WORLD scene units. Sun position is the
+   * sun's world centre. Caller (main.ts) refreshes every frame.
+   */
+  private shadowUniforms = {
+    uSunWorldPos:    { value: new Vector3(0, 0, 0) },
+    uSunRadius:      { value: 0.0 },
+    uShadowCount:    { value: 0 },
+    uShadowPos:      { value: [new Vector3(), new Vector3(), new Vector3(), new Vector3()] },
+    uShadowRadius:   { value: [0, 0, 0, 0] },
+  };
+
   constructor(descriptor: BodyDescriptor, sceneRadius: number) {
     this.descriptor = descriptor;
     this.group = new Group();
@@ -197,12 +224,29 @@ export class BodyMesh {
       const flattenU = this.flattenUniforms;
       const ringU = this.ringShadowUniforms;
       const driftU = this.driftUniforms;
+      const shadowU = this.shadowUniforms;
       const prevCompile = m.onBeforeCompile;
       m.onBeforeCompile = (shader) => {
         if (prevCompile) prevCompile(shader, undefined as unknown as never);
         shader.uniforms.uBrightTint = tintU;
         shader.uniforms.uFlatZenith = flattenU.uFlatZenith;
         shader.uniforms.uFlatYScale = flattenU.uFlatYScale;
+        shader.uniforms.uSunWorldPos = shadowU.uSunWorldPos;
+        shader.uniforms.uSunRadius = shadowU.uSunRadius;
+        shader.uniforms.uShadowCount = shadowU.uShadowCount;
+        shader.uniforms.uShadowPos = shadowU.uShadowPos;
+        shader.uniforms.uShadowRadius = shadowU.uShadowRadius;
+        // Vertex shader: forward world-space position so the fragment can do
+        // the per-pixel sun-occluder angular geometry. Reuses vBodyWorldDir
+        // pattern if Earth's observer-fade already added one — we add a
+        // distinct varying to avoid conflict.
+        shader.vertexShader = shader.vertexShader.replace(
+          '#include <common>',
+          `#include <common>\nvarying vec3 vShadowWorldPos;`,
+        ).replace(
+          '#include <project_vertex>',
+          `vShadowWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;\n#include <project_vertex>`,
+        );
         // Atmospheric flattening: compress the body along its mesh-local
         // zenith axis so the disc looks oval near the horizon. Caller passes
         // zenith already converted to mesh-local space (rotation/tilt
@@ -220,6 +264,57 @@ export class BodyMesh {
           }
           #include <project_vertex>`,
         );
+        // Common header block — every non-emissive body gets the shadow
+        // uniforms. The shadow apply block goes after map_fragment so it
+        // sees the texture-modulated diffuseColor (we want shadows to
+        // dim the lit surface uniformly regardless of albedo).
+        const shadowHeader =
+          `\nuniform vec3 uSunWorldPos;\nuniform float uSunRadius;` +
+          `\nuniform int uShadowCount;\nuniform vec3 uShadowPos[4];` +
+          `\nuniform float uShadowRadius[4];\nvarying vec3 vShadowWorldPos;`;
+        // Sun-occluder angular geometry. For each occluder:
+        //   sunDir, occDir = direction from fragment to sun / occluder
+        //   sunR, occR     = angular radius of sun / occluder as seen from fragment
+        //   sep            = angular distance between sun centre and occluder centre
+        // Three cases:
+        //   sep >= sunR + occR → no occlusion → factor 0
+        //   sep + sunR <= occR → full umbra  → factor 1
+        //   else                → penumbra → smooth interp
+        // Aggregate by taking the MAX shadow factor across occluders (a
+        // fragment can't be more than fully shadowed). Dim diffuseColor
+        // by up to 0.97 in the umbra — leave a hint of ambient so the
+        // moon during a total lunar eclipse stays just-visible-reddish
+        // (which is the right look anyway: refracted light, "blood moon").
+        const shadowApply =
+          `\n{
+            for (int _i = 0; _i < 4; _i++) {
+              if (_i >= uShadowCount) break;
+              vec3 _toSun = uSunWorldPos - vShadowWorldPos;
+              vec3 _toOcc = uShadowPos[_i] - vShadowWorldPos;
+              float _dS = length(_toSun);
+              float _dO = length(_toOcc);
+              if (_dO >= _dS) continue;          // occluder behind sun from fragment
+              vec3 _sunDir = _toSun / max(_dS, 1e-6);
+              vec3 _occDir = _toOcc / max(_dO, 1e-6);
+              float _sunR  = uSunRadius        / max(_dS, 1e-6);
+              float _occR  = uShadowRadius[_i] / max(_dO, 1e-6);
+              float _sep   = acos(clamp(dot(_sunDir, _occDir), -1.0, 1.0));
+              float _shadow;
+              if (_sep >= _sunR + _occR)        _shadow = 0.0;
+              else if (_sep + _sunR <= _occR)   _shadow = 1.0;
+              else                              _shadow = 1.0 - smoothstep(
+                                                  max(_occR - _sunR, 0.0),
+                                                  _sunR + _occR,
+                                                  _sep);
+              // 0.92 floor leaves ~8% residue in full umbra. Two reasons:
+              // (a) gives the existing lunar-eclipse red tint headroom to
+              //     stack on top → blood moon stays visibly red instead of
+              //     near-black, and (b) Galilean moons in Jupiter's shadow
+              //     stay just-discernible rather than disappearing entirely,
+              //     matching how they look in long-exposure astrophotos.
+              diffuseColor.rgb *= 1.0 - 0.92 * _shadow;
+            }
+          }`;
         if (isGasGiant) {
           shader.uniforms.uDriftPhase = driftU.uDriftPhase;
           // Replace the standard map sampling with a UV-shifted version.
@@ -227,7 +322,7 @@ export class BodyMesh {
           // zero at poles → equatorial belts drift fastest, polar caps stay.
           shader.fragmentShader = shader.fragmentShader.replace(
             '#include <common>',
-            `#include <common>\nuniform vec3 uBrightTint;\nuniform float uDriftPhase;`,
+            `#include <common>\nuniform vec3 uBrightTint;\nuniform float uDriftPhase;${shadowHeader}`,
           ).replace(
             '#include <map_fragment>',
             `#ifdef USE_MAP
@@ -237,15 +332,15 @@ export class BodyMesh {
               vec4 sampledDiffuseColor = texture2D(map, _drifted);
               diffuseColor *= sampledDiffuseColor;
             #endif
-            diffuseColor.rgb *= uBrightTint;`,
+            diffuseColor.rgb *= uBrightTint;${shadowApply}`,
           );
         } else {
           shader.fragmentShader = shader.fragmentShader.replace(
             '#include <common>',
-            `#include <common>\nuniform vec3 uBrightTint;`,
+            `#include <common>\nuniform vec3 uBrightTint;${shadowHeader}`,
           ).replace(
             '#include <map_fragment>',
-            `#include <map_fragment>\ndiffuseColor.rgb *= uBrightTint;`,
+            `#include <map_fragment>\ndiffuseColor.rgb *= uBrightTint;${shadowApply}`,
           );
         }
         if (isSaturn) {
@@ -594,6 +689,31 @@ export class BodyMesh {
   setEarthshine(intensity: number, sunDirLocal: Vector3): void {
     this.earthshineUniforms.uEarthshine.value = Math.max(0, Math.min(1, intensity));
     this.earthshineUniforms.uSunDirLocal.value.copy(sunDirLocal).normalize();
+  }
+
+  /**
+   * Update planet-on-planet shadow inputs. Pass the sun's world-space
+   * centre + radius and a list of up to 4 occluders (world centre + radius
+   * for each). Each frame, main.ts builds the occluder list for each
+   * body — typically just the parent + same-parent siblings. Pass an
+   * empty array to clear all shadows on this body.
+   *
+   * Coordinates are scene world units (NOT AU directly — must already be
+   * scaled by the active scale-controller).
+   */
+  setShadowInputs(
+    sunWorldPos: Vector3, sunRadius: number,
+    occluders: Array<{ worldPos: Vector3; radius: number }>,
+  ): void {
+    const u = this.shadowUniforms;
+    u.uSunWorldPos.value.copy(sunWorldPos);
+    u.uSunRadius.value = sunRadius;
+    const n = Math.min(4, occluders.length);
+    u.uShadowCount.value = n;
+    for (let i = 0; i < n; i++) {
+      (u.uShadowPos.value[i] as Vector3).copy(occluders[i].worldPos);
+      (u.uShadowRadius.value as number[])[i] = occluders[i].radius;
+    }
   }
 
   /**

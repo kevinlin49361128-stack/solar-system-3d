@@ -2105,39 +2105,73 @@ function applyLunarEclipse(sunWorld: Vector3): void {
 }
 
 /**
- * Apply Jupiter / Saturn / etc. shadow eclipses on their moons. Iterates
- * over all bodies; for each whose `parentId` is a non-sun planet, runs the
- * same projected-axis-distance check used for the lunar eclipse and tints
- * the moon dark grey when it falls inside the parent's umbra cylinder.
+ * Push a per-frame "what might be casting a shadow on me" list to every
+ * body's fragment shader. The shader does the actual angular-overlap
+ * sun-disc-vs-occluder-disc maths per fragment, so this function only
+ * needs to enumerate candidates — typically a body's parent + same-parent
+ * siblings + own children. Max 4 occluders per body (shader array size).
+ *
+ * Capability matrix this gives us "for free" via the shader:
+ *  - Moon shadow on Earth's surface (real solar eclipse silhouette)
+ *  - Earth's shadow on Moon (lunar eclipse umbra/penumbra geometry)
+ *  - Galilean moon shadows on Jupiter (the famous transit shadow discs)
+ *  - Jupiter's shadow on its moons (Io/Europa darkening when on far side)
+ *  - Titan's shadow on Saturn (and Saturn's on Titan)
+ *
+ * All occluder positions are world-space scene units (already AU-scaled
+ * by the active ScaleController), matching the shader's vShadowWorldPos
+ * varying. Sun radius likewise uses solarSystem.getBodyRadius('sun')
+ * which already returns post-scale scene units.
  */
-function applyPlanetaryMoonEclipses(sunWorld: Vector3): void {
-  for (const entry of solarSystem.getAllBodies()) {
-    const parentId = entry.descriptor.parentId;
-    if (!parentId || parentId === 'sun') continue;
-    const moonPos = solarSystem.getWorldPosition(entry.descriptor.id, _tmpVec1);
-    const parentPos = solarSystem.getWorldPosition(parentId, _tmpVec2);
-    if (!moonPos || !parentPos) continue;
-    const sunMoon = _tmpBodyPos.copy(moonPos).sub(sunWorld);
-    const sunParent = _tmpVec1.copy(parentPos).sub(sunWorld);
-    const sunParentLen2 = sunParent.lengthSq();
-    if (sunParentLen2 < 1e-12) continue;
-    const t = sunMoon.dot(sunParent) / sunParentLen2;
-    // t > 1 = moon on the anti-sun side of the parent. The cap is generous
-    // (1.0006 ≈ 100 000 km past Jupiter at 5 AU) since moon orbits are
-    // small compared to heliocentric distance.
-    if (t < 1.0 || t > 1.001) continue;
-    const perp = sunMoon.clone().addScaledVector(sunParent, -t);
-    const perpAU = perp.length();
-    const parentRadiusAU = solarSystem.getBodyRadius(parentId) ?? 0;
-    const umbraAU = parentRadiusAU * 1.5;       // exaggerated for visibility
-    const penumbraAU = parentRadiusAU * 3.0;
-    if (perpAU > penumbraAU) continue;
-    const x = (penumbraAU - perpAU) / Math.max(1e-9, penumbraAU - umbraAU);
-    const eclipseFrac = Math.max(0, Math.min(1, x));
-    // Galilean / Saturnian moons in shadow look near-black; we apply a
-    // greyish multiplier so the body doesn't completely vanish.
-    const tint = 1.0 - eclipseFrac * 0.85;
-    entry.mesh.multiplyBrightnessTint(tint, tint, tint);
+function applyBodyShadows(sunWorld: Vector3): void {
+  const sunRadius = solarSystem.getBodyRadius('sun') ?? 0;
+  const allBodies = solarSystem.getAllBodies();
+  // Pre-cache world positions + radii in one pass — avoids repeated
+  // getWorldPosition() calls inside the inner loop (each is a matrix
+  // walk through the scene graph).
+  const cache = new Map<string, { pos: Vector3; radius: number }>();
+  for (const b of allBodies) {
+    if (b.descriptor.id === 'sun') continue;
+    const pos = solarSystem.getWorldPosition(b.descriptor.id, new Vector3());
+    if (!pos) continue;
+    cache.set(b.descriptor.id, { pos, radius: solarSystem.getBodyRadius(b.descriptor.id) ?? 0 });
+  }
+  for (const receiver of allBodies) {
+    if (receiver.descriptor.id === 'sun') continue;
+    if (receiver.descriptor.appearance.emissive) continue;
+    const occluders: Array<{ worldPos: Vector3; radius: number }> = [];
+    const receiverId = receiver.descriptor.id;
+    const parentId = receiver.descriptor.parentId;
+    // Parent (e.g. Earth for Moon, Jupiter for Io). Skip Sun — it's the
+    // light source, never an occluder.
+    if (parentId && parentId !== 'sun') {
+      const p = cache.get(parentId);
+      if (p) occluders.push({ worldPos: p.pos, radius: p.radius });
+    }
+    // Same-parent siblings (e.g. Europa shadowing Io). Cap at 3 so the
+    // total stays ≤ shader's 4-slot limit even when parent is included.
+    if (parentId) {
+      let sibCount = 0;
+      for (const other of allBodies) {
+        if (sibCount >= 3) break;
+        const oId = other.descriptor.id;
+        if (oId === receiverId) continue;
+        if (other.descriptor.parentId !== parentId) continue;
+        const p = cache.get(oId);
+        if (p) { occluders.push({ worldPos: p.pos, radius: p.radius }); sibCount++; }
+      }
+    }
+    // Own children (e.g. Moon shadowing Earth — solar eclipse). For a
+    // planet, this is its moons.
+    let childCount = 0;
+    for (const other of allBodies) {
+      if (occluders.length >= 4) break;
+      if (childCount >= 4 - occluders.length) break;
+      if (other.descriptor.parentId !== receiverId) continue;
+      const p = cache.get(other.descriptor.id);
+      if (p) { occluders.push({ worldPos: p.pos, radius: p.radius }); childCount++; }
+    }
+    receiver.mesh.setShadowInputs(sunWorld, sunRadius, occluders);
   }
 }
 
@@ -2330,10 +2364,13 @@ function updateSkyForObserver(): void {
   // set by extinction so the effect stacks naturally.
   applyLunarEclipse(sunWorld);
 
-  // Planetary moon eclipses (Io / Europa / Ganymede / Callisto in Jupiter's
-  // umbra; Titan in Saturn's; etc.). Same geometry as lunar eclipse but
-  // each parent body acts as the occluder for its own children.
-  applyPlanetaryMoonEclipses(sunWorld);
+  // Per-fragment planet-on-planet shadows. The shader on each body's
+  // material checks angular sun/occluder overlap and dims the surface
+  // where the occluder blocks the sun — gives real directional shadows
+  // (Galilean shadow disc on Jupiter's cloud tops, Moon shadow on Earth
+  // during solar eclipse, Earth shadow on Moon during lunar eclipse).
+  // Supersedes the old applyPlanetaryMoonEclipses flat-tint approach.
+  applyBodyShadows(sunWorld);
 
   // Atmospheric refraction flattens the sun / moon disc near the horizon.
   // Effect is only meaningful below ~10° altitude.

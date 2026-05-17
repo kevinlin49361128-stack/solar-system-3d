@@ -37,6 +37,7 @@
 - **Lagrange L1–L5 即時計算**：日-地、日-木、地-月每幀從目前兩體位置重算。打開後 follow 木星，可以實際看到 Achilles / Hektor / Patroclus / Eurybates 在 L4 / L5 群點。
 - **點任何天體 → Physics under the hood**：propagator、J2000 根數 (a, e, i, Ω, ω)、目前 JD 狀態向量、JPL 資料來源連結，全部攤開。
 - **食 + 太空船軌跡**：日食 / 月食 umbra / penumbra 路徑、JWST / Voyager 1&2 / Parker Solar Probe / New Horizons 軌跡 sample 自 JPL Horizons。
+- **真實天體互相投影**：每像素 sun-as-disc 角度幾何，木衛凌木時可在木星雲頂看到正圓影斑、月食時月面真的有 Earth 的弧形 umbra（疊上 blood-moon 色）、日食時月影投在地表，全靠 BodyMesh shader 算，不是貼圖。
 - **觀測者模式**：站在地球任意 lat/lon，看 atmosphere-shader 染色的天空、AWS Open Terrain DEM 真地形、Esri 衛星貼圖、大氣消光、Bortle 光害分級、IAU 88 星座連線與邊界、Bennett 折射、IAU 1976 歲差。
 - **星表**：HYG 15 167 顆 mag<7 + Bright Star Catalog 8404 顆 + Messier 110 個深空天體 + 88 IAU 星座邊界（d3-celestial GeoJSON）。銀河背景用 ESO/Brunier GigaGalaxy Zoom 全景，IAU galactic-frame 矩陣對齊——Cygnus rift、Sgr A\*、Carina nebula 都對得上位置。
 - **時間 + 計算工具**：暫停 / 倒轉 / 0.0001×–1 年/秒 / 跳到任意 datetime / 自動偵測未來 2 年 13 種天文事件、6 種光學預設（裸眼到 8" SCT）、相對距離 / 視線速度 / 合角即時計算。
@@ -102,7 +103,7 @@ Helper 是獨立 repo：<https://github.com/kevinlin49361128-stack/solar-system-
 npm run test
 ```
 
-目前 **271 個測試 / 25 個檔案** 全綠：
+目前 **277 個測試 / 26 個檔案** 全綠：
 
 - **`kepler.test.ts`**：solver 在 e=0..0.995 全 M 範圍收斂、Halley 級高 e 回歸測試（防止之前的 Newton 噴飛 bug 復發）
 - **`topocentric.test.ts`**：GMST 在 J2000 ≈ 280.46°、每日 +0.985° sidereal drift、observer frame 三軸正交、precession 100 年位移 1.0–1.6°、Bennett 折射對標準參考值
@@ -115,7 +116,7 @@ UI / 整合測試還沒做（成本較高，物理回歸測試已經是 high-bug
 
 **最近 ship**：銀河系飛越 + 12 顆系外行星宿主 click-to-land、Lagrange L1–L5 即時計算、click-through Physics under the hood 透明面板、Trojan 群點視覺化、PWA 安裝。
 
-**桌上正在看**：planet-on-planet 陰影、Andromeda + 大小麥哲倫雲 billboard、系外行星宜居帶 overlay、行星自行（proper motion）+ 光行差修正、磁偏角校正（行動 AR 模式）、Hosek-Wilkie 黃昏漸層替換 Preetham。
+**桌上正在看**：Hosek-Wilkie 官方 LUT 取代手調係數、Andromeda + 大小麥哲倫雲 billboard、系外行星宜居帶 overlay、行星自行（proper motion）+ 光行差修正、磁偏角校正（行動 AR 模式）。
 
 **已知限制**：觀測者本地地形只覆蓋 ~45 km 半徑（25 個 zoom-12 tile）；恆星沒有 proper motion（拉到 1900 / 2100 會錯位）；N-body 只含太陽系內主要天體，彗星與太空船不參與攝動；行動陀螺儀 AR 在多支實機上未完整驗證。
 
