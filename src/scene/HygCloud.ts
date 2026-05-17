@@ -77,11 +77,22 @@ export class HygCloud {
   }
 
   /**
-   * Fetch and parse `public/stars-hyg-3d.json`. Idempotent — calling
-   * twice is safe; the second call resolves immediately.
+   * Currently-loaded catalogue path (so we don't reload the same one).
+   * v0.4 added the optional deep variant — toggleable from the
+   * Realism panel — so we need to track which is in memory.
    */
-  load(url = '/stars-hyg-3d.json'): Promise<void> {
-    if (this.loaded) return Promise.resolve();
+  private loadedUrl: string | null = null;
+
+  /**
+   * Fetch and parse a HYG 3D JSON file. Idempotent for the same URL;
+   * calling with a different URL replaces the in-memory geometry.
+   *
+   * Default file is the standard mag ≤ 7 catalogue (~600 KB, 15k stars).
+   * The deep variant (mag ≤ 9, ~3 MB, 78k stars) is opt-in through
+   * the Realism panel's "Deep star field" toggle.
+   */
+async load(url = '/stars-hyg-3d.json'): Promise<void> {
+    if (this.loadedUrl === url) return;
     if (this.loading) return this.loading;
     this.loading = (async () => {
       const r = await fetch(url);
@@ -105,19 +116,29 @@ export class HygCloud {
         colors[i * 3 + 2] = tmpColor.b;
         // Sprite size in (pixels × ly / scene-unit). We invert mag so
         // brighter (smaller mag value) → bigger sprite. mag=0 → 12 px
-        // base, mag=7 → ~3 px. The vertex shader applies further
-        // distance attenuation.
+        // base, mag=7 → ~3 px (mag=9 → 0.3 px → clamped at 1.5). The
+        // vertex shader applies further distance attenuation.
         sizes[i] = Math.max(1.5, 12 - mag * 1.3);
       }
 
+      // If we previously loaded a different catalogue, dispose the
+      // old buffer before replacing it.
+      if (this.loaded) {
+        this.group.geometry?.dispose?.();
+      }
       const geom = new BufferGeometry();
       geom.setAttribute('position', new BufferAttribute(positions, 3));
       geom.setAttribute('starColor', new BufferAttribute(colors, 3));
       geom.setAttribute('starSize',  new BufferAttribute(sizes, 1));
       this.group.geometry = geom;
       this.loaded = true;
+      this.loadedUrl = url;
     })();
-    return this.loading;
+    try {
+      await this.loading;
+    } finally {
+      this.loading = null;
+    }
   }
 
   /** Per-frame opacity. opacity ≤ 0.02 → group invisible. */
@@ -128,4 +149,5 @@ export class HygCloud {
   }
 
   isLoaded(): boolean { return this.loaded; }
+  currentUrl(): string | null { return this.loadedUrl; }
 }

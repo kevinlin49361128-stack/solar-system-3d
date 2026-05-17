@@ -70,6 +70,7 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'realism.bvColor': { 'zh-Hant': '恆星 B-V 真實色', 'en': 'Realistic star B-V colour', 'ja': '恒星 B-V 実色' },
   'realism.satShadow': { 'zh-Hant': '衛星地影過濾', 'en': 'Filter satellites in Earth shadow', 'ja': '衛星の地影フィルタ' },
   'realism.dsoRealSize': { 'zh-Hant': 'DSO 真實角直徑', 'en': 'Real DSO angular size', 'ja': 'DSO 実角直径' },
+  'realism.deepStars': { 'zh-Hant': '深空星表 (mag 9，~3 MB)', 'en': 'Deep star field (mag 9, ~3 MB)', 'ja': '深空星カタログ (mag 9, ~3 MB)' },
   'realism.milkyway': { 'zh-Hant': '銀河帶', 'en': 'Milky Way', 'ja': '天の川' },
   'realism.beltOfVenus': { 'zh-Hant': '暮光反日點 (Belt of Venus)', 'en': 'Belt of Venus / Earth shadow', 'ja': 'ヴィーナスの帯 / 地球影' },
   'realism.zodiacal': { 'zh-Hant': '黃道光', 'en': 'Zodiacal light', 'ja': '黄道光' },

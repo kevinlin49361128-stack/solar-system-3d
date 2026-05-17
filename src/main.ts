@@ -191,6 +191,8 @@ solarSystem.realism.subscribe((s) => {
   ss.setZodiacalLightVisible?.(s.zodiacal);
   ss.setMeteorShowersVisible?.(s.meteors);
   ss.setMessierRealAngularSize?.(s.dsoRealSize);
+  // Deep HYG catalog swap (v0.4 — Realism panel "Deep star field" toggle).
+  solarSystem.setDeepStarsEnabled(s.deepStars);
   const sat = solarSystem.getSatelliteLayer() as unknown as
     { setEarthShadowFilter?: (b: boolean) => void } | null;
   sat?.setEarthShadowFilter?.(s.satShadow);

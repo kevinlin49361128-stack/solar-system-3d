@@ -42,6 +42,9 @@ coverage/
 /scratch/
 /.tmp/
 
+# Downloaded source catalogues (regenerable via `npm run hyg:fetch`)
+/tmp_hyg/
+
 # Vercel
 .vercel/
 

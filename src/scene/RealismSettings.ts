@@ -22,6 +22,11 @@ export interface RealismSettings {
   zodiacal: boolean;
   airglow: boolean;
   meteors: boolean;
+  // catalogue depth (v0.4) — toggled on lazy-loads the deep HYG
+  // variant (mag ≤ 9, ~3 MB, 78k stars vs default 15k mag-7 stars).
+  // Especially useful in observer mode under dark skies and for the
+  // smart-telescope crowd.
+  deepStars: boolean;
 }
 
 export type RealismPreset = 'stylized' | 'balanced' | 'realistic';
@@ -30,14 +35,17 @@ export const PRESET_VALUES: Record<RealismPreset, RealismSettings> = {
   stylized: {
     extinction: false, moonGlow: false, bvColor: false, satShadow: false, dsoRealSize: false,
     milkyway: false, beltOfVenus: false, zodiacal: false, airglow: false, meteors: false,
+    deepStars: false,
   },
   balanced: {
     extinction: true, moonGlow: true, bvColor: true, satShadow: true, dsoRealSize: false,
     milkyway: true, beltOfVenus: true, zodiacal: false, airglow: false, meteors: false,
+    deepStars: false,
   },
   realistic: {
     extinction: true, moonGlow: true, bvColor: true, satShadow: true, dsoRealSize: true,
     milkyway: true, beltOfVenus: true, zodiacal: true, airglow: true, meteors: true,
+    deepStars: true,
   },
 };
 

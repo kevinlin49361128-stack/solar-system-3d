@@ -806,6 +806,21 @@ export class SolarSystem {
     this.hygCloud.setOpacity(opacity);
   }
 
+  /**
+   * Toggle between the default (mag ≤ 7) and deep (mag ≤ 9) HYG
+   * star catalogue. Lazy-fetches the deep variant on first request;
+   * swapping back to default just changes the URL load target and
+   * the geometry buffer gets replaced. ~3 MB download once per
+   * session for deep mode.
+   */
+  setDeepStarsEnabled(deep: boolean): void {
+    if (!this.hygCloud) return;
+    const url = deep ? '/stars-hyg-3d-deep.json' : '/stars-hyg-3d.json';
+    if (this.hygCloud.currentUrl() === url) return;
+    // Force a re-load even if already loaded with the other URL.
+    void this.hygCloud.load(url);
+  }
+
   /** Exoplanet host halos — same opacity gate as the HYG cloud. */
   setExoplanetHostsOpacity(opacity: number): void {
     this.exoplanetHosts?.setOpacity(opacity);

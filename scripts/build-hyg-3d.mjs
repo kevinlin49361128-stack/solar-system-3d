@@ -6,7 +6,10 @@
  * Input: `tmp_hyg/hyg.csv` (downloaded from
  *   https://raw.githubusercontent.com/astronexus/HYG-Database/main/hyg/CURRENT/hygdata_v41.csv
  * )
- * Output: `public/stars-hyg-3d.json`
+ *
+ * Usage:
+ *   node scripts/build-hyg-3d.mjs                                 # default: mag 7 → stars-hyg-3d.json
+ *   node scripts/build-hyg-3d.mjs --mag 9 --out public/stars-hyg-3d-deep.json
  *
  * Schema per record (Float32-friendly tuple):
  *   [xLy, yLy, zLy, mag, packedColor]
@@ -21,15 +24,24 @@
  * consistent so HygCloud can reuse it.
  *
  * Filters:
- *   - mag ≤ 7.0 (matches the unaided-eye limit + a margin for binoculars)
+ *   - mag ≤ MAG_LIMIT (CLI default 7.0 — naked-eye + binocular limit;
+ *     v0.4 added a 9.0 "deep" variant for the smart-telescope era)
  *   - distance > 0 (drops the Sol row + any nan parallax stars)
  *   - distance < 10000 ly (anything further is past the local stellar
  *     neighbourhood; flythrough doesn't need it)
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 
+// CLI arg parsing — single --mag and --out flags, both optional.
+const argv = process.argv.slice(2);
+function arg(name, fallback) {
+  const i = argv.indexOf(`--${name}`);
+  return i >= 0 ? argv[i + 1] : fallback;
+}
+const MAG_LIMIT = parseFloat(arg('mag', '7.0'));
+const OUT_PATH = arg('out', 'public/stars-hyg-3d.json');
+
 const PC_TO_LY = 3.26156;
-const MAG_LIMIT = 7.0;
 const MAX_DIST_LY = 10_000;
 
 const txt = readFileSync('tmp_hyg/hyg.csv', 'utf8');
@@ -98,8 +110,8 @@ for (let li = 1; li < lines.length; li++) {
 console.log(`HYG → 3D: ${kept} stars kept (mag ≤ ${MAG_LIMIT}, dist ≤ ${MAX_DIST_LY} ly)`);
 const json = JSON.stringify(out);
 console.log(`JSON size: ${(json.length / 1024 / 1024).toFixed(2)} MB`);
-writeFileSync('public/stars-hyg-3d.json', json);
-console.log('Wrote public/stars-hyg-3d.json');
+writeFileSync(OUT_PATH, json);
+console.log(`Wrote ${OUT_PATH}`);
 
 /**
  * Map B-V colour index to packed 24-bit RGB.

@@ -16,7 +16,10 @@
     "test:watch": "vitest",
     "og:capture": "node scripts/og-capture.mjs",
     "screenshots": "node scripts/readme-screenshots.mjs",
-    "lockfile:regen": "rm -rf node_modules package-lock.json && npx -y npm@10.9.2 install --no-audit --no-fund"
+    "lockfile:regen": "rm -rf node_modules package-lock.json && npx -y npm@10.9.2 install --no-audit --no-fund",
+    "hyg:fetch": "mkdir -p tmp_hyg && curl -L -o tmp_hyg/hyg.csv https://raw.githubusercontent.com/astronexus/HYG-Database/main/hyg/CURRENT/hygdata_v41.csv",
+    "hyg:build": "node scripts/build-hyg-3d.mjs",
+    "hyg:build:deep": "node scripts/build-hyg-3d.mjs --mag 9 --out public/stars-hyg-3d-deep.json"
   },
   "dependencies": {
     "lil-gui": "^0.20.0",

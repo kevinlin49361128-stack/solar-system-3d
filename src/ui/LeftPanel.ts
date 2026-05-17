@@ -169,6 +169,7 @@ export class LeftPanel {
       { id: 'realism-bv-color',       key: 'bvColor' },
       { id: 'realism-sat-shadow',     key: 'satShadow' },
       { id: 'realism-dso-realsize',   key: 'dsoRealSize' },
+      { id: 'realism-deep-stars',     key: 'deepStars' },
       { id: 'vfx-milkyway',           key: 'milkyway' },
       { id: 'vfx-belt-of-venus',      key: 'beltOfVenus' },
       { id: 'vfx-zodiacal',           key: 'zodiacal' },
