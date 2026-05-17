@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { ScopeBridge, type PointingFix, type ScopeBridgeState } from './ScopeBridge';
+import { ScopeBridge, type PointingFix, type ScopeBridgeState, type SlewEvent } from './ScopeBridge';
 
 /**
  * Minimal WebSocket stand-in. The bridge only ever calls .send(),
@@ -143,5 +143,135 @@ describe('ScopeBridge', () => {
     b.disconnect();
     expect(b.getLastFix()).toBeNull();
     expect(b.getState()).toBe('idle');
+  });
+
+  describe('Tier 2 — slew gating', () => {
+    it('refuses to slew when not connected', () => {
+      const b = new ScopeBridge();
+      b.setControlEnabled(true);
+      expect(b.slew(5, 0)).toBe('not-connected');
+    });
+
+    it('refuses to slew when control is disabled (default)', () => {
+      const b = new ScopeBridge();
+      void b.connect();
+      MockWebSocket.instances[0].simulateOpen();
+      expect(b.slew(5, 0)).toBe('control-disabled');
+    });
+
+    it('sends slew when connected + enabled + within envelope', () => {
+      const b = new ScopeBridge();
+      b.setControlEnabled(true);
+      void b.connect();
+      const ws = MockWebSocket.instances[0];
+      ws.simulateOpen();
+      // Subscribe message + slew message expected.
+      expect(b.slew(5.5, 22.0)).toBe('ok');
+      expect(ws.sent).toHaveLength(2);
+      expect(JSON.parse(ws.sent[1])).toEqual({ v: 1, type: 'slew', ra: 5.5, dec: 22 });
+      expect(b.isSlewing()).toBe(true);
+    });
+
+    it('rejects coordinates outside valid ranges', () => {
+      const b = new ScopeBridge();
+      b.setControlEnabled(true);
+      void b.connect();
+      MockWebSocket.instances[0].simulateOpen();
+      expect(b.slew(-1, 0)).toBe('bad-coords');
+      expect(b.slew(25, 0)).toBe('bad-coords');
+      expect(b.slew(0, -91)).toBe('bad-coords');
+      expect(b.slew(0, 91)).toBe('bad-coords');
+      expect(b.slew(NaN, 0)).toBe('bad-coords');
+    });
+
+    it('enforces dec floor and ceiling', () => {
+      const b = new ScopeBridge();
+      b.setControlEnabled(true);
+      b.setSafety({ minDecDeg: 0, maxDecDeg: 60 });
+      void b.connect();
+      MockWebSocket.instances[0].simulateOpen();
+      expect(b.slew(5, -10)).toBe('dec-floor');
+      expect(b.slew(5, 70)).toBe('dec-ceiling');
+      expect(b.slew(5, 30)).toBe('ok');
+    });
+
+    it('enforces max slew angle relative to last known pointing', () => {
+      const b = new ScopeBridge();
+      b.setControlEnabled(true);
+      b.setSafety({ maxSlewDeg: 30 });
+      void b.connect();
+      const ws = MockWebSocket.instances[0];
+      ws.simulateOpen();
+      // Seed a known pointing — RA 5h Dec 0° (Orion-ish).
+      ws.simulateMessage({ v: 1, type: 'pointing', ra: 5, dec: 0, at: 1 });
+      // ~7° away — fine.
+      expect(b.slew(5.5, 0)).toBe('ok');
+      // Reset slew state and try ~180° away.
+      ws.simulateMessage({ v: 1, type: 'slew.done', ra: 5, dec: 0 });
+      expect(b.slew(17, 0)).toBe('slew-too-large');
+    });
+
+    it('refuses concurrent slews until done event arrives', () => {
+      const b = new ScopeBridge();
+      b.setControlEnabled(true);
+      void b.connect();
+      const ws = MockWebSocket.instances[0];
+      ws.simulateOpen();
+      expect(b.slew(5, 0)).toBe('ok');
+      expect(b.slew(10, 0)).toBe('already-slewing');
+      ws.simulateMessage({ v: 1, type: 'slew.done', ra: 5, dec: 0 });
+      expect(b.isSlewing()).toBe(false);
+      // Now allowed — but the max-jump check might fire; widen it.
+      b.setSafety({ maxSlewDeg: 180 });
+      expect(b.slew(10, 0)).toBe('ok');
+    });
+
+    it('emits the full slew lifecycle to listeners', () => {
+      const b = new ScopeBridge();
+      b.setControlEnabled(true);
+      const events: SlewEvent[] = [];
+      b.onSlew((e) => events.push(e));
+      void b.connect();
+      const ws = MockWebSocket.instances[0];
+      ws.simulateOpen();
+      b.slew(5, 0);
+      ws.simulateMessage({ v: 1, type: 'slew.start', ra: 5, dec: 0 });
+      ws.simulateMessage({ v: 1, type: 'slew.progress', remainingDeg: 12.4 });
+      ws.simulateMessage({ v: 1, type: 'slew.done', ra: 5, dec: 0 });
+      expect(events.map((e) => e.type)).toEqual(['start', 'progress', 'done']);
+    });
+
+    it('abort() bypasses the control gate (always available)', () => {
+      const b = new ScopeBridge();
+      // No setControlEnabled — abort must still work in an emergency.
+      void b.connect();
+      const ws = MockWebSocket.instances[0];
+      ws.simulateOpen();
+      expect(b.abort()).toBe('ok');
+      expect(JSON.parse(ws.sent[1])).toEqual({ v: 1, type: 'abort' });
+    });
+
+    it('park / unpark respect the control gate', () => {
+      const b = new ScopeBridge();
+      void b.connect();
+      MockWebSocket.instances[0].simulateOpen();
+      expect(b.park()).toBe('control-disabled');
+      expect(b.unpark()).toBe('control-disabled');
+      b.setControlEnabled(true);
+      expect(b.park()).toBe('ok');
+      expect(b.unpark()).toBe('ok');
+    });
+
+    it('sync sends regardless of max-jump (sync is local, not motion)', () => {
+      const b = new ScopeBridge();
+      b.setControlEnabled(true);
+      b.setSafety({ maxSlewDeg: 1 });
+      void b.connect();
+      const ws = MockWebSocket.instances[0];
+      ws.simulateOpen();
+      ws.simulateMessage({ v: 1, type: 'pointing', ra: 5, dec: 0, at: 1 });
+      // Even though target is ~180° away — sync should still go.
+      expect(b.sync(17, 0)).toBe('ok');
+    });
   });
 });

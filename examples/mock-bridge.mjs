@@ -44,29 +44,124 @@ if (FIXED_RA != null && FIXED_DEC != null) {
 }
 
 const startMs = Date.now();
-function currentPointing() {
-  if (FIXED_RA != null && FIXED_DEC != null) {
-    return { ra: FIXED_RA, dec: FIXED_DEC };
-  }
-  // Sweep RA 0→24h over 240s; dec wobbles ±20° on a slower cycle.
+
+/**
+ * Per-connection simulated mount state. Defaults to the sweep pattern;
+ * a slew command transitions through 'slewing' (RA/Dec interpolate
+ * linearly toward target at ~3°/s) and then back to either fixed or
+ * sweep, depending on whether FIXED_* env vars are set.
+ */
+function makeMountState() {
+  return {
+    mode: 'sweep',          // 'sweep' | 'fixed' | 'slewing'
+    fixedRa: FIXED_RA,
+    fixedDec: FIXED_DEC,
+    currentRa: 0,
+    currentDec: 0,
+    slewTargetRa: 0,
+    slewTargetDec: 0,
+    slewSpeedDegPerSec: 3,  // rough mid-range smart-scope value
+  };
+}
+
+function sweepPointing() {
   const tSec = (Date.now() - startMs) / 1000;
   const ra = (tSec * (24 / 240)) % 24;
   const dec = Math.sin(tSec / 30) * 20;
   return { ra, dec };
 }
 
+/** Advance simulated mount one tick. Returns current (ra,dec) and
+ *  emits slew lifecycle messages on `ws` when slewing. */
+function tickMount(state, dtSec, ws) {
+  if (state.mode === 'sweep') {
+    const p = sweepPointing();
+    state.currentRa = p.ra; state.currentDec = p.dec;
+    return p;
+  }
+  if (state.mode === 'fixed') {
+    return { ra: state.fixedRa, dec: state.fixedDec };
+  }
+  // slewing — interpolate toward target at slewSpeedDegPerSec.
+  const dRa = angDeltaHours(state.currentRa, state.slewTargetRa);
+  const dDec = state.slewTargetDec - state.currentDec;
+  const remDeg = Math.hypot(dRa * 15, dDec);
+  if (remDeg < 0.05) {
+    // Arrived.
+    state.currentRa = state.slewTargetRa;
+    state.currentDec = state.slewTargetDec;
+    state.mode = (state.fixedRa != null) ? 'fixed' : 'sweep';
+    ws.send(JSON.stringify({ v: 1, type: 'slew.done',
+      ra: state.currentRa, dec: state.currentDec }));
+    return { ra: state.currentRa, dec: state.currentDec };
+  }
+  const stepDeg = state.slewSpeedDegPerSec * dtSec;
+  const frac = Math.min(1, stepDeg / remDeg);
+  state.currentRa  = wrapHours(state.currentRa  + dRa  * frac);
+  state.currentDec = state.currentDec + dDec * frac;
+  ws.send(JSON.stringify({ v: 1, type: 'slew.progress',
+    remainingDeg: remDeg - stepDeg }));
+  return { ra: state.currentRa, dec: state.currentDec };
+}
+
+function angDeltaHours(fromH, toH) {
+  let d = toH - fromH;
+  while (d >  12) d -= 24;
+  while (d < -12) d += 24;
+  return d;
+}
+function wrapHours(h) {
+  let x = h % 24; if (x < 0) x += 24; return x;
+}
+
 wss.on('connection', (ws, req) => {
   console.log(`[mock-bridge] client connected from ${req.socket.remoteAddress}`);
+  const state = makeMountState();
   let timer = null;
+  let lastTickMs = Date.now();
   ws.on('message', (raw) => {
     let msg;
     try { msg = JSON.parse(raw.toString()); } catch { return; }
-    if (msg?.type !== 'subscribe.pointing') return;
-    if (timer) return;  // already streaming
-    timer = setInterval(() => {
-      const { ra, dec } = currentPointing();
-      ws.send(JSON.stringify({ v: 1, type: 'pointing', ra, dec, at: Date.now() }));
-    }, 1000 / PUSH_HZ);
+    if (!msg || typeof msg !== 'object') return;
+    switch (msg.type) {
+      case 'subscribe.pointing':
+        if (timer) return;
+        lastTickMs = Date.now();
+        timer = setInterval(() => {
+          const now = Date.now();
+          const dt = (now - lastTickMs) / 1000;
+          lastTickMs = now;
+          const { ra, dec } = tickMount(state, dt, ws);
+          ws.send(JSON.stringify({ v: 1, type: 'pointing', ra, dec, at: now }));
+        }, 1000 / PUSH_HZ);
+        return;
+      case 'slew':
+        if (typeof msg.ra !== 'number' || typeof msg.dec !== 'number') return;
+        state.mode = 'slewing';
+        state.slewTargetRa = msg.ra;
+        state.slewTargetDec = msg.dec;
+        ws.send(JSON.stringify({ v: 1, type: 'slew.start', ra: msg.ra, dec: msg.dec }));
+        console.log(`[mock-bridge] slew start → RA=${msg.ra.toFixed(3)}h Dec=${msg.dec.toFixed(2)}°`);
+        return;
+      case 'sync':
+        if (typeof msg.ra !== 'number' || typeof msg.dec !== 'number') return;
+        state.currentRa = msg.ra;
+        state.currentDec = msg.dec;
+        console.log(`[mock-bridge] sync to RA=${msg.ra.toFixed(3)}h Dec=${msg.dec.toFixed(2)}°`);
+        return;
+      case 'abort':
+        if (state.mode === 'slewing') {
+          state.mode = (state.fixedRa != null) ? 'fixed' : 'sweep';
+          ws.send(JSON.stringify({ v: 1, type: 'slew.aborted' }));
+          console.log('[mock-bridge] slew aborted');
+        }
+        return;
+      case 'park':
+      case 'unpark':
+        // No-op in the mock — just acknowledge for logging.
+        console.log(`[mock-bridge] ${msg.type} (no-op in mock)`);
+        return;
+    }
   });
   ws.on('close', () => {
     if (timer) clearInterval(timer);

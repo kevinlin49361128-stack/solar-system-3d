@@ -1103,6 +1103,152 @@ const scopeBridge = new ScopeBridge();
   });
 })();
 
+// Scope bridge Tier 2 — slew/sync/park outbound. Each piece is opt-in:
+// (a) the user must tick the risk-acknowledgement checkbox, (b) every
+// slew is range-checked against user-settable limits before leaving
+// the browser, (c) the panic-stop button is wired even when control is
+// disabled so it's there when you reach for it.
+(() => {
+  const ack = document.getElementById('scope-bridge-ack') as HTMLInputElement | null;
+  const maxSlewInput = document.getElementById('scope-bridge-max-slew') as HTMLInputElement | null;
+  const decMinInput = document.getElementById('scope-bridge-dec-min') as HTMLInputElement | null;
+  const decMaxInput = document.getElementById('scope-bridge-dec-max') as HTMLInputElement | null;
+  const stopBtn = document.getElementById('scope-bridge-stop') as HTMLButtonElement | null;
+  const slewStatus = document.getElementById('scope-bridge-slew-status');
+  const slewBtn = document.getElementById('info-slew-scope') as HTMLButtonElement | null;
+  if (!ack || !maxSlewInput || !decMinInput || !decMaxInput || !stopBtn || !slewStatus || !slewBtn) return;
+
+  const refreshSafety = () => {
+    const maxSlew = Math.max(1, Math.min(180, Number(maxSlewInput.value) || 90));
+    const decMinRaw = decMinInput.value.trim();
+    const decMaxRaw = decMaxInput.value.trim();
+    const decMin = decMinRaw === '' ? null : Math.max(-90, Math.min(90, Number(decMinRaw)));
+    const decMax = decMaxRaw === '' ? null : Math.max(-90, Math.min(90, Number(decMaxRaw)));
+    scopeBridge.setSafety({ maxSlewDeg: maxSlew, minDecDeg: decMin, maxDecDeg: decMax });
+  };
+  const refreshControl = () => {
+    scopeBridge.setControlEnabled(ack.checked);
+    updateSlewButtonVisibility();
+  };
+  const updateSlewButtonVisibility = () => {
+    // Show the slew button only when ALL three conditions hold:
+    //   bridge connected + tier-2 enabled + InfoPanel actually showing
+    //   a target with RA/Dec (the dataset attributes set by show* methods).
+    const nameEl = document.getElementById('info-name') as HTMLElement | null;
+    const hasTarget = !!(nameEl?.dataset.unnamedStarRa || nameEl?.dataset.bodyId || nameEl?.dataset.starId);
+    const enabled = scopeBridge.isConnected() && scopeBridge.isControlEnabled() && hasTarget;
+    slewBtn.style.display = enabled ? '' : 'none';
+  };
+
+  ack.addEventListener('change', refreshControl);
+  maxSlewInput.addEventListener('change', refreshSafety);
+  decMinInput.addEventListener('change', refreshSafety);
+  decMaxInput.addEventListener('change', refreshSafety);
+  refreshSafety();
+
+  // Slew-event stream → status indicator. Auto-clears after slew.done /
+  // slew.error so the status field doesn't get sticky on the next session.
+  scopeBridge.onSlew((e) => {
+    if (e.type === 'start') {
+      slewStatus.style.color = '#7fffa0';
+      slewStatus.textContent = t('external.scopeBridgeSlewing').replace('{remDeg}', '?');
+    } else if (e.type === 'progress') {
+      slewStatus.textContent = t('external.scopeBridgeSlewing').replace('{remDeg}', e.remainingDeg.toFixed(1));
+    } else if (e.type === 'done') {
+      slewStatus.style.color = '#7fffa0';
+      slewStatus.textContent = t('external.scopeBridgeSlewDone')
+        .replace('{ra}', e.raHours.toFixed(4))
+        .replace('{dec}', e.decDeg.toFixed(3));
+    } else if (e.type === 'aborted') {
+      slewStatus.style.color = '#ffb060';
+      slewStatus.textContent = t('external.scopeBridgeSlewAbort');
+    } else if (e.type === 'error') {
+      slewStatus.style.color = '#ff7878';
+      slewStatus.textContent = t('external.scopeBridgeSlewError').replace('{message}', e.message);
+    }
+  });
+  // Show / hide the slew button as bridge state changes.
+  scopeBridge.onState(updateSlewButtonVisibility);
+  // Also reactively after panel updates — main.ts already mutates the
+  // dataset on each show*; this captures all of them in one place.
+  const obs = new MutationObserver(updateSlewButtonVisibility);
+  const nameEl = document.getElementById('info-name');
+  if (nameEl) obs.observe(nameEl, { attributes: true, attributeFilter: ['data-body-id', 'data-star-id', 'data-unnamed-star-ra'] });
+
+  stopBtn.addEventListener('click', () => {
+    const g = scopeBridge.abort();
+    if (g === 'not-connected') {
+      slewStatus.style.color = '#ff7878';
+      slewStatus.textContent = t('external.scopeBridgeGateNotConn');
+    }
+  });
+
+  slewBtn.addEventListener('click', () => {
+    // Resolve RA/Dec from whatever the InfoPanel currently shows.
+    // Three datasets cover the three shapes: planets (bodyId via
+    // getWorldPosition lookup), named stars (starId), and unnamed/
+    // catalogue rows (unnamedStarRa + unnamedStarDec).
+    const nameEl2 = document.getElementById('info-name') as HTMLElement | null;
+    if (!nameEl2) return;
+    let raHours: number | null = null, decDeg: number | null = null;
+    const unnamedRa = nameEl2.dataset.unnamedStarRa;
+    const unnamedDec = nameEl2.dataset.unnamedStarDec;
+    if (unnamedRa && unnamedDec) {
+      raHours = Number(unnamedRa); decDeg = Number(unnamedDec);
+    } else if (nameEl2.dataset.starId) {
+      const star = NAMED_STARS.find((s) => s.id === nameEl2.dataset.starId);
+      if (star) { raHours = star.raHours; decDeg = star.decDeg; }
+    } else if (nameEl2.dataset.bodyId) {
+      // Body — reuse the same scene→ecliptic→equatorial path as the
+      // Stellarium GoTo above. Inlined for clarity (the maths is small).
+      const pos = solarSystem.getWorldPosition(nameEl2.dataset.bodyId, new Vector3());
+      const earth = solarSystem.getWorldPosition('earth', new Vector3());
+      if (pos) {
+        const rel = earth ? pos.clone().sub(earth) : pos.clone();
+        const len = rel.length();
+        if (len > 1e-9) {
+          const x = rel.x / len, y = -rel.z / len, z = rel.y / len;
+          const eps = 23.4393 * Math.PI / 180;
+          const xe = x;
+          const ye = y * Math.cos(eps) - z * Math.sin(eps);
+          const ze = y * Math.sin(eps) + z * Math.cos(eps);
+          let raDeg = Math.atan2(ye, xe) * 180 / Math.PI;
+          if (raDeg < 0) raDeg += 360;
+          raHours = raDeg / 15;
+          decDeg = Math.asin(Math.max(-1, Math.min(1, ze))) * 180 / Math.PI;
+        }
+      }
+    }
+    if (raHours == null || decDeg == null) return;
+    const gate = scopeBridge.slew(raHours, decDeg);
+    if (gate === 'ok') {
+      slewStatus.style.color = '#7fffa0';
+      slewStatus.textContent = t('external.scopeBridgeGateOk');
+    } else {
+      slewStatus.style.color = '#ffb060';
+      slewStatus.textContent = scopeBridgeGateMessage(gate, scopeBridge.getSafety().maxSlewDeg);
+    }
+  });
+
+  onLanguageChange(updateSlewButtonVisibility);
+})();
+
+/** Map gate codes from ScopeBridge.slew() to human-readable, localised
+ *  status text. Kept module-local because it's the only call site. */
+function scopeBridgeGateMessage(gate: import('./controls/ScopeBridge').SlewGate, maxDeg: number): string {
+  switch (gate) {
+    case 'control-disabled': return t('external.scopeBridgeGateDisabled');
+    case 'bad-coords':       return t('external.scopeBridgeGateBadCoords');
+    case 'dec-floor':        return t('external.scopeBridgeGateDecFloor');
+    case 'dec-ceiling':      return t('external.scopeBridgeGateDecCeil');
+    case 'slew-too-large':   return t('external.scopeBridgeGateTooLarge').replace('{maxDeg}', String(maxDeg));
+    case 'already-slewing':  return t('external.scopeBridgeGateBusy');
+    case 'not-connected':    return t('external.scopeBridgeGateNotConn');
+    case 'send-failed':      return t('external.scopeBridgeError');
+    case 'ok':               return t('external.scopeBridgeGateOk');
+  }
+}
+
 // Persist user preferences for left-panel selections (checkboxes, selects,
 // sliders, scale/frame button groups). Called after LeftPanel construction
 // so initial event listeners exist before we replay stored values via

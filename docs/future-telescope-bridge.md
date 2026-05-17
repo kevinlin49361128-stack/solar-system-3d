@@ -2,24 +2,46 @@
 
 **Status**:
 - **Tier 1 (read-only)** — *shipped in v0.7*. Browser-side `ScopeBridge`
-  + dome reticle live in `src/controls/ScopeBridge.ts` /
-  `src/scene/ScopeReticle.ts`. A mock helper for local testing lives
-  at `examples/mock-bridge.mjs`.
-- **Tier 2 (full slew control)** — still deferred; this doc captures
-  the architecture so the real INDI/ASCOM helper has something to
-  build against.
+  + dome reticle in `src/controls/ScopeBridge.ts` /
+  `src/scene/ScopeReticle.ts`.
+- **Tier 2 (slew / sync / park control)** — *shipped in v0.7*. The
+  `ScopeBridge` class now sends `slew` / `sync` / `abort` / `park` /
+  `unpark` messages through a layered safety gate. The InfoPanel
+  exposes a 🔭→ button on any catalogue entry; the Realism panel adds
+  a panic-stop button + slew-rate cap + dec floor/ceiling.
+- **Real INDI/ASCOM helper app** — still in a separate repo
+  (`solar-system-3d-bridge`); only the JSON envelope between browser
+  and helper is in this repo. A mock helper for local end-to-end
+  testing lives at `examples/mock-bridge.mjs` and now simulates slew
+  motion (linear interpolation at ~3°/s with progress + done events).
 
-**Quick test of Tier 1**:
+**Quick test (Tier 1 + Tier 2)**:
 ```
 npm i -D ws
 node examples/mock-bridge.mjs   # listens on ws://localhost:7624/sim
-# then in the simulator: Realism panel → 🔭 INDI / ASCOM bridge → Connect
-# green reticle appears, sweeping along the equator (mock pattern)
+
+# In the simulator:
+# 1) Realism panel → 🔭 INDI / ASCOM bridge → Connect
+#    → green reticle appears, sweeping along the equator
+# 2) Click ⚠️ Tier 2 → tick "I understand the risks"
+# 3) Click any DSO / star / planet → InfoPanel's 🔭→ button appears
+# 4) Press 🔭→ → reticle starts moving toward target; status bar
+#    shows "Slewing… N° remaining" → "On target".
+# 5) Press 🛑 PANIC STOP mid-slew to abort.
 ```
 
-**Target release for Tier 2**: v0.8+
-**Remaining effort**: 8–14 hours (real INDI helper + Windows ASCOM
-helper + integration testing)
+**Safety model** (defence in depth):
+1. **Browser layer** — `ScopeBridge.slew()` returns `SlewGate` enum
+   before any wire send. Checks: connected → control-enabled → coord
+   ranges → dec floor/ceiling → max angular jump → not-already-slewing.
+2. **User opt-in** — control gate is off by default. The acknowledgement
+   checkbox is the only path to flip `controlEnabled = true`.
+3. **Panic stop** — `abort()` bypasses the control gate so it works
+   even after a buggy bridge keeps `slewActive` stuck.
+4. **Helper layer** (future real helper) — should also enforce mount
+   driver limits + meridian-flip handling + slew-rate clamps.
+5. **Mount hardware** — physical limit switches are the final
+   backstop; users are explicitly reminded to set them.
 
 ---
 
