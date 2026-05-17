@@ -1624,6 +1624,86 @@
         padding: 0 2px;
         cursor: pointer;
       }
+
+      /* ─────────────────────────────────────────────────────────
+         BottomSheet component — sheets from src/ui/BottomSheet.ts.
+         The DOM elements are created at runtime; CSS here styles
+         them via class hooks.
+         ──────────────────────────────────────────────────────── */
+      .bs-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease-out;
+        z-index: 200;
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+      }
+      .bs-root {
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        max-width: 720px;
+        margin: 0 auto;
+        background: rgba(16, 22, 38, 0.97);
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: none;
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+        z-index: 201;
+        transform: translateY(100%);
+        transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+                    height 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+      .bs-header {
+        flex: none;
+        padding: 6px 16px 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: grab;
+        user-select: none;
+        touch-action: none;
+        flex-direction: column;
+      }
+      .bs-handle {
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.25);
+        margin-bottom: 6px;
+      }
+      .bs-header > .bs-title { order: 2; }
+      .bs-header > .bs-close { order: 3; position: absolute; right: 12px; top: 12px; }
+      .bs-title {
+        font-size: 14px;
+        font-weight: 600;
+        flex: 1;
+        text-align: center;
+      }
+      .bs-close {
+        background: transparent;
+        border: none;
+        color: var(--text);
+        font-size: 18px;
+        cursor: pointer;
+        min-width: 32px;
+        min-height: 32px;
+        padding: 0;
+      }
+      .bs-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 4px 16px 24px;
+        -webkit-overflow-scrolling: touch;
+      }
     </style>
   </head>
   <body>
