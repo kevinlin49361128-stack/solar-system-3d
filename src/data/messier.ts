@@ -178,3 +178,84 @@ const TYPE_DEFAULT_ARCMIN: Record<MessierType, number> = {
 export function dsoAngularSizeArcmin(id: string, type: MessierType): number {
   return MESSIER_ANGULAR_SIZE_ARCMIN[id] ?? TYPE_DEFAULT_ARCMIN[type];
 }
+
+/**
+ * Detailed apparent dimensions for each Messier object — major and
+ * minor axes in arcminutes. Generated from OpenNGC v2 via
+ * `scripts/fetch-messier-sizes.mjs`, with 4 manual entries appended
+ * for objects OpenNGC omits (M40 double star, M45 Pleiades, M73
+ * asterism, M102 spindle galaxy candidate).
+ *
+ * Used to compute surface brightness for InfoPanel display:
+ *   SB = m + 2.5·log10(π/4 · major · minor · 60²)   (mag/arcsec²)
+ * where major × minor is the elliptical apparent area in arcsec².
+ *
+ * The single-axis `MESSIER_ANGULAR_SIZE_ARCMIN` table above stays
+ * unchanged so the realism-layer "real angular size" rendering
+ * doesn't shift; this is purely an additive enrichment.
+ */
+export const MESSIER_ANG_SIZES: Record<string, [number, number]> = {
+  'M1': [8, 4], 'M2': [8.4, 8.4], 'M3': [16.2, 16.2], 'M4': [28.2, 28.2],
+  'M5': [15, 15], 'M6': [15.6, 15.6], 'M7': [22.2, 22.2], 'M8': [45, 30],
+  'M9': [6.9, 6.9], 'M10': [9.3, 9.3], 'M11': [9, 9], 'M12': [11.1, 11.1],
+  'M13': [16.5, 16.5], 'M14': [9.9, 9.9], 'M15': [11.1, 11.1],
+  'M16': [120, 25], 'M17': [12.6, 12.6], 'M18': [6, 6], 'M19': [7.5, 7.5],
+  'M20': [28, 28], 'M21': [6, 6], 'M22': [12.6, 12.6], 'M23': [16.8, 16.8],
+  'M24': [120, 60], 'M25': [14.1, 14.1], 'M26': [6, 6], 'M27': [6.7, 6.7],
+  'M28': [5.1, 5.1], 'M29': [3.6, 3.6], 'M30': [9, 9],
+  'M31': [177.83, 69.66], 'M32': [7.74, 4.86], 'M33': [62.09, 36.73],
+  'M34': [22.5, 22.5], 'M35': [24, 24], 'M36': [7.2, 7.2], 'M37': [11.4, 11.4],
+  'M38': [9.6, 9.6], 'M39': [19.5, 19.5],
+  'M40': [0.8, 0.8],          // double star — manual addition (OpenNGC omits)
+  'M41': [12, 12], 'M42': [90, 60], 'M43': [20, 15], 'M44': [108.6, 108.6],
+  'M45': [110, 110],          // Pleiades — manual; OpenNGC truncates open clusters
+  'M46': [21, 21], 'M47': [19.8, 19.8], 'M48': [28.2, 28.2],
+  'M49': [10.21, 8.38], 'M50': [14.1, 14.1], 'M51': [13.71, 11.67],
+  'M52': [9.9, 9.9], 'M53': [9, 9], 'M54': [5.1, 5.1], 'M55': [12, 12],
+  'M56': [5.8, 5.8], 'M57': [1.27, 1.27], 'M58': [5.01, 3.84],
+  'M59': [4.55, 3.21], 'M60': [6.78, 5.45], 'M61': [6.89, 6.56],
+  'M62': [7.8, 7.8], 'M63': [11.83, 7.16], 'M64': [10.52, 5.33],
+  'M65': [7.64, 1.97], 'M66': [10.28, 4.61], 'M67': [33, 33],
+  'M68': [6.6, 6.6], 'M69': [5.7, 5.7], 'M70': [6.6, 6.6], 'M71': [6.9, 6.9],
+  'M72': [4.5, 4.5],
+  'M73': [2.8, 2.8],          // asterism — manual
+  'M74': [9.89, 9.33], 'M75': [3.6, 3.6], 'M76': [1.12, 1.12],
+  'M77': [6.11, 5.61], 'M78': [4.5, 4.5], 'M79': [7.2, 7.2], 'M80': [5.7, 5.7],
+  'M81': [21.63, 11.25], 'M82': [10.99, 5.11], 'M83': [13.61, 13.21],
+  'M84': [7.41, 6.44], 'M85': [6.95, 5.35], 'M86': [11.53, 8.43],
+  'M87': [7.11, 6.67], 'M88': [8.65, 4.38], 'M89': [8.13, 8],
+  'M90': [9.12, 3.82], 'M91': [5.55, 4.52], 'M92': [14.4, 14.4],
+  'M93': [15, 15], 'M94': [7.74, 6.68], 'M95': [7.23, 4.45],
+  'M96': [8.26, 5.51], 'M97': [3.58, 3.58], 'M98': [11.04, 2.66],
+  'M99': [5.04, 4.74], 'M100': [6.1, 5.62], 'M101': [23.99, 23.07],
+  'M102': [5.2, 2.3],         // NGC 5866 Spindle Galaxy candidate — manual
+  'M103': [4.5, 4.5], 'M104': [8.45, 4.91], 'M105': [4.89, 4.25],
+  'M106': [16.98, 7.24], 'M107': [7.8, 7.8], 'M108': [3.98, 1.66],
+  'M109': [8.07, 5.64], 'M110': [16.22, 9.59],
+};
+
+/**
+ * Mean surface brightness in mag/arcsec². Returns NaN if angular size
+ * data is missing for the object. Computed as:
+ *
+ *   SB = m + 2.5·log10(πab)
+ *
+ * where (a, b) are the major/minor axes converted to arcseconds and
+ * πab is the elliptical apparent area. This is the "mean within
+ * isophote" surface brightness astronomers cite for diffuse objects
+ * — for star clusters the value is poorly defined and should be
+ * read as "rough comparison only".
+ */
+export function messierSurfaceBrightness(
+  id: string, apparentMag: number,
+): number {
+  const axes = MESSIER_ANG_SIZES[id];
+  if (!axes) return NaN;
+  const [major, minor] = axes;
+  if (!(major > 0 && minor > 0)) return NaN;
+  // Major/minor are arcmin; convert to arcsec and compute πab area.
+  const a = major * 60;
+  const b = minor * 60;
+  const areaArcsec2 = Math.PI * a * b;
+  return apparentMag + 2.5 * Math.log10(areaArcsec2);
+}

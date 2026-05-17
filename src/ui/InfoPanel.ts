@@ -21,6 +21,7 @@ import {
 } from '../data/observationLog';
 import { findStarHopPath, bearingCardinal } from '../physics/starHopping';
 import { EXOPLANET_SYSTEMS } from '../data/exoplanetSystems';
+import { MESSIER_ANG_SIZES, messierSurfaceBrightness } from '../data/messier';
 import { Vector3 } from 'three';
 
 /**
@@ -489,6 +490,24 @@ export class InfoPanel {
     rows.push([t('info.row.ra2000'), formatRA(m.raHours)]);
     rows.push([t('info.row.dec2000'), `${m.decDeg >= 0 ? '+' : ''}${m.decDeg.toFixed(4)}°`]);
     rows.push([t('info.row.magnitude'), `${m.magnitude >= 0 ? '+' : ''}${m.magnitude.toFixed(2)}`]);
+    // Apparent angular extent + surface brightness — critical numbers for
+    // the smart-telescope crowd ("will this fit my Seestar's FOV / is it
+    // bright enough per pixel to stack out from light pollution?"). The
+    // standard visual magnitude is misleading for diffuse objects (M33 is
+    // mag 5.7 but you can't see it from suburbia because it's spread over
+    // 1° of sky); surface brightness is the better predictor.
+    const axes = MESSIER_ANG_SIZES[m.id];
+    if (axes) {
+      const [major, minor] = axes;
+      const sizeStr = major === minor
+        ? `${major.toFixed(1)}′`
+        : `${major.toFixed(1)}′ × ${minor.toFixed(1)}′`;
+      rows.push([t('info.row.apparentSize'), sizeStr]);
+      const sb = messierSurfaceBrightness(m.id, m.magnitude);
+      if (Number.isFinite(sb)) {
+        rows.push([t('info.row.surfaceBrightness'), `${sb.toFixed(1)} mag/arcsec²`]);
+      }
+    }
     this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
 
     // Star-hopping hint: connect this DSO back to the nearest bright
