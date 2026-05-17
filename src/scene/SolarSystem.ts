@@ -31,6 +31,7 @@ import { LagrangePointsLayer } from './LagrangePoints';
 import type { ScaleController } from '../controls/ScaleController';
 import type { SimulationClock } from '../time/SimulationClock';
 import { gmstRad } from '../physics/topocentric';
+import { moonLibrationDeg } from '../physics/lunarPosition';
 import { buildNBodyFromDescriptors, NBodyAdapter, type NBodySimulation } from '../physics/nbody';
 import { STARS_AND_PLANETS, SUN } from '../data/bodies';
 import { MOONS } from '../data/moons';
@@ -499,15 +500,17 @@ export class SolarSystem {
         entry.mesh.advanceRotation(dDays);
       }
 
-      // Moon: apply optical libration so we see slightly more than 50% of the
-      // surface over the synodic month. Simple sinusoidal approximation.
+      // Moon: apply optical libration so we see slightly more than 50 % of the
+      // surface over the synodic month. Uses Meeus ch. 53 (computed from the
+      // Moon's actual ecliptic position vs the orientation of its mean equator)
+      // rather than the sin-wave proxy this used to be — so the wobble lines up
+      // correctly with eclipses and the real lunar-node cycle.
       if (desc.id === 'moon') {
-        const Tdays = jd - 2451545.0;
-        // Libration in longitude: ±7.9° with anomalistic month period ~27.55 d
-        const libLonDeg = 7.9 * Math.sin((2 * Math.PI / 27.55) * Tdays);
-        // Libration in latitude: ±6.7° with draconic month period ~27.21 d
-        const libLatDeg = 6.7 * Math.sin((2 * Math.PI / 27.21) * Tdays);
-        entry.mesh.setLibration(libLatDeg * Math.PI / 180, libLonDeg * Math.PI / 180);
+        const lib = moonLibrationDeg(jd);
+        entry.mesh.setLibration(
+          lib.latitudeDeg * Math.PI / 180,
+          lib.longitudeDeg * Math.PI / 180,
+        );
       }
     }
 

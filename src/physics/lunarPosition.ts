@@ -180,3 +180,73 @@ export class LunarPropagator implements OrbitPropagator {
     return { position, velocity };
   }
 }
+
+/**
+ * Geometric (optical) lunar libration per Meeus 1998 chapter 53.
+ *
+ * The Moon is tidally locked but its rotation is uniform while its
+ * orbital motion is not (Kepler's 2nd law), so the side facing Earth
+ * appears to "wobble" — east-west by up to ±7.9° (libration in
+ * longitude, driven by orbital eccentricity) and north-south by up to
+ * ±6.7° (libration in latitude, driven by the 5.15° inclination of
+ * the lunar orbit to the ecliptic). The combined effect lets us see
+ * about 59 % of the Moon's surface over a synodic month rather than
+ * the textbook 50 %.
+ *
+ * This computes the OPTICAL (geometric) libration — derived from the
+ * Moon's actual ecliptic position vs the orientation of its mean
+ * equator. PHYSICAL libration (~0.04° secular corrections from tidal
+ * torques) is omitted; the geometric part dominates by 100×.
+ *
+ * Reference Meeus example 53.a: at JD 2448724.5 (1992 Apr 12 0h TD),
+ * optical libration should be l' ≈ -1.206°, b' ≈ +4.196°.
+ *
+ * Returns angles in DEGREES (positive l' = east lunar limb tipped
+ * toward Earth; positive b' = north lunar pole tipped toward Earth).
+ */
+export function moonLibrationDeg(jd: number): { longitudeDeg: number; latitudeDeg: number } {
+  const m = lunarMeanArgs(jd);
+  const T = (jd - J2000_JD) / 36525;
+  // Longitude of ascending node of the Mean Lunar orbit (Meeus eq. 47.7).
+  const OmegaDeg = 125.04452 - 1934.136261 * T + 0.0020708 * T * T + (T * T * T) / 450000;
+  // Inclination of Moon's mean equator to the ecliptic (IAU 1980).
+  const I = 1.54242 * DEG2RAD;
+
+  // Use the apparent ecliptic position from the same Brown-theory
+  // expansion the propagator uses, so libration stays consistent with
+  // where the moon actually appears.
+  const pos = moonPositionEcliptic(jd);
+  const r = pos.length();
+  const lambda = Math.atan2(pos.y, pos.x);            // ecliptic longitude
+  const beta = Math.asin(Math.max(-1, Math.min(1, pos.z / r)));  // ecliptic latitude
+
+  const W = lambda - OmegaDeg * DEG2RAD;
+  const sinW = Math.sin(W);
+  const cosW = Math.cos(W);
+  const sinB = Math.sin(beta);
+  const cosB = Math.cos(beta);
+  const sinI = Math.sin(I);
+  const cosI = Math.cos(I);
+
+  // Meeus eq. 53.1–53.3 (geometric / optical libration):
+  //   A = atan2(sinW·cosβ·cosI − sinβ·sinI, cosW·cosβ)
+  //   l' = A − F                                    (libration in longitude)
+  //   b' = arcsin(−sinW·cosβ·sinI − sinβ·cosI)      (libration in latitude)
+  const A = Math.atan2(
+    sinW * cosB * cosI - sinB * sinI,
+    cosW * cosB,
+  );
+  const Frad = m.F * DEG2RAD;
+  let lPrime = A - Frad;
+  // Wrap into (-π, π]:
+  while (lPrime > Math.PI) lPrime -= 2 * Math.PI;
+  while (lPrime <= -Math.PI) lPrime += 2 * Math.PI;
+  const bPrime = Math.asin(Math.max(-1, Math.min(1,
+    -sinW * cosB * sinI - sinB * cosI,
+  )));
+
+  return {
+    longitudeDeg: lPrime * 180 / Math.PI,
+    latitudeDeg: bPrime * 180 / Math.PI,
+  };
+}

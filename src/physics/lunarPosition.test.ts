@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { moonPositionEcliptic, LunarPropagator } from './lunarPosition';
+import { moonPositionEcliptic, moonLibrationDeg, LunarPropagator } from './lunarPosition';
 import { J2000_JD, AU_KM } from './constants';
 
 describe('moonPositionEcliptic', () => {
@@ -84,5 +84,49 @@ describe('LunarPropagator', () => {
     expect(prop.elements.a).toBeCloseTo(384399 / AU_KM, 6);
     expect(prop.elements.e).toBeCloseTo(0.0549, 4);
     expect(prop.elements.periodDays).toBeCloseTo(27.32, 1);
+  });
+});
+
+describe('moonLibrationDeg — Meeus chapter 53 optical libration', () => {
+  it('stays bounded within textbook ±10° on both axes across a year', () => {
+    // Theoretical maxima are ±7.9° (longitude) and ±6.7° (latitude),
+    // but the geometric formula occasionally peaks slightly higher
+    // when the apparent latitude term contributes — keep a generous
+    // ±10° box for the regression check.
+    for (let i = 0; i < 365; i += 7) {
+      const lib = moonLibrationDeg(J2000_JD + i);
+      expect(Math.abs(lib.longitudeDeg)).toBeLessThan(10);
+      expect(Math.abs(lib.latitudeDeg)).toBeLessThan(10);
+    }
+  });
+
+  it('matches Meeus example 53.a at JD 2448724.5 (1992 Apr 12)', () => {
+    // Meeus 1998 worked example: l' = -1.206°, b' = +4.196°.
+    // Our truncated Brown-theory expansion has ~10″ position error, so
+    // libration here matches to ~0.2° rather than Meeus's 6 decimal places.
+    const lib = moonLibrationDeg(2448724.5);
+    expect(lib.longitudeDeg).toBeCloseTo(-1.206, 0);
+    expect(lib.latitudeDeg).toBeCloseTo(4.196, 0);
+  });
+
+  it('libration in latitude oscillates over a draconic month (~27.21 d)', () => {
+    // Sample b' every 2 days for 30 days; expect to cross zero at least
+    // once (a draconic period fits inside 30 days regardless of phase).
+    let signChanges = 0;
+    let prevSign = 0;
+    for (let i = 0; i <= 30; i += 2) {
+      const b = moonLibrationDeg(J2000_JD + i).latitudeDeg;
+      const sgn = Math.sign(b);
+      if (prevSign !== 0 && sgn !== 0 && sgn !== prevSign) signChanges++;
+      if (sgn !== 0) prevSign = sgn;
+    }
+    expect(signChanges).toBeGreaterThanOrEqual(1);
+  });
+
+  it('libration is deterministic for repeated calls (no state leakage)', () => {
+    const a = moonLibrationDeg(J2000_JD + 100);
+    const b = moonLibrationDeg(J2000_JD + 100);
+    expect(a.longitudeDeg).toBe(b.longitudeDeg);
+    expect(a.latitudeDeg).toBe(b.latitudeDeg);
   });
 });
