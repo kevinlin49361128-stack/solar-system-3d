@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.3.0",
   "type": "module",
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -11,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "og:capture": "node scripts/og-capture.mjs",
-    "screenshots": "node scripts/readme-screenshots.mjs"
+    "screenshots": "node scripts/readme-screenshots.mjs",
+    "lockfile:regen": "rm -rf node_modules package-lock.json && npx -y npm@10.9.2 install --no-audit --no-fund"
   },
   "dependencies": {
     "lil-gui": "^0.20.0",

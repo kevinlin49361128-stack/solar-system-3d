@@ -55,7 +55,19 @@ npm run test         # vitest run
 npm run test:watch   # watch mode
 ```
 
-需要：Node 18+、現代瀏覽器（WebGL2 + ES2022）。
+需要：**Node 22+** (LTS, 跟 `.nvmrc` 對齊)、現代瀏覽器（WebGL2 + ES2022）。
+用 nvm：`nvm use` 會自動讀 `.nvmrc`。
+
+### 升 deps / 重生 lockfile
+
+```bash
+npm run lockfile:regen   # 強制走 npm 10.x（npm 11 的 lockfile 跟 npm ci 不相容）
+```
+
+背景：npm 11.x 在生 lockfile 時會把 esbuild 跨平台 binary 標
+`extraneous: true`，CI 用 `npm ci` 會吐 EBADPLATFORM。已知 bug，
+所以 lockfile 的生成統一走 npm 10。執行期間用 npm 11 跑 `npm ci`
+跟 `npm run dev` 都沒問題。
 
 ## Architecture
 
