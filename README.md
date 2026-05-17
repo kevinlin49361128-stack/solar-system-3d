@@ -40,6 +40,8 @@
 - **觀測者模式**：站在地球任意 lat/lon，看 atmosphere-shader 染色的天空、AWS Open Terrain DEM 真地形、Esri 衛星貼圖、大氣消光、Bortle 光害分級、IAU 88 星座連線與邊界、Bennett 折射、IAU 1976 歲差。
 - **星表**：HYG 15 167 顆 mag<7 + Bright Star Catalog 8404 顆 + Messier 110 個深空天體 + 88 IAU 星座邊界（d3-celestial GeoJSON）。銀河背景用 ESO/Brunier GigaGalaxy Zoom 全景，IAU galactic-frame 矩陣對齊——Cygnus rift、Sgr A\*、Carina nebula 都對得上位置。
 - **時間 + 計算工具**：暫停 / 倒轉 / 0.0001×–1 年/秒 / 跳到任意 datetime / 自動偵測未來 2 年 13 種天文事件、6 種光學預設（裸眼到 8" SCT）、相對距離 / 視線速度 / 合角即時計算。
+- **智慧望遠鏡規劃**：14k+ DSO 目錄（Messier + NGC/IC 全集 11k + Sharpless 2 + Abell 富星系團 2712），按目標表面亮度 + 智慧望遠鏡口徑（Seestar S30/S50、Vespera Pro、Dwarf 3）即時估算 stack 時間，整合今晚天文夜窗判定可觀測性 → 一鍵加入觀測隊列。
+- **可選 INDI / ASCOM 望遠鏡橋接**：搭配獨立 [solar-system-3d-bridge](https://github.com/kevinlin49361128-stack/solar-system-3d-bridge) helper，瀏覽器可顯示真實望遠鏡指向（Tier 1 唯讀），也能反向 GoTo / Sync / Park 控制（Tier 2，預設關閉、多層安全閘）。詳見 [`docs/future-telescope-bridge.md`](docs/future-telescope-bridge.md)。
 - **Trilingual UI**：繁中 / English / 日本語，包含資料行 label、食接觸時間、propagator 描述、scale-tier banner——不只翻按鈕。
 - **PWA 可安裝**，行動裝置響應式 + 雙指 pinch-zoom FOV。
 
@@ -75,13 +77,32 @@ npm run lockfile:regen   # 強制走 npm 10.x（npm 11 的 lockfile 跟 npm ci �
 
 擴充原則：物理層用 `OrbitPropagator` interface 抽象（`physics/types.ts`），場景層完全不知道目前是 Kepler 還是 N-body。要加新天體只動 `data/`。詳見 [`src/`](src/) 原始碼。
 
+## Telescope bridge (optional, INDI / ASCOM)
+
+模擬器內建一個 WebSocket 客戶端，可選地對接一個跑在本機的 helper 行程，把瀏覽器跟你的赤道儀接起來：
+
+- **Tier 1（唯讀）**：天球上多一個綠色十字標示望遠鏡目前指向，跟模擬器內的 crosshair 並列。
+- **Tier 2（控制）**：點任何天體 → 望遠鏡 GoTo / Sync / Park。預設關閉；要勾「我了解風險」+ 設定最大移動角度 + Dec 上下限才會啟用；🛑 緊急停止隨時可用。
+
+```bash
+# 在另一個 terminal：
+git clone https://github.com/kevinlin49361128-stack/solar-system-3d-bridge.git
+cd solar-system-3d-bridge && npm install && node src/cli.js
+# 預設 ws://localhost:7624/sim，會試著連 indiserver 在 127.0.0.1:7624
+# 模擬器內：Realism 面板 → 🔭 INDI / ASCOM 望遠鏡橋接 → 連接
+```
+
+> 沒有實體望遠鏡也能試：模擬器這邊的 `examples/mock-bridge.mjs` 是個 60 行 Node 服務，會假扮成橋接、餵假的指向資料，方便驗證整條串聯。
+
+Helper 是獨立 repo：<https://github.com/kevinlin49361128-stack/solar-system-3d-bridge>。詳細設計與安全模型見 [`docs/future-telescope-bridge.md`](docs/future-telescope-bridge.md)。
+
 ## What's verified
 
 ```bash
 npm run test
 ```
 
-目前 **236 個測試 / 22 個檔案** 全綠：
+目前 **253 個測試 / 23 個檔案** 全綠：
 
 - **`kepler.test.ts`**：solver 在 e=0..0.995 全 M 範圍收斂、Halley 級高 e 回歸測試（防止之前的 Newton 噴飛 bug 復發）
 - **`topocentric.test.ts`**：GMST 在 J2000 ≈ 280.46°、每日 +0.985° sidereal drift、observer frame 三軸正交、precession 100 年位移 1.0–1.6°、Bennett 折射對標準參考值
