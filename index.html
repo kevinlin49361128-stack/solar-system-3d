@@ -1828,6 +1828,85 @@
         pointer-events: auto;
       }
 
+      /* Observation queue panel — same dock size + style as
+         tonight-plan-panel; bespoke entry styling so the per-target
+         scope picker + integration-time chip read clearly. */
+      #observation-queue-panel {
+        position: fixed; right: 12px; bottom: 64px;
+        width: 320px; max-width: calc(100vw - 32px);
+        max-height: 70vh; overflow: hidden;
+        z-index: 80;
+      }
+      #queue-list .queue-empty {
+        text-align: center;
+        color: var(--text-dim);
+        font-size: 11px;
+        padding: 24px 12px;
+      }
+      .queue-entry {
+        padding: 6px 8px;
+        margin: 4px 0;
+        background: rgba(124, 212, 160, 0.04);
+        border: 1px solid rgba(124, 212, 160, 0.18);
+        border-radius: 5px;
+        font-size: 11px;
+        line-height: 1.45;
+      }
+      .queue-entry-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2px;
+      }
+      .queue-name {
+        font-weight: 600;
+        color: var(--text);
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .queue-remove {
+        background: transparent;
+        border: none;
+        color: var(--text-dim);
+        cursor: pointer;
+        padding: 2px 6px;
+        font-size: 12px;
+        margin-left: 4px;
+      }
+      .queue-remove:hover { color: #e08080; }
+      .queue-entry-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 2px;
+      }
+      .queue-scope {
+        flex: 1;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: var(--text);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+      }
+      .queue-min {
+        color: #7cd4a0;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      .queue-alt-good { color: #7cd4a0; }
+      .queue-alt-low  { color: #e0c060; }
+      .queue-alt-below { color: var(--text-dim); }
+      .queue-dim { color: var(--text-dim); }
+      .queue-ok { color: #7cd4a0; }
+      .queue-warn { color: #e08080; }
+      .queue-stat-row {
+        font-size: 11px;
+        margin: 2px 0;
+      }
+
       /* Mobile observer HUD — alt/az strip + centre crosshair.
          Both hidden by default; .visible class toggled by
          src/ui/mobileObserverHUD.ts on sim:mode-change to
@@ -2319,6 +2398,9 @@
           <button id="tonight-plan-open" data-i18n="tonight.open" style="flex:1;background:rgba(255,204,64,0.15);border:1px solid rgba(255,204,64,0.4);color:#ffcc40;padding:6px;border-radius:6px;cursor:pointer;font-size:12px;">🌟 今晚看什麼</button>
           <button id="observation-log-open" data-i18n="obslog.open" style="flex:1;background:rgba(118,209,138,0.12);border:1px solid rgba(118,209,138,0.4);color:#76d18a;padding:6px;border-radius:6px;cursor:pointer;font-size:12px;">📔 我的觀測</button>
         </div>
+        <div style="display:flex;gap:4px;margin-top:4px;">
+          <button id="observation-queue-open" data-i18n="queue.open" style="flex:1;background:rgba(124,212,160,0.12);border:1px solid rgba(124,212,160,0.4);color:#7cd4a0;padding:6px;border-radius:6px;cursor:pointer;font-size:12px;">📋 觀測隊列</button>
+        </div>
         <label style="display:block;margin-top:6px;font-size:11px;color:var(--text-dim);">
           <input type="checkbox" id="observer-lock-horizon" checked /> <span data-i18n="observer.lockHorizon">鎖定地平線以上</span>
         </label>
@@ -2403,6 +2485,10 @@
                 style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;">
           ⭐
         </button>
+        <button id="info-queue-add" data-i18n-attr="title:info.queueTitle" title="加入觀測隊列"
+                style="display:none;background:rgba(124,212,160,0.12);border:1px solid rgba(124,212,160,0.4);color:#7cd4a0;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;">
+          📋
+        </button>
       </div>
       <!-- Observation log: ✓ mark observed + 1-5 star rating + free-text notes.
            Hidden when no target loaded. Built dynamically by InfoPanel.ts. -->
@@ -2455,6 +2541,17 @@
       </div>
       <div id="tonight-plan-list" style="font-size:12px;line-height:1.5;max-height:60vh;overflow-y:auto;"></div>
       <div data-i18n="tonight.tapHint" style="color:var(--text-dim);font-size:10px;margin-top:6px;">點選即跳轉鏡頭 + 開啟資訊面板</div>
+    </div>
+
+    <div id="observation-queue-panel" class="panel" style="display:none;">
+      <span class="close" id="queue-close">×</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div data-i18n="queue.title" style="color:#7cd4a0;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">📋 觀測隊列</div>
+        <button id="queue-clear" data-i18n="queue.clearAll" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">清空</button>
+      </div>
+      <div id="queue-list" style="font-size:12px;line-height:1.5;max-height:55vh;overflow-y:auto;"></div>
+      <div id="queue-footer" style="margin-top:8px;padding-top:6px;border-top:1px dashed rgba(160,190,230,0.18);font-size:11px;line-height:1.5;color:var(--text-dim);"></div>
+      <div data-i18n="queue.tapHint" style="color:var(--text-dim);font-size:10px;margin-top:6px;">點目標名稱跳轉鏡頭 · 改下拉選單切換設備</div>
     </div>
 
     <div id="eclipse-map" class="panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(900px,92vw);max-height:88vh;z-index:200;">

@@ -13,26 +13,41 @@ describe('ScaleTierController', () => {
   });
 
   it('animates to neighbourhood tier and settles after duration', () => {
-    const c = new ScaleTierController();
-    c.setTier('neighbourhood', 1.0); // 1 second for test speed
-    expect(c.isAnimating()).toBe(true);
+    // Mock performance.now so setTier (which reads start = now())
+    // and update(now) share a controllable clock. Without this the
+    // test was flaky: `update(500)` was being interpreted as absolute
+    // wall-clock 500ms, but setTier captured the real performance.now()
+    // (~hundreds of ms after cold Node start), so elapsed went negative
+    // on ~30% of runs and the easing produced cameraDistance < 14.
+    const realNow = performance.now;
+    let mockedNow = 1_000_000;
+    performance.now = () => mockedNow;
+    try {
+      const c = new ScaleTierController();
+      c.setTier('neighbourhood', 1.0); // 1 second for test speed
+      expect(c.isAnimating()).toBe(true);
 
-    // Halfway through (t=0.5 → eased=0.5 — symmetric ease curve)
-    const mid = c.update(500);
-    expect(mid.cameraDistance).toBeGreaterThan(14);
-    expect(mid.cameraDistance).toBeLessThan(80);
-    expect(mid.layerWeights.solarSystem).toBeGreaterThan(0.15);
-    expect(mid.layerWeights.solarSystem).toBeLessThan(1);
-    expect(mid.layerWeights.hygCloud).toBeGreaterThan(0);
-    expect(mid.layerWeights.hygCloud).toBeLessThan(1);
+      // Halfway through (t=0.5 → eased=0.5 — symmetric ease curve)
+      mockedNow += 500;
+      const mid = c.update(mockedNow);
+      expect(mid.cameraDistance).toBeGreaterThan(14);
+      expect(mid.cameraDistance).toBeLessThan(80);
+      expect(mid.layerWeights.solarSystem).toBeGreaterThan(0.15);
+      expect(mid.layerWeights.solarSystem).toBeLessThan(1);
+      expect(mid.layerWeights.hygCloud).toBeGreaterThan(0);
+      expect(mid.layerWeights.hygCloud).toBeLessThan(1);
 
-    // After full duration → settled at target
-    const final = c.update(1500);
-    expect(c.isAnimating()).toBe(false);
-    expect(c.getTier()).toBe('neighbourhood');
-    expect(final.cameraDistance).toBe(80);
-    expect(final.layerWeights.solarSystem).toBeCloseTo(0.15, 6);
-    expect(final.layerWeights.hygCloud).toBe(1);
+      // After full duration → settled at target
+      mockedNow += 1000;
+      const final = c.update(mockedNow);
+      expect(c.isAnimating()).toBe(false);
+      expect(c.getTier()).toBe('neighbourhood');
+      expect(final.cameraDistance).toBe(80);
+      expect(final.layerWeights.solarSystem).toBeCloseTo(0.15, 6);
+      expect(final.layerWeights.hygCloud).toBe(1);
+    } finally {
+      performance.now = realNow;
+    }
   });
 
   it('uses logarithmic interpolation for camera distance (3+ decades)', () => {

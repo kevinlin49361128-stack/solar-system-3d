@@ -32,6 +32,7 @@ import { PrecisionInfoPanel } from './ui/PrecisionInfoPanel';
 import { NBodyDiagnostics } from './ui/NBodyDiagnostics';
 import { TonightPlanPanel } from './ui/TonightPlanPanel';
 import { ObservationLogPanel } from './ui/ObservationLogPanel';
+import { ObservationQueuePanel } from './ui/ObservationQueuePanel';
 import { setupNightVision } from './ui/NightVision';
 import { formatDMS } from './ui/formatAngles';
 import {
@@ -389,7 +390,16 @@ document.getElementById('tonight-plan-open')?.addEventListener('click', () => {
 const observationLogPanel = new ObservationLogPanel(cameraCtl, infoPanel, solarSystem);
 document.getElementById('observation-log-open')?.addEventListener('click', () => {
   if (observationLogPanel.isOpen()) observationLogPanel.hide();
-  else { tonightPlan.hide(); observationLogPanel.show(); }
+  else { tonightPlan.hide(); observationQueuePanel.hide(); observationLogPanel.show(); }
+});
+
+// 觀測隊列 (observation queue) — smart-scope session planner. Pairs
+// with InfoPanel's "Add to queue" button on DSO entries.
+const observationQueuePanel = new ObservationQueuePanel(cameraCtl, infoPanel, clock);
+infoPanel.setObservationQueuePanel(observationQueuePanel);
+document.getElementById('observation-queue-open')?.addEventListener('click', () => {
+  if (observationQueuePanel.isOpen()) observationQueuePanel.hide();
+  else { tonightPlan.hide(); observationLogPanel.hide(); observationQueuePanel.show(); }
 });
 
 // Lazy-load observer-mode-only resources on first entry.

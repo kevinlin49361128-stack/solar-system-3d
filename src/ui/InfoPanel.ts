@@ -188,8 +188,19 @@ export class InfoPanel {
    *  can encode "the user was looking at this body". */
   getCurrentId(): string | null { return this.currentId; }
 
+  /** Hide the queue-add button. Called by every non-Messier show*
+   *  path; Messier path re-shows + populates after. Cheap idempotent. */
+  private hideQueueButton(): void {
+    const btn = document.getElementById('info-queue-add');
+    if (btn) (btn as HTMLElement).style.display = 'none';
+  }
+
   private cameraCtl: CameraController | null = null;
   private eventsPanel: EventsPanel | null = null;
+  private observationQueuePanel: import('./ObservationQueuePanel').ObservationQueuePanel | null = null;
+  setObservationQueuePanel(p: import('./ObservationQueuePanel').ObservationQueuePanel): void {
+    this.observationQueuePanel = p;
+  }
 
   constructor(
     private solarSystem: SolarSystem,
@@ -295,6 +306,37 @@ export class InfoPanel {
       localStorage.setItem('bookmarks', JSON.stringify(list));
       window.dispatchEvent(new CustomEvent('bookmarks:changed'));
     });
+
+    // 📋 Add-to-queue: persist a QueueTarget for the smart-telescope
+    // session planner. The button shows only for catalogue entries
+    // where surface brightness is meaningful — Messier (showMessier
+    // populates a dataset attribute pre-existing-fetched), NGC named
+    // (NGC_DATA), and Sharpless 2 (when a Sharpless InfoPanel path
+    // exists). We read state off the rendered button's dataset
+    // (data-queue-source / data-queue-target) so the wiring stays
+    // here and per-render code is just markup.
+    document.getElementById('info-queue-add')?.addEventListener('click', () => {
+      const btn = document.getElementById('info-queue-add') as HTMLButtonElement | null;
+      if (!btn) return;
+      const targetJson = btn.dataset.queueTarget;
+      if (!targetJson) return;
+      try {
+        const target = JSON.parse(targetJson) as import('../physics/observationQueue').QueueTarget;
+        // Stamp the add time at click-time, not at button-build time.
+        target.addedAt = Date.now();
+        void import('../data/observationQueueStore').then(({ addToQueue }) => {
+          addToQueue(target);
+          this.observationQueuePanel?.refreshIfOpen();
+          // Lightweight feedback — temporarily swap the icon to a
+          // check, then back.
+          const orig = btn.textContent;
+          btn.textContent = '✓';
+          setTimeout(() => { btn.textContent = orig; }, 1500);
+        });
+      } catch (err) {
+        console.warn('queue-add: invalid target', err);
+      }
+    });
   }
 
   private refreshTrackState(): void {
@@ -316,6 +358,7 @@ export class InfoPanel {
   }
 
   show(bodyId: string): void {
+    this.hideQueueButton();
     this.currentId = bodyId;
     this.el.classList.add('visible');
     this.updateCompactState();
@@ -358,6 +401,7 @@ export class InfoPanel {
    * here") work the same as for our own planets.
    */
   showExoplanetSystem(sys: import('../data/exoplanetSystems').ExoplanetSystemMeta): void {
+    this.hideQueueButton();
     this.currentId = `exo:${sys.id}`;
     this.el.classList.add('visible');
     this.updateCompactState();
@@ -429,6 +473,7 @@ export class InfoPanel {
    * direction without relying on a NAMED_STARS lookup.
    */
   showStarBasic(raHours: number, decDeg: number, magnitude: number): void {
+    this.hideQueueButton();
     this.currentId = `unnamed:${raHours.toFixed(4)}_${decDeg.toFixed(4)}`;
     this.el.classList.add('visible');
     this.updateCompactState();
@@ -497,18 +542,46 @@ export class InfoPanel {
     // mag 5.7 but you can't see it from suburbia because it's spread over
     // 1° of sky); surface brightness is the better predictor.
     const axes = MESSIER_ANG_SIZES[m.id];
+    let sbValue = NaN;
     if (axes) {
       const [major, minor] = axes;
       const sizeStr = major === minor
         ? `${major.toFixed(1)}′`
         : `${major.toFixed(1)}′ × ${minor.toFixed(1)}′`;
       rows.push([t('info.row.apparentSize'), sizeStr]);
-      const sb = messierSurfaceBrightness(m.id, m.magnitude);
-      if (Number.isFinite(sb)) {
-        rows.push([t('info.row.surfaceBrightness'), `${sb.toFixed(1)} mag/arcsec²`]);
+      sbValue = messierSurfaceBrightness(m.id, m.magnitude);
+      if (Number.isFinite(sbValue)) {
+        rows.push([t('info.row.surfaceBrightness'), `${sbValue.toFixed(1)} mag/arcsec²`]);
       }
     }
     this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+
+    // Stash a serialised QueueTarget on the add-to-queue button so
+    // its click handler doesn't need to re-resolve catalogue data.
+    // Only show the button when surface brightness is computable
+    // (otherwise the integration-time estimate would be blank).
+    const queueBtn = document.getElementById('info-queue-add') as HTMLButtonElement | null;
+    if (queueBtn) {
+      if (Number.isFinite(sbValue)) {
+        const target: import('../physics/observationQueue').QueueTarget = {
+          id: `messier:${m.id}`,
+          label: `${m.id} · ${m.name}`,
+          source: 'messier',
+          surfaceBrightness: sbValue,
+          magnitude: m.magnitude,
+          raHours: m.raHours,
+          decDeg: m.decDeg,
+          scope: 'seestar-s50',  // default; per-target overridable in panel
+          overrideMinutes: null,
+          addedAt: 0,            // stamped at actual add-click time
+        };
+        queueBtn.dataset.queueTarget = JSON.stringify(target);
+        queueBtn.style.display = '';
+      } else {
+        delete queueBtn.dataset.queueTarget;
+        queueBtn.style.display = 'none';
+      }
+    }
 
     // Star-hopping hint: connect this DSO back to the nearest bright
     // anchor star via named-star waypoints. Helpful for finder-scope
@@ -561,6 +634,7 @@ export class InfoPanel {
   }
 
   showStar(star: import('../data/stars').NamedStar): void {
+    this.hideQueueButton();
     this.currentId = `star:${star.id}`;
     this.lastNamedStar = star;
     this.el.classList.add('visible');
