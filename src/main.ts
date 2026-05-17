@@ -193,6 +193,8 @@ solarSystem.realism.subscribe((s) => {
   ss.setMessierRealAngularSize?.(s.dsoRealSize);
   // Deep HYG catalog swap (v0.4 — Realism panel "Deep star field" toggle).
   solarSystem.setDeepStarsEnabled(s.deepStars);
+  // Sharpless 2 emission-nebula overlay (v0.5).
+  solarSystem.setSharpless2Enabled(s.sharpless2);
   const sat = solarSystem.getSatelliteLayer() as unknown as
     { setEarthShadowFilter?: (b: boolean) => void } | null;
   sat?.setEarthShadowFilter?.(s.satShadow);

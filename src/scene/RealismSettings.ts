@@ -27,6 +27,10 @@ export interface RealismSettings {
   // Especially useful in observer mode under dark skies and for the
   // smart-telescope crowd.
   deepStars: boolean;
+  // Sharpless 2 emission-nebula overlay (v0.5) — 313 Hα HII regions.
+  // Off by default to keep the DSO view uncluttered for casual users;
+  // smart-scope planners flip it on.
+  sharpless2: boolean;
 }
 
 export type RealismPreset = 'stylized' | 'balanced' | 'realistic';
@@ -35,17 +39,17 @@ export const PRESET_VALUES: Record<RealismPreset, RealismSettings> = {
   stylized: {
     extinction: false, moonGlow: false, bvColor: false, satShadow: false, dsoRealSize: false,
     milkyway: false, beltOfVenus: false, zodiacal: false, airglow: false, meteors: false,
-    deepStars: false,
+    deepStars: false, sharpless2: false,
   },
   balanced: {
     extinction: true, moonGlow: true, bvColor: true, satShadow: true, dsoRealSize: false,
     milkyway: true, beltOfVenus: true, zodiacal: false, airglow: false, meteors: false,
-    deepStars: false,
+    deepStars: false, sharpless2: false,
   },
   realistic: {
     extinction: true, moonGlow: true, bvColor: true, satShadow: true, dsoRealSize: true,
     milkyway: true, beltOfVenus: true, zodiacal: true, airglow: true, meteors: true,
-    deepStars: true,
+    deepStars: true, sharpless2: true,
   },
 };
 

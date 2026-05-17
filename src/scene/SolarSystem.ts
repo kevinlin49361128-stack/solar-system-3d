@@ -52,6 +52,7 @@ import { CelestialGrids } from './CelestialGrids';
 import { LunarMansionsLayer } from './LunarMansionsLayer';
 import { GalacticDisk } from './GalacticDisk';
 import { LocalGroupGalaxies } from './LocalGroupGalaxies';
+import { SharplessLayer } from './SharplessLayer';
 import { HygCloud } from './HygCloud';
 import { ExoplanetHosts } from './ExoplanetHosts';
 import { ExoplanetSystemView } from './ExoplanetSystemView';
@@ -98,6 +99,7 @@ export class SolarSystem {
   private lunarMansions: LunarMansionsLayer | null = null;
   private galacticDisk: GalacticDisk | null = null;
   private localGroup: LocalGroupGalaxies | null = null;
+  private sharpless: SharplessLayer | null = null;
   private hygCloud: HygCloud | null = null;
   private exoplanetHosts: ExoplanetHosts | null = null;
   private exoplanetView: ExoplanetSystemView | null = null;
@@ -159,6 +161,12 @@ export class SolarSystem {
 
     this.messierLayer = new MessierLayer();
     this.scene.add(this.messierLayer.object);
+
+    // Sharpless 2 emission-nebula layer — opt-in via Realism toggle.
+    // Layer mounts immediately but loads data lazily on first toggle-on
+    // to avoid the ~9 KB fetch for users who never enable it.
+    this.sharpless = new SharplessLayer();
+    this.scene.add(this.sharpless.object);
 
     this.iauBoundaries = new IAUBoundaries();
     this.scene.add(this.iauBoundaries.object);
@@ -804,6 +812,19 @@ export class SolarSystem {
       void this.hygCloud.load();
     }
     this.hygCloud.setOpacity(opacity);
+  }
+
+  /**
+   * Toggle the Sharpless 2 emission-nebula layer. Lazy-loads
+   * `/sharpless2.json` (~9 KB) on first enable; subsequent toggles
+   * just flip the layer opacity.
+   */
+  setSharpless2Enabled(on: boolean): void {
+    if (!this.sharpless) return;
+    if (on && !this.sharpless.isLoaded()) {
+      void this.sharpless.load();
+    }
+    this.sharpless.setOpacity(on ? 1.0 : 0);
   }
 
   /**
