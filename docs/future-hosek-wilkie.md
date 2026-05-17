@@ -18,10 +18,12 @@
 >   one-frame with no allocation.
 >
 > **What's still approximate** (full LUT remains as follow-up):
-> - Daytime coefficient set is the HW 2012 Table 1 published values
->   (T=4, sun-high, albedo≈0.3) applied at all sun-up altitudes —
->   the official LUT would vary A..I across solar-elevation^(1/3),
->   improving accuracy at low-sun-but-still-daytime geometries.
+> - Coefficient set interpolates linearly between two endpoint
+>   coefficient packs (sun-high HW Table 1, sun-low hand-fit to
+>   HW figure 4 golden-hour) using elevation^(1/3) per HW eq. 4.
+>   The official LUT uses a quintic Bezier over 6 control points
+>   per coefficient × channel — visually similar to our 2-point
+>   interp for most of the day but smoother across deep twilight.
 > - Twilight + night transitions interpolate the zenith luminance
 >   and overall intensity by hand-tuned ramps; the formal HW model
 >   doesn't extend below sun-on-horizon, so this part is necessarily

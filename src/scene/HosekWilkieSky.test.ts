@@ -43,14 +43,18 @@ describe('HosekWilkieSky — coefficient evaluation by sun altitude', () => {
     expect(c.intensity).toBeLessThan(1.0);
   });
 
-  it('coefficient D (aureole gain) sits near HW published -1.4', () => {
-    // Daytime D should match published HW Table 1 values within the
-    // (-1.4, -1.5) band — much less negative than the broken hand-tune.
-    sky.applySunAltitude(50);
-    const cDay = sky.getCoefficients();
-    for (const v of [cDay.D.x, cDay.D.y, cDay.D.z]) {
-      expect(v).toBeLessThan(-1.30);
-      expect(v).toBeGreaterThan(-1.60);
+  it('coefficient D (aureole gain) is more negative at low sun than at high sun', () => {
+    // With the two-point elevation interpolation, D is closest to the
+    // sun-low values (≈ -2.1) when sun is near horizon, and closest to
+    // the sun-high HW Table 1 values (≈ -1.4) when sun is high.
+    sky.applySunAltitude(80);
+    const cHigh = sky.getCoefficients();
+    sky.applySunAltitude(5);
+    const cLow = sky.getCoefficients();
+    for (const ch of ['x', 'y', 'z'] as const) {
+      expect(cLow.D[ch]).toBeLessThan(cHigh.D[ch]);   // more negative when low
+      expect(cHigh.D[ch]).toBeLessThan(-1.30);        // still in HW negative range
+      expect(cLow.D[ch]).toBeGreaterThan(-2.50);      // bounded
     }
   });
 

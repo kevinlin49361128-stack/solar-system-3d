@@ -210,33 +210,58 @@ export class HosekWilkieSky {
   applySunAltitude(sunAltDeg: number): void {
     const u = this.mat.uniforms;
 
-    // --- Daytime baseline (HW 2012 Table 1, T=4, sun-high) ----------
-    // Source: paper supplementary; matches the reference C++ output
-    // for the typical "clear-sky noon" scenario to within 5 % per
-    // pixel after tone mapping.
-    const baseA = [-1.06, -1.09, -1.04];
-    const baseB = [-0.17, -0.16, -0.18];
-    const baseC = [ 1.65,  1.71,  1.74];
-    const baseD = [-1.40, -1.43, -1.49];
-    const baseE = [ 0.045, 0.034, 0.043];
-    const baseF = [ 0.071, 0.078, 0.060];
-    const baseG = [ 0.0002, 0.0001, 0.0002];
-    const baseH = [ 0.999, 0.998, 0.997];
-    const baseI = [ 0.020, 0.020, 0.022];
+    // --- Two-point HW elevation interpolation (T=4 clear-sky, albedo≈0.3) ----
+    //
+    // The full HW model evaluates each A..I coefficient as a quintic
+    // Bezier in solar-elevation^(1/3) using 6 control points per (turbidity,
+    // albedo, channel, coefficient). We approximate that with a linear
+    // interpolation between two endpoint sets:
+    //
+    //   sun-high (Table 1, sun near zenith) — what shipped previously
+    //   sun-low  (HW paper figure 4, sun near horizon)
+    //
+    // Captures the qualitative variation across the day — at sunrise the
+    // limb-darkening A coefficient is more negative, the aureole gain D
+    // is larger in magnitude, and the cos²γ term F is bigger (forward
+    // scatter dominates). Quintic Bezier interp is the obvious follow-up
+    // if anyone wants closer-to-spec output.
+    const highA = [-1.06, -1.09, -1.04];
+    const highB = [-0.17, -0.16, -0.18];
+    const highC = [ 1.65,  1.71,  1.74];
+    const highD = [-1.40, -1.43, -1.49];
+    const highE = [ 0.045, 0.034, 0.043];
+    const highF = [ 0.071, 0.078, 0.060];
+    const highG = [ 0.0002, 0.0001, 0.0002];
+    const highH = [ 0.999, 0.998, 0.997];
+    const highI = [ 0.020, 0.020, 0.022];
+    // Hand-fit "sun near horizon" coefficients matching HW paper figure 4
+    // golden-hour appearance. Most channels shift toward the more
+    // negative A (deeper limb darkening) and larger F (more forward
+    // scattering toward the warm-glow horizon).
+    const lowA  = [-1.30, -1.20, -1.08];
+    const lowB  = [-0.18, -0.17, -0.18];
+    const lowC  = [ 1.95,  1.70,  1.10];   // C drops on blue → warm bias
+    const lowD  = [-2.20, -2.10, -2.40];   // bigger aureole at sunset
+    const lowE  = [ 0.050, 0.040, 0.045];
+    const lowF  = [ 0.220, 0.150, 0.110];  // stronger forward scatter
+    const lowG  = [ 0.0002, 0.0001, 0.0002];
+    const lowH  = [ 0.998, 0.997, 0.996];
+    const lowI  = [ 0.030, 0.025, 0.022];
 
-    // Apply baseline coefficients unchanged across sun-up altitudes —
-    // the visible difference between sun=20° and sun=60° comes mostly
-    // from the zenith-luminance scaling below, not the F(θ,γ) shape.
-    // (Full LUT would vary A..I with elevation^(1/3) per HW Eq. 4.)
-    setRGB(u.uA.value, baseA[0], baseA[1], baseA[2]);
-    setRGB(u.uB.value, baseB[0], baseB[1], baseB[2]);
-    setRGB(u.uC.value, baseC[0], baseC[1], baseC[2]);
-    setRGB(u.uD.value, baseD[0], baseD[1], baseD[2]);
-    setRGB(u.uE.value, baseE[0], baseE[1], baseE[2]);
-    setRGB(u.uF.value, baseF[0], baseF[1], baseF[2]);
-    setRGB(u.uG.value, baseG[0], baseG[1], baseG[2]);
-    setRGB(u.uH.value, baseH[0], baseH[1], baseH[2]);
-    setRGB(u.uI.value, baseI[0], baseI[1], baseI[2]);
+    // Interpolation parameter: 0 at sun on horizon, 1 at sun at zenith.
+    // HW recommends elevation^(1/3) for smoother visual transition.
+    const sunAltRad = Math.max(0, sunAltDeg) * Math.PI / 180;
+    const t = Math.pow(sunAltRad / (Math.PI / 2), 1 / 3);  // 0..1
+    const interp = (lo: number[], hi: number[], i: number) => lo[i] + (hi[i] - lo[i]) * t;
+    setRGB(u.uA.value, interp(lowA, highA, 0), interp(lowA, highA, 1), interp(lowA, highA, 2));
+    setRGB(u.uB.value, interp(lowB, highB, 0), interp(lowB, highB, 1), interp(lowB, highB, 2));
+    setRGB(u.uC.value, interp(lowC, highC, 0), interp(lowC, highC, 1), interp(lowC, highC, 2));
+    setRGB(u.uD.value, interp(lowD, highD, 0), interp(lowD, highD, 1), interp(lowD, highD, 2));
+    setRGB(u.uE.value, interp(lowE, highE, 0), interp(lowE, highE, 1), interp(lowE, highE, 2));
+    setRGB(u.uF.value, interp(lowF, highF, 0), interp(lowF, highF, 1), interp(lowF, highF, 2));
+    setRGB(u.uG.value, interp(lowG, highG, 0), interp(lowG, highG, 1), interp(lowG, highG, 2));
+    setRGB(u.uH.value, interp(lowH, highH, 0), interp(lowH, highH, 1), interp(lowH, highH, 2));
+    setRGB(u.uI.value, interp(lowI, highI, 0), interp(lowI, highI, 1), interp(lowI, highI, 2));
 
     // --- Zenith luminance + overall intensity by sun altitude --------
     // At noon, sky is brightest blue. Near sunset, biased warm. After
