@@ -591,6 +591,7 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'mb.menuStub':            { 'zh-Hant': '設定面板開發中 — Phase D', 'en': 'Settings sheet coming in Phase D', 'ja': '設定シートは Phase D で実装予定' },
   'mb.sheetStub':           { 'zh-Hant': '「{name}」面板開發中 — Phase D', 'en': '"{name}" sheet coming in Phase D', 'ja': '「{name}」シートは Phase D で実装予定' },
   'mb.empty':               { 'zh-Hant': '（此面板沒有可顯示的內容）', 'en': '(No content available for this sheet)', 'ja': '（このシートに表示する内容はありません）' },
+  'mb.gyroNudge':           { 'zh-Hant': '💡 在「鏡頭」面板裡可啟用陀螺儀，把手機指向天空即可瞄準。', 'en': '💡 Tap "Camera" to enable gyroscope — point your phone at the sky to aim.', 'ja': '💡 「カメラ」シートでジャイロを有効に — 携帯を空に向けて視界を移動。' },
   // Open-Meteo weather opt-in
   'weather.optinPitch':     { 'zh-Hant': '查看今晚雲量？資料來源 open-meteo.com（免費、不需帳號）。', 'en': 'Check tonight\'s cloud cover? Data from open-meteo.com (free, no account).', 'ja': '今夜の雲量を確認？データは open-meteo.com（無料・登録不要）。' },
   'weather.optinAction':    { 'zh-Hant': '啟用', 'en': 'Enable', 'ja': '有効にする' },
