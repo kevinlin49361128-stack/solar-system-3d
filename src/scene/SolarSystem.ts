@@ -55,6 +55,7 @@ import { LocalGroupGalaxies } from './LocalGroupGalaxies';
 import { SharplessLayer } from './SharplessLayer';
 import { NGCFullLayer } from './NGCFullLayer';
 import { AbellLayer } from './AbellLayer';
+import { ScopeReticle } from './ScopeReticle';
 import { HygCloud } from './HygCloud';
 import { ExoplanetHosts } from './ExoplanetHosts';
 import { ExoplanetSystemView } from './ExoplanetSystemView';
@@ -104,6 +105,7 @@ export class SolarSystem {
   private sharpless: SharplessLayer | null = null;
   private ngcFull: NGCFullLayer | null = null;
   private abell: AbellLayer | null = null;
+  private scopeReticle: ScopeReticle | null = null;
   private hygCloud: HygCloud | null = null;
   private exoplanetHosts: ExoplanetHosts | null = null;
   private exoplanetView: ExoplanetSystemView | null = null;
@@ -179,6 +181,13 @@ export class SolarSystem {
     // Abell galaxy-cluster catalogue (v0.6) — 2712 entries, ~80 KB.
     this.abell = new AbellLayer();
     this.scene.add(this.abell.object);
+
+    // INDI/ASCOM telescope-bridge reticle (v0.7 Tier 1). The reticle
+    // mounts always but stays hidden until the bridge starts pushing
+    // pointing fixes — so unused it costs only a Mesh + a LineSegments
+    // in the scene graph.
+    this.scopeReticle = new ScopeReticle();
+    this.scene.add(this.scopeReticle.object);
 
     this.iauBoundaries = new IAUBoundaries();
     this.scene.add(this.iauBoundaries.object);
@@ -863,6 +872,7 @@ export class SolarSystem {
     this.abell.setOpacity(on ? 0.8 : 0);
   }
   getAbellLayer(): AbellLayer | null { return this.abell; }
+  getScopeReticle(): ScopeReticle | null { return this.scopeReticle; }
 
   /**
    * Toggle between the default (mag ≤ 7) and deep (mag ≤ 9) HYG

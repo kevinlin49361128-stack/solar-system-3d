@@ -1,10 +1,25 @@
-# Future: INDI / ASCOM telescope bridge
+# INDI / ASCOM telescope bridge
 
-**Target release**: v0.7 (post Show-HN)
-**Estimated effort**: 12–20 hours (split server-side ≈ 60 %, browser
-client ≈ 30 %, integration testing ≈ 10 %)
-**Status**: deferred from v0.6; this doc captures the architecture so
-the actual implementation has something to build against.
+**Status**:
+- **Tier 1 (read-only)** — *shipped in v0.7*. Browser-side `ScopeBridge`
+  + dome reticle live in `src/controls/ScopeBridge.ts` /
+  `src/scene/ScopeReticle.ts`. A mock helper for local testing lives
+  at `examples/mock-bridge.mjs`.
+- **Tier 2 (full slew control)** — still deferred; this doc captures
+  the architecture so the real INDI/ASCOM helper has something to
+  build against.
+
+**Quick test of Tier 1**:
+```
+npm i -D ws
+node examples/mock-bridge.mjs   # listens on ws://localhost:7624/sim
+# then in the simulator: Realism panel → 🔭 INDI / ASCOM bridge → Connect
+# green reticle appears, sweeping along the equator (mock pattern)
+```
+
+**Target release for Tier 2**: v0.8+
+**Remaining effort**: 8–14 hours (real INDI helper + Windows ASCOM
+helper + integration testing)
 
 ---
 

@@ -907,6 +907,7 @@ if (panelToggleBtn && leftPanelEl) {
 import { fetchHorizonsVectors } from './physics/horizonsClient';
 import { HorizonsPropagator } from './physics/horizonsPropagator';
 import { StellariumTelescope } from './controls/StellariumTelescope';
+import { ScopeBridge } from './controls/ScopeBridge';
 import type { BodyDescriptor } from './physics/types';
 
 (() => {
@@ -1034,6 +1035,73 @@ document.getElementById('info-goto')?.addEventListener('click', () => {
   const decDeg = Math.asin(Math.max(-1, Math.min(1, ze))) * 180 / Math.PI;
   stellariumScope.sendGoto(raDeg / 15, decDeg);
 });
+
+// INDI / ASCOM scope-bridge — v0.7 Tier 1 (read-only).
+// Subscribes to a local helper at ws://localhost:7624/sim, draws a
+// green reticle on the celestial dome wherever the mount is pointed.
+// Helper failures (not running, mount disconnected, network drop) all
+// cleanly hide the reticle; the simulator itself never breaks.
+const scopeBridge = new ScopeBridge();
+(() => {
+  const urlInput = document.getElementById('scope-bridge-url') as HTMLInputElement | null;
+  const btn = document.getElementById('scope-bridge-connect') as HTMLButtonElement | null;
+  const status = document.getElementById('scope-bridge-status');
+  if (!urlInput || !btn || !status) return;
+  // Track state locally so we can re-render on language change without
+  // waiting for the bridge to emit a new state event.
+  let currentState: import('./controls/ScopeBridge').ScopeBridgeState = 'idle';
+  let lastFix: import('./controls/ScopeBridge').PointingFix | null = null;
+  const renderState = (): void => {
+    if (currentState === 'connecting') {
+      status.textContent = t('external.scopeBridgeConnecting');
+      btn.textContent = t('external.scopeBridgeConnect');
+    } else if (currentState === 'connected') {
+      btn.textContent = t('external.scopeBridgeDisconnect');
+      if (lastFix) {
+        status.textContent = t('external.scopeBridgeReceiving')
+          .replace('{ra}', lastFix.raHours.toFixed(4))
+          .replace('{dec}', lastFix.decDeg.toFixed(3));
+      } else {
+        status.textContent = t('external.scopeBridgeConnected');
+      }
+    } else if (currentState === 'error') {
+      status.textContent = t('external.scopeBridgeError');
+      btn.textContent = t('external.scopeBridgeConnect');
+    } else {
+      status.textContent = t('external.scopeBridgeIdle');
+      btn.textContent = t('external.scopeBridgeConnect');
+    }
+  };
+  scopeBridge.onState((s) => {
+    currentState = s;
+    if (s !== 'connected') {
+      lastFix = null;
+      // Bridge dropped → hide the reticle. Done here rather than in the
+      // pointing path so a clean disconnect (no new pointing message)
+      // still hides it.
+      solarSystem.getScopeReticle()?.hide();
+    }
+    renderState();
+  });
+  scopeBridge.onPointing((p) => {
+    lastFix = p;
+    solarSystem.getScopeReticle()?.setPointing(p.raHours, p.decDeg);
+    renderState();
+  });
+  onLanguageChange(renderState);
+  renderState();
+  btn.addEventListener('click', async () => {
+    if (scopeBridge.isConnected() || scopeBridge.getState() === 'connecting') {
+      scopeBridge.disconnect();
+      return;
+    }
+    scopeBridge.setUrl(urlInput.value.trim() || 'ws://localhost:7624/sim');
+    // connect() resolves on open; an immediate error (e.g. helper not
+    // running) reaches us via the 'error' state callback, so the catch
+    // is intentionally a no-op.
+    try { await scopeBridge.connect(); } catch { /* state callback handles UI */ }
+  });
+})();
 
 // Persist user preferences for left-panel selections (checkboxes, selects,
 // sliders, scale/frame button groups). Called after LeftPanel construction
