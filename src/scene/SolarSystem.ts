@@ -51,6 +51,7 @@ import { CometTails } from './CometTails';
 import { CelestialGrids } from './CelestialGrids';
 import { LunarMansionsLayer } from './LunarMansionsLayer';
 import { GalacticDisk } from './GalacticDisk';
+import { LocalGroupGalaxies } from './LocalGroupGalaxies';
 import { HygCloud } from './HygCloud';
 import { ExoplanetHosts } from './ExoplanetHosts';
 import { ExoplanetSystemView } from './ExoplanetSystemView';
@@ -96,6 +97,7 @@ export class SolarSystem {
   private celestialGrids: CelestialGrids | null = null;
   private lunarMansions: LunarMansionsLayer | null = null;
   private galacticDisk: GalacticDisk | null = null;
+  private localGroup: LocalGroupGalaxies | null = null;
   private hygCloud: HygCloud | null = null;
   private exoplanetHosts: ExoplanetHosts | null = null;
   private exoplanetView: ExoplanetSystemView | null = null;
@@ -186,6 +188,10 @@ export class SolarSystem {
     // doesn't burn ~30k vertex-buffer entries on first paint.
     this.galacticDisk = new GalacticDisk();
     this.scene.add(this.galacticDisk.group);
+    // Local Group galaxy billboards — visible at the same galactic tier
+    // as the disk. M31 / M33 / LMC / SMC + a handful of dwarfs.
+    this.localGroup = new LocalGroupGalaxies();
+    this.scene.add(this.localGroup.group);
     // HYG 3D point cloud — created here but data is lazy-loaded the
     // first time the neighbourhood tier is requested (~600 KB JSON).
     this.hygCloud = new HygCloud();
@@ -765,6 +771,23 @@ export class SolarSystem {
     this.heliocentric.visible = opacity > 0.05;
   }
 
+  /** Local Group galaxies (LMC/SMC/M31 etc.) — share the galactic-tier
+   *  fade with the disk. Slightly higher floor (0.4) so M31 / LMC stay
+   *  legible while the disk is mid-transition rather than vanishing
+   *  entirely. */
+  setLocalGroupOpacity(opacity: number): void {
+    this.localGroup?.setOpacity(Math.max(opacity, opacity > 0.05 ? 0.4 : 0));
+  }
+
+  /** Per-frame billboard update — keeps Local Group galaxies facing
+   *  the camera. Called from main.ts alongside updateExoplanetHosts. */
+  updateLocalGroup(cameraPos: import('three').Vector3): void {
+    this.localGroup?.update(cameraPos);
+  }
+
+  /** Picking accessor for raycast hits. */
+  getLocalGroup(): LocalGroupGalaxies | null { return this.localGroup; }
+
   /** Galactic-tier 3D Milky Way disk visibility. */
   setGalacticDiskOpacity(opacity: number): void {
     this.galacticDisk?.setOpacity(opacity);
@@ -831,6 +854,7 @@ export class SolarSystem {
       { key: 'celestialGrids', obj: this.celestialGrids?.object ?? null },
       { key: 'lunarMansions', obj: this.lunarMansions?.object ?? null },
       { key: 'galacticDisk', obj: this.galacticDisk?.group ?? null },
+      { key: 'localGroup', obj: this.localGroup?.group ?? null },
       { key: 'hygCloud', obj: this.hygCloud?.group ?? null },
       { key: 'exoplanetHosts', obj: this.exoplanetHosts?.group ?? null },
     ];

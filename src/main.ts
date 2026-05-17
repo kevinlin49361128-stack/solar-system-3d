@@ -1488,6 +1488,9 @@ function tick(now: number): void {
       solarSystem.setHygCloudOpacity(state.layerWeights.hygCloud);
       solarSystem.setExoplanetHostsOpacity(state.layerWeights.hygCloud);
       solarSystem.setGalacticDiskOpacity(state.layerWeights.milkyWayDisk);
+      // Local Group galaxies share the galactic-tier fade with the disk
+      // (Phase #2 of v0.4 detail roll-up).
+      solarSystem.setLocalGroupOpacity(state.layerWeights.milkyWayDisk);
     }
   } else {
     // Always advance internal state even when not driving the camera, so
@@ -1502,6 +1505,8 @@ function tick(now: number): void {
   cameraCtl.update();
   // Keep host halos billboarded to the camera each frame.
   solarSystem.updateExoplanetHosts(cameraCtl.camera.position);
+  // Same for the Local Group galaxy billboards.
+  solarSystem.updateLocalGroup(cameraCtl.camera.position);
   // Advance the active exoplanet system's planets, if any.
   solarSystem.updateExoplanetSystem(clock.getJd());
   solarSystem.updateLabelSizes(cameraCtl.camera, renderer.domElement.clientHeight);
