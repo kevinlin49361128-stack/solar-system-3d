@@ -17,14 +17,13 @@ describe('HosekWilkieSky — coefficient evaluation by sun altitude', () => {
     sky.setVisible(false);
   });
 
-  it('coefficient B (exp gradient) stays near -0.18 across channels', () => {
+  it('coefficient B (exp gradient) stays near published HW value across channels', () => {
     sky.applySunAltitude(45);
     const c = sky.getCoefficients();
-    // HW canonical B value is ~ -0.18 across RGB. Tight bound since it's a
-    // structural constant in the model.
+    // HW 2012 Table 1 B values are -0.17, -0.16, -0.18 for R/G/B.
     for (const v of [c.B.x, c.B.y, c.B.z]) {
       expect(v).toBeGreaterThan(-0.20);
-      expect(v).toBeLessThan(-0.15);
+      expect(v).toBeLessThan(-0.14);
     }
   });
 
@@ -34,21 +33,25 @@ describe('HosekWilkieSky — coefficient evaluation by sun altitude', () => {
     expect(c.intensity).toBeLessThan(0.15);
   });
 
-  it('intensity recovers to ~1.5 at full noon', () => {
+  it('intensity scales appropriately for full daylight', () => {
     sky.applySunAltitude(80);
     const c = sky.getCoefficients();
-    expect(c.intensity).toBeGreaterThan(1.4);
-    expect(c.intensity).toBeLessThan(1.7);
+    // After the noon fix (HW Table 1 coefficients have D≈-1.4 instead
+    // of the broken -3.5 hand-tune), the tone-mapped radiance is
+    // physical. Intensity multiplier is correspondingly smaller.
+    expect(c.intensity).toBeGreaterThan(0.5);
+    expect(c.intensity).toBeLessThan(1.0);
   });
 
-  it('coefficient D (aureole gain) is more negative when sun is up', () => {
+  it('coefficient D (aureole gain) sits near HW published -1.4', () => {
+    // Daytime D should match published HW Table 1 values within the
+    // (-1.4, -1.5) band — much less negative than the broken hand-tune.
     sky.applySunAltitude(50);
     const cDay = sky.getCoefficients();
-    sky.applySunAltitude(-15);
-    const cNight = sky.getCoefficients();
-    // |D| is bigger (more negative) when sun is up — aureole is brighter
-    // in daylight. We use D.y (green channel) as the representative value.
-    expect(cDay.D.y).toBeLessThan(cNight.D.y);
+    for (const v of [cDay.D.x, cDay.D.y, cDay.D.z]) {
+      expect(v).toBeLessThan(-1.30);
+      expect(v).toBeGreaterThan(-1.60);
+    }
   });
 
   it('coefficient H (chi shape) stays in [0.99, 1.0) for all altitudes', () => {

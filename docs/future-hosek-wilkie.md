@@ -18,10 +18,24 @@
 >   one-frame with no allocation.
 >
 > **What's still approximate** (full LUT remains as follow-up):
-> - Coefficient values are hand-tuned, calibrated against HW Figure 4
->   reference images — not loaded from the official 3240-float LUT.
+> - Daytime coefficient set is the HW 2012 Table 1 published values
+>   (T=4, sun-high, albedo≈0.3) applied at all sun-up altitudes —
+>   the official LUT would vary A..I across solar-elevation^(1/3),
+>   improving accuracy at low-sun-but-still-daytime geometries.
+> - Twilight + night transitions interpolate the zenith luminance
+>   and overall intensity by hand-tuned ramps; the formal HW model
+>   doesn't extend below sun-on-horizon, so this part is necessarily
+>   visualisation-driven not physically modelled.
 > - Single turbidity baseline (~T=4 clear sky). No haze knob yet.
 > - Single albedo (~0.3 vegetation). No ocean/snow variants.
+
+> **Fixed in v0.7.1 follow-up**: an earlier version of this shader
+> used hand-tuned coefficients with D≈-3.5 which caused the
+> mainTerm polynomial to go negative across most of the sky at
+> noon, producing a saturated yellow-green blob bug. Replaced
+> with the published Table 1 values (D≈-1.4); also added a chi
+> function denominator clamp at 1e-3 to keep the aureole bounded
+> at γ→0, and a max(0, ·) clamp before tone-mapping for safety.
 
 ## What's missing
 
