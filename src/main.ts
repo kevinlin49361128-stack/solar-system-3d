@@ -136,6 +136,7 @@ new SearchBar(solarSystem, cameraCtl, infoPanel);
 if (document.body.classList.contains('mobile-ui')) {
   const { MobileUI } = await import('./ui/MobileUI');
   const { buildMobileSheets } = await import('./ui/mobileSheets');
+  const { attachMobileInfoBackdrop } = await import('./ui/mobileInfoBackdrop');
   const mobile = new MobileUI(clock);
   const sheetHandlers = buildMobileSheets();
   // Wire each bottom-toolbar button to open its sheet. Done after a
@@ -147,6 +148,7 @@ if (document.body.classList.contains('mobile-ui')) {
       mobile.setSheetHandler(id, sheetHandlers[id]);
     });
   });
+  attachMobileInfoBackdrop();
 }
 
 // Realism state → live scene wiring. Each toggle pushes its value into the
