@@ -339,6 +339,7 @@ export class LeftPanel {
     const btn = document.getElementById('nbody-toggle') as HTMLButtonElement;
     const yoshida = document.getElementById('nbody-yoshida4') as HTMLInputElement | null;
     const relativ = document.getElementById('nbody-relativistic') as HTMLInputElement | null;
+    const solarJ2 = document.getElementById('nbody-solar-j2') as HTMLInputElement | null;
     const updateLabel = () => {
       const on = solarSystem.isNBodyEnabled();
       btn.textContent = on ? t('nbody.toKepler') : t('nbody.toNbody');
@@ -347,15 +348,17 @@ export class LeftPanel {
       // outright (so the user can pre-select) but indicate visual state.
       if (yoshida) yoshida.parentElement!.style.opacity = on ? '1' : '0.5';
       if (relativ) relativ.parentElement!.style.opacity = on ? '1' : '0.5';
+      if (solarJ2) solarJ2.parentElement!.style.opacity = on ? '1' : '0.5';
     };
     onLanguageChange(updateLabel);
     btn.addEventListener('click', () => {
       if (solarSystem.isNBodyEnabled()) solarSystem.disableNBody();
       else solarSystem.enableNBody(clock.getJd());
-      // Re-apply pending integrator / GR settings on enable.
+      // Re-apply pending integrator / GR / J2 settings on enable.
       if (solarSystem.isNBodyEnabled()) {
         if (yoshida?.checked) solarSystem.setNBodyIntegrator('yoshida4');
         if (relativ?.checked) solarSystem.setNBodyRelativistic(true);
+        if (solarJ2?.checked) solarSystem.setNBodySolarJ2(true);
       }
       updateLabel();
     });
@@ -364,6 +367,9 @@ export class LeftPanel {
     });
     relativ?.addEventListener('change', () => {
       solarSystem.setNBodyRelativistic(relativ.checked);
+    });
+    solarJ2?.addEventListener('change', () => {
+      solarSystem.setNBodySolarJ2(solarJ2.checked);
     });
     updateLabel();
   }

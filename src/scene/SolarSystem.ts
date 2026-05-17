@@ -1057,11 +1057,22 @@ export class SolarSystem {
   setNBodyRelativistic(enabled: boolean): void {
     if (this.nbodySim) this.nbodySim.relativisticGR = enabled;
   }
+  /**
+   * Toggle Sun J2 (oblateness) perturbation on the N-body sim. Small
+   * effect (~3″/century on Mercury perihelion) but historically the
+   * "other half" of the Mercury anomaly discussion.
+   */
+  setNBodySolarJ2(enabled: boolean): void {
+    if (this.nbodySim) this.nbodySim.solarJ2 = enabled;
+  }
   getNBodyIntegrator(): 'verlet' | 'yoshida4' {
     return this.nbodySim?.integrator ?? 'verlet';
   }
   getNBodyRelativistic(): boolean {
     return this.nbodySim?.relativisticGR ?? false;
+  }
+  getNBodySolarJ2(): boolean {
+    return this.nbodySim?.solarJ2 ?? false;
   }
   /** Returns the live N-body simulation, or null if not currently enabled.
    *  Used by the diagnostics panel to read conservation quantities. */

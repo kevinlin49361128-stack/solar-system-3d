@@ -87,3 +87,41 @@ describe('NBodySimulation.getConservation', () => {
     expect(dY).toBeLessThanOrEqual(dV * 1.1); // tiny slack for noise
   });
 });
+
+describe('Sun J2 perturbation', () => {
+  it('toggle adds extra radial acceleration on Mercury-like orbit', () => {
+    // Mercury at 0.387 AU. Two sims: one with J2 off, one with J2 on.
+    // Step one tiny dt and compare velocity deltas.
+    const merc = [
+      { id: 'sun',     massKg: 1.98892e30, pos: new Vector3(0, 0, 0),     vel: new Vector3(0, 0, 0) },
+      { id: 'mercury', massKg: 3.3011e23,  pos: new Vector3(0.387, 0, 0), vel: new Vector3(0, 0.0102, 0) },
+    ];
+    const simOff = new NBodySimulation(JSON.parse(JSON.stringify(merc)).map(reHydrate), 2451545);
+    const simOn  = new NBodySimulation(JSON.parse(JSON.stringify(merc)).map(reHydrate), 2451545);
+    simOn.solarJ2 = true;
+    simOff.step(0.1);
+    simOn.step(0.1);
+    const vOff = simOff.getState('mercury')!.velocity;
+    const vOn  = simOn.getState('mercury')!.velocity;
+    // J2 contribution should be radial (pointing toward Sun), so the
+    // x-component of mercury's velocity should be MORE negative with J2.
+    // (mercury was at +x with zero radial velocity, J2 pulls it inward).
+    expect(vOn.x).toBeLessThan(vOff.x);
+    // Magnitude check: J2_solar = 2e-7, (R_sun/r)² ~ (0.00465/0.387)² ~ 1.44e-4,
+    // so J2 correction is ~3/2 · 2e-7 · 1.44e-4 ≈ 4e-11 fractional gravity boost.
+    // Over 0.1 day on a Mercury-like orbit (orbital velocity ~10 km/s = 5.7e-3 AU/d),
+    // expect Δvx of order 4e-11 × 5.7e-3 × 0.1 ≈ 2e-14 AU/d — measurable in fp64.
+    expect(Math.abs(vOn.x - vOff.x)).toBeGreaterThan(1e-15);
+    expect(Math.abs(vOn.x - vOff.x)).toBeLessThan(1e-10);
+  });
+
+  it('default is off (no behavior change unless opted in)', () => {
+    const sim = new NBodySimulation(twoBodyInitial(), 2451545);
+    expect(sim.solarJ2).toBe(false);
+  });
+});
+
+// Re-hydrate plain {x,y,z} JSON back into Vector3 — JSON.parse strips classes.
+function reHydrate<T extends { pos: { x: number; y: number; z: number }; vel: { x: number; y: number; z: number } }>(p: T) {
+  return { ...p, pos: new Vector3(p.pos.x, p.pos.y, p.pos.z), vel: new Vector3(p.vel.x, p.vel.y, p.vel.z) };
+}

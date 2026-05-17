@@ -64,6 +64,14 @@ export class NBodySimulation {
    * bodies but the numerical cost is trivial.
    */
   relativisticGR = false;
+  /**
+   * Toggle Sun J2 oblateness perturbation. The Sun is very slightly
+   * oblate (J2 ≈ 2e-7) due to rotation; the resulting perihelion advance
+   * on Mercury is small (~3"/century) but historically important — it
+   * was the dominant non-Newtonian effect proposed by Newcomb / Le
+   * Verrier before GR. Cost: one extra heliocentric pass per step.
+   */
+  solarJ2 = false;
 
   constructor(initial: { id: string; massKg: number; pos: Vector3; vel: Vector3 }[], startJd: number) {
     this.jd = startJd;
@@ -120,6 +128,7 @@ export class NBodySimulation {
       }
     }
     if (this.relativisticGR) this.applyRelativisticCorrection();
+    if (this.solarJ2) this.applySolarJ2();
   }
 
   /**
@@ -158,6 +167,57 @@ export class NBodySimulation {
       aAcc.x += factor * (term1 * ux + term2 * vx);
       aAcc.y += factor * (term1 * uy + term2 * vy);
       aAcc.z += factor * (term1 * uz + term2 * vz);
+    }
+  }
+
+  /**
+   * Sun J2 oblateness perturbation in the ECLIPTIC frame.
+   *
+   * Strictly the Sun's J2 is defined about its spin axis (tilted 7.155°
+   * from the ecliptic toward longitude 73.5°), but the spin-axis tilt
+   * makes < 1 % difference to the dominant Mercury contribution at this
+   * scale. We use the ecliptic-frame approximation (z = 0 in the orbital
+   * plane → standard J2 formula simplifies to the in-plane radial term):
+   *
+   *   a_J2 = -(3/2) μ J2 (R/r)² · [r̂ (1 - 5sin²φ) + 2ẑ sinφ] / r²
+   *
+   * where φ is the latitude relative to the Sun's equator. For ecliptic
+   * planets sin²φ ≈ 0 so the dominant term is a radial inward bonus of
+   * size (3/2)·J2·(R/r)² times the standard gravity — i.e. a tiny extra
+   * inward pull that shows up over centuries as Mercury perihelion
+   * advance of ~3 arcsec/century (vs the 43 arcsec/century from GR).
+   *
+   * Reference: Pireaux & Rozelot 2003 doi:10.1023/A:1023929420683
+   */
+  private applySolarJ2(): void {
+    const sun = this.particles.find(p => p.id === 'sun');
+    if (!sun) return;
+    const GM = G_AU3_PER_MSUN_PER_DAY2 * sun.mass;
+    // J2 = 2.0e-7, R_sun = 695700 km converted to AU.
+    const J2 = 2.0e-7;
+    const R_AU = 695700 / AU_KM;
+    const R2 = R_AU * R_AU;
+    for (const p of this.particles) {
+      if (p === sun) continue;
+      const dx = p.pos.x - sun.pos.x;
+      const dy = p.pos.y - sun.pos.y;
+      const dz = p.pos.z - sun.pos.z;
+      const r2 = dx*dx + dy*dy + dz*dz;
+      const r = Math.sqrt(r2);
+      if (r < 1e-9) continue;
+      const r5 = r2 * r2 * r;
+      // sin(φ) where φ is the latitude above the Sun's equator. Treat
+      // ecliptic z directly (small-tilt approximation noted above).
+      const sinPhi = dz / r;
+      const sinPhi2 = sinPhi * sinPhi;
+      const factor = -1.5 * GM * J2 * R2 / r5;
+      // Radial part (1 - 5sin²φ) on r̂ + 2 sinφ on ẑ:
+      const radialCoef = factor * (1 - 5 * sinPhi2);
+      const zCoef      = factor * 2 * sinPhi;
+      const aAcc = this.acc.get(p.id)!;
+      aAcc.x += radialCoef * dx;
+      aAcc.y += radialCoef * dy;
+      aAcc.z += radialCoef * dz + zCoef * r;
     }
   }
 

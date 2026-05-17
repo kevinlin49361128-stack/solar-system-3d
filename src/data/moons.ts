@@ -1,5 +1,7 @@
 import { KeplerPropagator } from '../physics/keplerPropagator';
 import { LunarPropagator } from '../physics/lunarPosition';
+import { J2PerturbedKeplerPropagator, J2_BODIES } from '../physics/j2Perturbation';
+import type { OrbitPropagator } from '../physics/types';
 import type { BodyDescriptor } from '../physics/types';
 import { DETAILS } from './body-details';
 
@@ -41,6 +43,40 @@ function moonProp(opts: {
   });
 }
 
+/**
+ * J2-perturbed variant of moonProp — applies the parent body's
+ * oblateness secular drift to the moon's ascending node and argument
+ * of perigee. Required for any moon whose orbital plane is close to
+ * the parent's equator (i.e. the inner regular moons of Mars,
+ * Jupiter, Saturn) — they live deep in the parent's J2 field, and
+ * over years the node regression is visually obvious at high sim
+ * speeds.
+ *
+ * Outer / irregular moons (Iapetus, Phoebe, etc.) orbit close to the
+ * parent's *orbital* plane rather than equatorial, so don't use this
+ * — apply plain moonProp.
+ */
+function moonPropJ2(parentId: 'mars' | 'jupiter' | 'saturn', opts: {
+  aKm: number;
+  e: number;
+  iDeg: number;
+  LDeg: number;
+  varpiDeg?: number;
+  OmegaDeg?: number;
+  periodDays: number;
+}): OrbitPropagator {
+  return new J2PerturbedKeplerPropagator({
+    a: toAU(opts.aKm),
+    e: opts.e,
+    iDeg: opts.iDeg,
+    LDeg: opts.LDeg,
+    LDotDeg: (360 / opts.periodDays) * 36525,
+    varpiDeg: opts.varpiDeg ?? 0,
+    OmegaDeg: opts.OmegaDeg ?? 0,
+    periodDays: opts.periodDays,
+  }, J2_BODIES[parentId], parentId);
+}
+
 export const MOON: BodyDescriptor = {
   id: 'moon',
   name: '月球',
@@ -65,7 +101,7 @@ export const IO: BodyDescriptor = {
   parentId: 'jupiter',
   category: 'moon',
   physical: { radiusKm: 1821.6, massKg: 8.93e22, rotationPeriodDays: 1.769, axialTiltDeg: 0 },
-  propagator: moonProp({ aKm: 421800, e: 0.0041, iDeg: 0.05, LDeg: 0, periodDays: 1.769137786 }),
+  propagator: moonPropJ2('jupiter', { aKm: 421800, e: 0.0041, iDeg: 0.05, LDeg: 0, periodDays: 1.769137786 }),
   appearance: { color: 0xe6d36b },
 };
 
@@ -77,7 +113,7 @@ export const EUROPA: BodyDescriptor = {
   parentId: 'jupiter',
   category: 'moon',
   physical: { radiusKm: 1560.8, massKg: 4.8e22, rotationPeriodDays: 3.551, axialTiltDeg: 0.1 },
-  propagator: moonProp({ aKm: 671100, e: 0.009, iDeg: 0.47, LDeg: 90, periodDays: 3.551181 }),
+  propagator: moonPropJ2('jupiter', { aKm: 671100, e: 0.009, iDeg: 0.47, LDeg: 90, periodDays: 3.551181 }),
   appearance: { color: 0xc8b89a },
 };
 
@@ -89,7 +125,7 @@ export const GANYMEDE: BodyDescriptor = {
   parentId: 'jupiter',
   category: 'moon',
   physical: { radiusKm: 2634.1, massKg: 1.4819e23, rotationPeriodDays: 7.155, axialTiltDeg: 0.33 },
-  propagator: moonProp({ aKm: 1070400, e: 0.0013, iDeg: 0.2, LDeg: 180, periodDays: 7.15455296 }),
+  propagator: moonPropJ2('jupiter', { aKm: 1070400, e: 0.0013, iDeg: 0.2, LDeg: 180, periodDays: 7.15455296 }),
   appearance: { color: 0x9c9087 },
 };
 
@@ -101,7 +137,7 @@ export const CALLISTO: BodyDescriptor = {
   parentId: 'jupiter',
   category: 'moon',
   physical: { radiusKm: 2410.3, massKg: 1.0759e23, rotationPeriodDays: 16.689, axialTiltDeg: 0 },
-  propagator: moonProp({ aKm: 1882700, e: 0.0074, iDeg: 0.192, LDeg: 270, periodDays: 16.6890184 }),
+  propagator: moonPropJ2('jupiter', { aKm: 1882700, e: 0.0074, iDeg: 0.192, LDeg: 270, periodDays: 16.6890184 }),
   appearance: { color: 0x6e645c },
 };
 
@@ -113,7 +149,7 @@ export const TITAN: BodyDescriptor = {
   parentId: 'saturn',
   category: 'moon',
   physical: { radiusKm: 2574.7, massKg: 1.3452e23, rotationPeriodDays: 15.945, axialTiltDeg: 0 },
-  propagator: moonProp({ aKm: 1221870, e: 0.0288, iDeg: 0.34854, LDeg: 0, periodDays: 15.945421 }),
+  propagator: moonPropJ2('saturn', { aKm: 1221870, e: 0.0288, iDeg: 0.34854, LDeg: 0, periodDays: 15.945421 }),
   appearance: { color: 0xd9a058 },
 };
 
@@ -125,7 +161,7 @@ export const PHOBOS: BodyDescriptor = {
   parentId: 'mars',
   category: 'moon',
   physical: { radiusKm: 11.27, massKg: 1.0659e16, rotationPeriodDays: 0.31891, axialTiltDeg: 0 },
-  propagator: moonProp({ aKm: 9376, e: 0.0151, iDeg: 1.093, LDeg: 0, periodDays: 0.31891 }),
+  propagator: moonPropJ2('mars', { aKm: 9376, e: 0.0151, iDeg: 1.093, LDeg: 0, periodDays: 0.31891 }),
   appearance: { color: 0x5e564c },
 };
 
@@ -137,7 +173,7 @@ export const DEIMOS: BodyDescriptor = {
   parentId: 'mars',
   category: 'moon',
   physical: { radiusKm: 6.2, massKg: 1.4762e15, rotationPeriodDays: 1.26244, axialTiltDeg: 0 },
-  propagator: moonProp({ aKm: 23463, e: 0.00033, iDeg: 0.93, LDeg: 90, periodDays: 1.26244 }),
+  propagator: moonPropJ2('mars', { aKm: 23463, e: 0.00033, iDeg: 0.93, LDeg: 90, periodDays: 1.26244 }),
   appearance: { color: 0x70685c },
 };
 
@@ -149,7 +185,7 @@ export const ENCELADUS: BodyDescriptor = {
   parentId: 'saturn',
   category: 'moon',
   physical: { radiusKm: 252.1, massKg: 1.08e20, rotationPeriodDays: 1.37022, axialTiltDeg: 0 },
-  propagator: moonProp({ aKm: 238040, e: 0.0047, iDeg: 0.019, LDeg: 30, periodDays: 1.37022 }),
+  propagator: moonPropJ2('saturn', { aKm: 238040, e: 0.0047, iDeg: 0.019, LDeg: 30, periodDays: 1.37022 }),
   appearance: { color: 0xf0f4ff },
 };
 
@@ -161,7 +197,7 @@ export const RHEA: BodyDescriptor = {
   parentId: 'saturn',
   category: 'moon',
   physical: { radiusKm: 763.5, massKg: 2.307e21, rotationPeriodDays: 4.518, axialTiltDeg: 0 },
-  propagator: moonProp({ aKm: 527108, e: 0.001, iDeg: 0.345, LDeg: 60, periodDays: 4.518 }),
+  propagator: moonPropJ2('saturn', { aKm: 527108, e: 0.001, iDeg: 0.345, LDeg: 60, periodDays: 4.518 }),
   appearance: { color: 0xc0bcb0 },
 };
 
@@ -173,6 +209,12 @@ export const IAPETUS: BodyDescriptor = {
   parentId: 'saturn',
   category: 'moon',
   physical: { radiusKm: 734.5, massKg: 1.806e21, rotationPeriodDays: 79.32, axialTiltDeg: 0 },
+  // Iapetus is intentionally NOT J2-perturbed: its 15.47° inclination is
+  // measured against Saturn's *orbital* plane (not the equator like Titan/
+  // Rhea/Enceladus), so applying Saturn's equatorial J2 here would be
+  // computing in the wrong reference plane. Iapetus's actual node
+  // regression is dominated by the Sun + Saturn's mutual Laplace plane
+  // anyway, not the bulge — out of scope for our secular model.
   propagator: moonProp({ aKm: 3560820, e: 0.0286, iDeg: 15.47, LDeg: 120, periodDays: 79.32 }),
   appearance: { color: 0x8c7060 },
 };

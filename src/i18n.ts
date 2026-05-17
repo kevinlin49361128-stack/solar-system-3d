@@ -82,6 +82,7 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'left.events': { 'zh-Hant': '天文事件', 'en': 'Astro Events', 'ja': '天文イベント' },
   'nbody.yoshida4': { 'zh-Hant': 'Yoshida 4 階積分', 'en': 'Yoshida 4th-order integrator', 'ja': '吉田4次積分' },
   'nbody.relativistic': { 'zh-Hant': '廣義相對論修正（水星進動）', 'en': 'GR correction (Mercury precession)', 'ja': '一般相対論補正（水星近日点移動）' },
+  'nbody.solarJ2': { 'zh-Hant': '太陽 J2 扁率（~3″/cy）', 'en': 'Solar J2 oblateness (~3″/cy)', 'ja': '太陽 J2 扁平度（~3″/cy）' },
   'info.goto': { 'zh-Hant': '🔭 鏡頭對準', 'en': '🔭 Aim camera', 'ja': '🔭 カメラを向ける' },
   'info.track': { 'zh-Hant': '📌', 'en': '📌', 'ja': '📌' },
   'info.bookmark': { 'zh-Hant': '⭐', 'en': '⭐', 'ja': '⭐' },
