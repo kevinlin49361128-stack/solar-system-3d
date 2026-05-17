@@ -103,7 +103,7 @@ Helper 是獨立 repo：<https://github.com/kevinlin49361128-stack/solar-system-
 npm run test
 ```
 
-目前 **281 個測試 / 27 個檔案** 全綠：
+目前 **292 個測試 / 28 個檔案** 全綠：
 
 - **`kepler.test.ts`**：solver 在 e=0..0.995 全 M 範圍收斂、Halley 級高 e 回歸測試（防止之前的 Newton 噴飛 bug 復發）
 - **`topocentric.test.ts`**：GMST 在 J2000 ≈ 280.46°、每日 +0.985° sidereal drift、observer frame 三軸正交、precession 100 年位移 1.0–1.6°、Bennett 折射對標準參考值
@@ -116,7 +116,7 @@ UI / 整合測試還沒做（成本較高，物理回歸測試已經是 high-bug
 
 **最近 ship**：銀河系飛越 + 12 顆系外行星宿主 click-to-land、Lagrange L1–L5 即時計算、click-through Physics under the hood 透明面板、Trojan 群點視覺化、PWA 安裝。
 
-**桌上正在看**：Hosek-Wilkie 官方 LUT 取代手調係數、系外行星宜居帶 overlay、磁偏角校正（行動 AR 模式）、HYG 15k 大量星表的 PM 重建。
+**桌上正在看**：Hosek-Wilkie 官方 LUT 取代手調係數、磁偏角校正（行動 AR 模式）、HYG 15k 大量星表的 PM 重建、宜居帶 overlay 的 UI toggle + 樂觀邊界（runaway greenhouse / maximum greenhouse）。
 
 **已知限制**：觀測者本地地形只覆蓋 ~45 km 半徑（25 個 zoom-12 tile）；HYG 15k 大量星表沒有 proper motion（拉到遠期會略錯位 — 名星 catalogue 已套用 PM + 年差光行差）；N-body 只含太陽系內主要天體，彗星與太空船不參與攝動；行動陀螺儀 AR 在多支實機上未完整驗證。
 

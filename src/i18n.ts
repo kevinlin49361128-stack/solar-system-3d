@@ -641,6 +641,13 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'exo.visitSystem':       { 'zh-Hant': '降落到此系統', 'en': 'Land on this system', 'ja': 'このシステムに降下' },
   'exo.returnToGalaxy':    { 'zh-Hant': '↩ 回到銀河', 'en': '↩ Return to galaxy', 'ja': '↩ 銀河に戻る' },
   'exo.activeBanner':      { 'zh-Hant': '正在參觀', 'en': 'Currently visiting', 'ja': '訪問中' },
+  // Habitable-zone classification badges (Kopparapu+2013 conservative HZ)
+  'exo.hz.inHz':           { 'zh-Hant': '宜居帶內', 'en': 'In HZ', 'ja': 'HZ内' },
+  'exo.hz.hotEdge':        { 'zh-Hant': '高溫邊緣', 'en': 'Hot edge', 'ja': '高温端' },
+  'exo.hz.coldEdge':       { 'zh-Hant': '低溫邊緣', 'en': 'Cold edge', 'ja': '低温端' },
+  'exo.hz.tooHot':         { 'zh-Hant': '過熱', 'en': 'Too hot', 'ja': '高温過ぎ' },
+  'exo.hz.tooCold':        { 'zh-Hant': '過冷', 'en': 'Too cold', 'ja': '低温過ぎ' },
+  'info.row.hzRange':      { 'zh-Hant': '宜居帶範圍 (Kopparapu)', 'en': 'Habitable zone (Kopparapu)', 'ja': 'ハビタブルゾーン (Kopparapu)' },
 
   // SkyPanel — sun/moon events
   'sky.polarNight':         { 'zh-Hant': '極夜/極晝',     'en': 'Polar night/day',         'ja': '極夜/白夜' },

@@ -5,6 +5,7 @@ import type { CameraController } from '../controls/CameraController';
 import type { EventsPanel } from './EventsPanel';
 import { AU_KM } from '../physics/constants';
 import { J2_BODIES, computeJ2SecularRates, J2PerturbedKeplerPropagator } from '../physics/j2Perturbation';
+import { habitableZoneAU, classifyHabitability, type HabitabilityBucket } from '../physics/habitableZone';
 import { pieChartSvg, compositionListHtml, tempGaugeHtml } from './charts';
 import { langPick, bodyName, onLanguageChange, t } from '../i18n';
 import {
@@ -430,6 +431,12 @@ export class InfoPanel {
       [t('info.row.radius'), `${formatNumber(sys.host.physical.radiusKm, 0)} km (${(sys.host.physical.radiusKm / 695700).toFixed(3)} R☉)`],
       [t('info.row.mass'), `${sys.host.physical.massKg.toExponential(3)} kg (${(sys.host.physical.massKg / 1.989e30).toFixed(3)} M☉)`],
     ];
+    // Surface the Kopparapu HZ bounds when we can compute them — feeds
+    // directly into the per-planet 🟢 / 🟠 / 🔵 badges further down.
+    const hz = habitableZoneAU(sys.host.physical.radiusKm, sys.hostTeffK);
+    if (hz) {
+      rows.push([t('info.row.hzRange'), `${hz.innerAU.toFixed(3)} – ${hz.outerAU.toFixed(3)} AU`]);
+    }
     this.dataEl.innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
 
     // Description + planet roster
@@ -446,15 +453,23 @@ export class InfoPanel {
       ? ''
       : `<div class="info-section">
            <div class="info-section-title">${escapeHtml(t('info.cat.planet'))} × ${sys.planets.length}</div>
-           ${sys.planets.map(p => `
-             <div style="font-size:11px;line-height:1.55;margin:4px 0;padding:4px 6px;background:rgba(93,177,255,0.04);border-left:2px solid var(--panel-border);border-radius:3px;">
-               <b>${escapeHtml(p.nameEn)}</b> &mdash; ${langPick(p.description ?? { 'zh-Hant': '', en: '', ja: '' })}
-               <div style="color:var(--text-dim);font-family:ui-monospace,monospace;font-size:10px;margin-top:2px;">
-                 a = ${p.propagator?.elements?.a.toFixed(5)} AU,
-                 P = ${formatPeriod(p.propagator?.elements?.periodDays ?? 0)},
-                 e = ${p.propagator?.elements?.e.toFixed(4) ?? '—'}
-               </div>
-             </div>`).join('')}
+           ${sys.planets.map(p => {
+             const aAU = p.propagator?.elements?.a ?? NaN;
+             const bucket = classifyHabitability(aAU, hz);
+             const { emoji, label, color } = hzBadge(bucket);
+             const badgeHtml = bucket === 'unknown'
+               ? ''
+               : `<span title="${escapeHtml(label)}" style="display:inline-block;margin-left:6px;padding:0 5px;border-radius:8px;font-size:9px;background:${color};color:#001a26;font-weight:600;">${emoji} ${escapeHtml(label)}</span>`;
+             return `
+               <div style="font-size:11px;line-height:1.55;margin:4px 0;padding:4px 6px;background:rgba(93,177,255,0.04);border-left:2px solid var(--panel-border);border-radius:3px;">
+                 <b>${escapeHtml(p.nameEn)}</b>${badgeHtml} &mdash; ${langPick(p.description ?? { 'zh-Hant': '', en: '', ja: '' })}
+                 <div style="color:var(--text-dim);font-family:ui-monospace,monospace;font-size:10px;margin-top:2px;">
+                   a = ${p.propagator?.elements?.a.toFixed(5)} AU,
+                   P = ${formatPeriod(p.propagator?.elements?.periodDays ?? 0)},
+                   e = ${p.propagator?.elements?.e.toFixed(4) ?? '—'}
+                 </div>
+               </div>`;
+           }).join('')}
          </div>`;
     this.extraEl.innerHTML = desc + visitBtn + planetList;
     this.planningEl.innerHTML = '';
@@ -1685,6 +1700,23 @@ function formatPeriod(days: number): string {
   if (days < 1000) return `${formatNumber(days, 2)} ${t('info.unit.day')}`;
   const years = days / 365.256;
   return `${formatNumber(years, 2)} ${t('info.unit.year')}`;
+}
+
+/**
+ * Map a HabitabilityBucket to a visual badge: emoji, short label, and
+ * an HSL background colour that reads as "warm/cool/temperate" at a
+ * glance. Labels go through t() for i18n. Used by the exoplanet system
+ * InfoPanel to flag each planet's HZ position.
+ */
+function hzBadge(bucket: HabitabilityBucket): { emoji: string; label: string; color: string } {
+  switch (bucket) {
+    case 'in-hz':    return { emoji: '🟢', label: t('exo.hz.inHz'),    color: '#7fffa0' };
+    case 'hot-edge': return { emoji: '🟠', label: t('exo.hz.hotEdge'), color: '#ffc070' };
+    case 'cold-edge':return { emoji: '🔵', label: t('exo.hz.coldEdge'),color: '#9fd8ff' };
+    case 'too-hot':  return { emoji: '🔥', label: t('exo.hz.tooHot'),  color: '#ff8060' };
+    case 'too-cold': return { emoji: '❄️', label: t('exo.hz.tooCold'), color: '#a0c0ff' };
+    case 'unknown':  return { emoji: '',   label: '',                  color: 'transparent' };
+  }
 }
 
 /**

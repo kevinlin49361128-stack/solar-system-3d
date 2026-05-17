@@ -94,3 +94,30 @@ export function habitableZoneAU(
   const outerAU = Math.sqrt(L / sOuter);
   return { innerAU, outerAU };
 }
+
+/**
+ * Classification of a planet's semi-major axis relative to its host's
+ * habitable zone. Used by InfoPanel to badge each exoplanet with a
+ * visual hint (🟢 in HZ, 🟠 too hot, 🔵 too cold). The "edge" buckets
+ * give a 10 % grace either side of the conservative HZ — these are
+ * planets that brush the boundaries and might be habitable under more
+ * optimistic assumptions (e.g. cloud feedback, atmospheric H₂).
+ */
+export type HabitabilityBucket =
+  | 'in-hz'        // strictly inside the conservative HZ
+  | 'hot-edge'     // 0–10 % closer than inner edge
+  | 'cold-edge'    // 0–10 % beyond outer edge
+  | 'too-hot'      // > 10 % closer than inner edge
+  | 'too-cold'     // > 10 % beyond outer edge
+  | 'unknown';     // host Teff outside Kopparapu calibration range
+
+export function classifyHabitability(
+  planetAU: number, hz: { innerAU: number; outerAU: number } | null,
+): HabitabilityBucket {
+  if (!hz) return 'unknown';
+  if (planetAU >= hz.innerAU && planetAU <= hz.outerAU) return 'in-hz';
+  if (planetAU < hz.innerAU) {
+    return planetAU > hz.innerAU * 0.90 ? 'hot-edge' : 'too-hot';
+  }
+  return planetAU < hz.outerAU * 1.10 ? 'cold-edge' : 'too-cold';
+}
