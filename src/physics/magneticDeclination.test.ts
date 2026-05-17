@@ -46,13 +46,16 @@ describe('magneticDeclinationDeg — dipole-friendly cities (±9°)', () => {
 });
 
 describe('magneticDeclinationDeg — strong-anomaly cities (sign + magnitude only)', () => {
-  // These sit on top of major crustal anomalies or in regions where
-  // higher-order WMM multipoles dominate (Pacific Northwest, South
-  // Atlantic). n=1+n=2 captures the gross direction but not the
-  // magnitude well. We just sanity-check sign + order-of-magnitude.
-  // Vancouver omitted entirely — the Pacific Northwest n=3/n=4 signature
-  // flips the sign of our n=2 prediction; would need at least n=4 to fix.
+  // These sit on top of major crustal anomalies. n=1+n=2+n=3 catches
+  // the direction but not the full magnitude — full 12-order WMM
+  // needed for sub-degree at hotspots. We just sanity-check sign +
+  // order-of-magnitude.
+  //
+  // Vancouver got promoted from "broken under n=2" to working at n=3 —
+  // the Pacific NW signature comes mostly from the octupole, so adding
+  // it resolves the sign flip the earlier model had.
   const anomalyCities: Array<[string, number, number, number]> = [
+    ['Vancouver', 49.28, -123.12,  16.2],
     ['Cape Town', -33.92,   18.42, -25.0],
     ['Sao Paulo', -23.55,  -46.63, -21.4],
   ];
