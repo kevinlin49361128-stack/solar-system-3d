@@ -72,6 +72,7 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'realism.dsoRealSize': { 'zh-Hant': 'DSO 真實角直徑', 'en': 'Real DSO angular size', 'ja': 'DSO 実角直径' },
   'realism.deepStars': { 'zh-Hant': '深空星表 (mag 9，~3 MB)', 'en': 'Deep star field (mag 9, ~3 MB)', 'ja': '深空星カタログ (mag 9, ~3 MB)' },
   'realism.sharpless2': { 'zh-Hant': 'Sharpless 2 發射星雲 (313 個)', 'en': 'Sharpless 2 emission nebulae (313)', 'ja': 'Sharpless 2 散光星雲 (313)' },
+  'realism.ngcFull': { 'zh-Hant': 'NGC 全集 (~11k，~445 KB)', 'en': 'NGC full catalogue (~11k, ~445 KB)', 'ja': 'NGC 全カタログ (~11k, ~445 KB)' },
   'realism.milkyway': { 'zh-Hant': '銀河帶', 'en': 'Milky Way', 'ja': '天の川' },
   'realism.beltOfVenus': { 'zh-Hant': '暮光反日點 (Belt of Venus)', 'en': 'Belt of Venus / Earth shadow', 'ja': 'ヴィーナスの帯 / 地球影' },
   'realism.zodiacal': { 'zh-Hant': '黃道光', 'en': 'Zodiacal light', 'ja': '黄道光' },

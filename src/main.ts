@@ -195,6 +195,8 @@ solarSystem.realism.subscribe((s) => {
   solarSystem.setDeepStarsEnabled(s.deepStars);
   // Sharpless 2 emission-nebula overlay (v0.5).
   solarSystem.setSharpless2Enabled(s.sharpless2);
+  // Full NGC + IC catalogue overlay (v0.5).
+  solarSystem.setNGCFullEnabled(s.ngcFull);
   const sat = solarSystem.getSatelliteLayer() as unknown as
     { setEarthShadowFilter?: (b: boolean) => void } | null;
   sat?.setEarthShadowFilter?.(s.satShadow);

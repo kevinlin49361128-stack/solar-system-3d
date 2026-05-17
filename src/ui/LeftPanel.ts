@@ -171,6 +171,7 @@ export class LeftPanel {
       { id: 'realism-dso-realsize',   key: 'dsoRealSize' },
       { id: 'realism-deep-stars',     key: 'deepStars' },
       { id: 'realism-sharpless2',     key: 'sharpless2' },
+      { id: 'realism-ngc-full',       key: 'ngcFull' },
       { id: 'vfx-milkyway',           key: 'milkyway' },
       { id: 'vfx-belt-of-venus',      key: 'beltOfVenus' },
       { id: 'vfx-zodiacal',           key: 'zodiacal' },

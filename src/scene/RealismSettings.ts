@@ -31,6 +31,11 @@ export interface RealismSettings {
   // Off by default to keep the DSO view uncluttered for casual users;
   // smart-scope planners flip it on.
   sharpless2: boolean;
+  // Full NGC + IC catalogue (v0.5) — ~11k entries (445 KB JSON). Bulk
+  // background sprinkle over the curated Messier + named NGC layer.
+  // Opt-in for the same reason: most NGC objects are invisible to
+  // visual observers and only become useful with a smart scope.
+  ngcFull: boolean;
 }
 
 export type RealismPreset = 'stylized' | 'balanced' | 'realistic';
@@ -39,17 +44,17 @@ export const PRESET_VALUES: Record<RealismPreset, RealismSettings> = {
   stylized: {
     extinction: false, moonGlow: false, bvColor: false, satShadow: false, dsoRealSize: false,
     milkyway: false, beltOfVenus: false, zodiacal: false, airglow: false, meteors: false,
-    deepStars: false, sharpless2: false,
+    deepStars: false, sharpless2: false, ngcFull: false,
   },
   balanced: {
     extinction: true, moonGlow: true, bvColor: true, satShadow: true, dsoRealSize: false,
     milkyway: true, beltOfVenus: true, zodiacal: false, airglow: false, meteors: false,
-    deepStars: false, sharpless2: false,
+    deepStars: false, sharpless2: false, ngcFull: false,
   },
   realistic: {
     extinction: true, moonGlow: true, bvColor: true, satShadow: true, dsoRealSize: true,
     milkyway: true, beltOfVenus: true, zodiacal: true, airglow: true, meteors: true,
-    deepStars: true, sharpless2: true,
+    deepStars: true, sharpless2: true, ngcFull: true,
   },
 };
 

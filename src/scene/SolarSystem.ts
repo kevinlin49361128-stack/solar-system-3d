@@ -53,6 +53,7 @@ import { LunarMansionsLayer } from './LunarMansionsLayer';
 import { GalacticDisk } from './GalacticDisk';
 import { LocalGroupGalaxies } from './LocalGroupGalaxies';
 import { SharplessLayer } from './SharplessLayer';
+import { NGCFullLayer } from './NGCFullLayer';
 import { HygCloud } from './HygCloud';
 import { ExoplanetHosts } from './ExoplanetHosts';
 import { ExoplanetSystemView } from './ExoplanetSystemView';
@@ -100,6 +101,7 @@ export class SolarSystem {
   private galacticDisk: GalacticDisk | null = null;
   private localGroup: LocalGroupGalaxies | null = null;
   private sharpless: SharplessLayer | null = null;
+  private ngcFull: NGCFullLayer | null = null;
   private hygCloud: HygCloud | null = null;
   private exoplanetHosts: ExoplanetHosts | null = null;
   private exoplanetView: ExoplanetSystemView | null = null;
@@ -167,6 +169,10 @@ export class SolarSystem {
     // to avoid the ~9 KB fetch for users who never enable it.
     this.sharpless = new SharplessLayer();
     this.scene.add(this.sharpless.object);
+
+    // Full NGC + IC catalogue layer — also opt-in (445 KB on first enable).
+    this.ngcFull = new NGCFullLayer();
+    this.scene.add(this.ngcFull.object);
 
     this.iauBoundaries = new IAUBoundaries();
     this.scene.add(this.iauBoundaries.object);
@@ -825,6 +831,16 @@ export class SolarSystem {
       void this.sharpless.load();
     }
     this.sharpless.setOpacity(on ? 1.0 : 0);
+  }
+
+  /** Full NGC + IC catalogue (~11 000 entries, ~445 KB). Same lazy-
+   *  load + opacity-toggle pattern as the Sharpless layer. */
+  setNGCFullEnabled(on: boolean): void {
+    if (!this.ngcFull) return;
+    if (on && !this.ngcFull.isLoaded()) {
+      void this.ngcFull.load();
+    }
+    this.ngcFull.setOpacity(on ? 0.85 : 0);
   }
 
   /**
