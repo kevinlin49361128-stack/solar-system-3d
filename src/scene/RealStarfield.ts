@@ -10,8 +10,27 @@ import { raDecToEcliptic } from '../physics/topocentric';
 import { eclipticToScene } from '../physics/frame';
 import { toast } from '../ui/toast';
 import { t } from '../i18n';
+import { NAMED_STARS } from '../data/stars';
 
 const STAR_DOME_RADIUS = 4000;
+
+/**
+ * Pre-computed unit vectors for every NAMED_STAR's J2000 position.
+ * Used to filter bulk-catalog entries that duplicate a named star
+ * (otherwise the user sees a "double" — the StarMap sprite drifts
+ * under PM correction while the unfiltered HYG entry stays at J2000,
+ * and they no longer overlap). Built lazily on first populate() call.
+ */
+let _namedStarUnitVectors: Vector3[] | null = null;
+const NAMED_DEDUP_COS_THRESHOLD = Math.cos(0.3 * Math.PI / 180);  // 0.3°
+function getNamedStarUnitVectors(): Vector3[] {
+  if (_namedStarUnitVectors) return _namedStarUnitVectors;
+  _namedStarUnitVectors = NAMED_STARS.map((s) => {
+    const eclDir = raDecToEcliptic(s.raHours, s.decDeg);
+    return eclipticToScene(eclDir);  // unit length (raDecToEcliptic normalises)
+  });
+  return _namedStarUnitVectors;
+}
 
 /**
  * Renders the Yale Bright Star Catalog (BSC) — ~8400 stars to magnitude 6.5
@@ -192,14 +211,43 @@ export class RealStarfield {
   }
 
   private populate(data: Array<[number, number, number, number?]>): void {
-    const N = data.length;
+    // Drop bulk-catalogue entries that duplicate a NAMED_STAR. The
+    // StarMap renders those separately with PM + aberration applied; if
+    // we leave them in here they show up as a second un-corrected dot
+    // a fraction of a degree from the rendered named-star sprite — the
+    // "double-star" bug from the PM commit. Filter is angular-distance
+    // on the unit sphere (cos > threshold = within ε). We only care
+    // about bright bulk entries since dim collisions are imperceptible.
+    const namedUnit = getNamedStarUnitVectors();
+    const tmpUnit = new Vector3();
+    const filtered: Array<[number, number, number, number?]> = [];
+    for (const row of data) {
+      const [raH, decDeg, mag] = row;
+      let isNamed = false;
+      if (mag < 4.5) {
+        // Bright enough for a duplicate dot to be visually obvious.
+        tmpUnit.copy(eclipticToScene(raDecToEcliptic(raH, decDeg)));
+        for (const u of namedUnit) {
+          if (tmpUnit.dot(u) > NAMED_DEDUP_COS_THRESHOLD) { isNamed = true; break; }
+        }
+      }
+      if (!isNamed) filtered.push(row);
+    }
+
+    // Keep `catalogEntries` aligned with the geometry's vertex order so
+    // pickAtScreen() can index both with the same `i`. Idempotent under
+    // re-population (filtering twice gives the same result), so the
+    // loadExtendedCatalog concat-then-populate flow stays correct.
+    this.catalogEntries = filtered;
+
+    const N = filtered.length;
     const positions = new Float32Array(N * 3);
     const colors = new Float32Array(N * 3);
     const sizes = new Float32Array(N);
     const mags = new Float32Array(N);
 
     for (let i = 0; i < N; i++) {
-      const [raH, decDeg, mag, colorInt] = data[i];
+      const [raH, decDeg, mag, colorInt] = filtered[i];
       const dirEcl = raDecToEcliptic(raH, decDeg);
       const dirScene = eclipticToScene(dirEcl).multiplyScalar(STAR_DOME_RADIUS);
       positions[i * 3]     = dirScene.x;

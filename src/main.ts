@@ -404,16 +404,34 @@ function pickNamedStarAtScreen(
   const W = rect.width, H = rect.height;
   const v = new Vector3();
   let best: { star: import('./data/stars').NamedStar; dist: number } | null = null;
-  for (const s of NAMED_STARS) {
-    const dirEcl = raDecToEcliptic(s.raHours, s.decDeg);
-    const dirScene = eclipticToScene(dirEcl).multiplyScalar(4000);
-    v.copy(dirScene).project(cameraCtl.camera);
-    if (v.z > 1 || v.z < -1) continue;
-    const sx = (v.x * 0.5 + 0.5) * W;
-    const sy = (-v.y * 0.5 + 0.5) * H;
-    const d = Math.hypot(sx - cssX, sy - cssY);
-    if (d < tolerancePx && (!best || d < best.dist)) {
-      best = { star: s, dist: d };
+  // Use the StarMap's cached PM + aberration corrected positions so the
+  // click hit detection lines up exactly with where the sprite is drawn.
+  // Falls back to the catalogue J2000 projection if StarMap isn't ready
+  // (mostly a first-frame edge case).
+  const starMap = solarSystem.getStarMap();
+  if (starMap) {
+    starMap.forEachStarScenePosition((s, pos) => {
+      v.copy(pos).project(cameraCtl.camera);
+      if (v.z > 1 || v.z < -1) return;
+      const sx = (v.x * 0.5 + 0.5) * W;
+      const sy = (-v.y * 0.5 + 0.5) * H;
+      const d = Math.hypot(sx - cssX, sy - cssY);
+      if (d < tolerancePx && (!best || d < best.dist)) {
+        best = { star: s, dist: d };
+      }
+    });
+  } else {
+    for (const s of NAMED_STARS) {
+      const dirEcl = raDecToEcliptic(s.raHours, s.decDeg);
+      const dirScene = eclipticToScene(dirEcl).multiplyScalar(4000);
+      v.copy(dirScene).project(cameraCtl.camera);
+      if (v.z > 1 || v.z < -1) continue;
+      const sx = (v.x * 0.5 + 0.5) * W;
+      const sy = (-v.y * 0.5 + 0.5) * H;
+      const d = Math.hypot(sx - cssX, sy - cssY);
+      if (d < tolerancePx && (!best || d < best.dist)) {
+        best = { star: s, dist: d };
+      }
     }
   }
   return best?.star ?? null;
@@ -1733,12 +1751,19 @@ function updateSelectionMarker(): void {
   } else if (starId) {
     const star = NAMED_STARS.find((s) => s.id === starId);
     if (!star) { selectionMarkerEl.classList.remove('visible'); return; }
-    // Stars: convert RA/Dec → ecliptic → scene direction at the star
-    // dome radius (matches StarMap's geometry so the marker sits exactly
-    // on top of the rendered star sprite).
-    const dirEcl = raDecToEcliptic(star.raHours, star.decDeg);
-    const dirScene = eclipticToScene(dirEcl);
-    _markerWorldPos.copy(dirScene).multiplyScalar(4000);
+    // Stars: source the position from StarMap's cached PM + aberration
+    // corrected scenePositions so the marker stays on top of the actual
+    // rendered sprite. Falling back to J2000 projection would offset
+    // the bracket from the sprite by the accumulated PM drift (the
+    // "double-star" bug — bracket at J2000, sprite at current epoch).
+    const cached = solarSystem.getStarMap()?.getStarScenePosition(starId);
+    if (cached) {
+      _markerWorldPos.copy(cached);
+    } else {
+      const dirEcl = raDecToEcliptic(star.raHours, star.decDeg);
+      const dirScene = eclipticToScene(dirEcl);
+      _markerWorldPos.copy(dirScene).multiplyScalar(4000);
+    }
     const lang = getLang();
     labelText = lang === 'en' ? star.nameEn
               : lang === 'ja' ? (star.nameJa ?? star.nameEn)

@@ -233,6 +233,30 @@ export class StarMap {
   /** Current epoch (JD) the star positions were computed at. */
   getEpoch(): number { return this.lastEpochJd; }
 
+  /**
+   * Return the current PM + aberration corrected scene position for a
+   * named star (by ID), or null if unknown. Cached — no recomputation;
+   * callers that need exact visual alignment (selection brackets, hit
+   * detection) should use this rather than re-projecting from J2000
+   * catalog RA/Dec or they'll be offset from the actual sprite by the
+   * accumulated PM drift since J2000.
+   *
+   * Returned vector is owned by the StarMap and should not be mutated
+   * (it's the live cache entry). Clone it before chaining operations.
+   */
+  getStarScenePosition(starId: string): Vector3 | null {
+    const i = this.idIndex.get(starId);
+    return i === undefined ? null : this.scenePositions[i];
+  }
+
+  /** Walk every named-star's cached position. The callback receives the
+   *  star and its current scene position; used by the hit-test path. */
+  forEachStarScenePosition(cb: (s: NamedStar, pos: Vector3) => void): void {
+    for (let i = 0; i < NAMED_STARS.length; i++) {
+      cb(NAMED_STARS[i], this.scenePositions[i]);
+    }
+  }
+
   setOpacity(opacity: number): void {
     (this.points.material as PointsMaterial).opacity = opacity;
     (this.lines.material as LineBasicMaterial).opacity = opacity * 0.4;
