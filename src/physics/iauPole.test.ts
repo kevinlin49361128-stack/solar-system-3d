@@ -57,4 +57,27 @@ describe('iauPoleToSceneDir', () => {
     const tiltDeg = Math.acos(Math.max(-1, Math.min(1, v.y))) * 180 / Math.PI;
     expect(Math.abs(tiltDeg - 3.13)).toBeLessThan(2);
   });
+
+  it('Uranus IAU pole sits ~82° from ecliptic normal (rolling-barrel axis)', () => {
+    // The famous extreme tilt. Note IAU CONVENTION: for retrograde
+    // rotators (Uranus, Venus, Pluto) the IAU "north pole" is the
+    // axis end CLOSER to ecliptic north, NOT the angular-momentum
+    // pole. So Uranus's published tilt of 97.77° is from the orbit
+    // normal in the spin-handedness sense; the IAU pole sits at
+    // 180° − 97.77° = 82.23° from ecliptic north. Both are correct;
+    // we use the IAU pole for visual orientation since that's what
+    // the catalogue RA/Dec values index.
+    const v = iauPoleToSceneDir(257.311, -15.175);
+    const tiltDeg = Math.acos(Math.max(-1, Math.min(1, v.y))) * 180 / Math.PI;
+    expect(Math.abs(tiltDeg - 82.23)).toBeLessThan(3);
+  });
+
+  it('Venus pole points slightly south of ecliptic north (retrograde rotator)', () => {
+    // IAU convention for retrograde rotators is to call the pole "above
+    // the ecliptic" the north pole regardless of rotation direction.
+    // Venus's pole sits about 2.6° from ecliptic north → v.y very near +1.
+    const v = iauPoleToSceneDir(272.76, 67.16);
+    const tiltDeg = Math.acos(Math.max(-1, Math.min(1, v.y))) * 180 / Math.PI;
+    expect(tiltDeg).toBeLessThan(5);
+  });
 });

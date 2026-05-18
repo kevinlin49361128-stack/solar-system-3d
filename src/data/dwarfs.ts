@@ -31,7 +31,13 @@ export const PLUTO: BodyDescriptor = {
   nameJa: '冥王星',
   parentId: null,
   category: 'dwarf',
-  physical: { radiusKm: 1188.3, massKg: 1.303e22, rotationPeriodDays: -6.387, axialTiltDeg: 122.53 },
+  physical: {
+    radiusKm: 1188.3, massKg: 1.303e22, rotationPeriodDays: -6.387, axialTiltDeg: 122.53,
+    // Pluto's spin axis points well south of the ecliptic (122.5° tilt).
+    // IAU values; Pluto's mutual orbit with Charon makes the system's
+    // barycentre wobble visible but the body orientation is well-defined.
+    poleRaJ2000Deg: 132.993, poleDecJ2000Deg: -6.163,
+  },
   propagator: new KeplerPropagator({
     a: 39.482, e: 0.2488, iDeg: 17.16,
     LDeg: 238.92881, LDotDeg: (360 / 90560) * 36525,

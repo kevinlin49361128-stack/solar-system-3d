@@ -46,7 +46,10 @@ export const MERCURY: BodyDescriptor = {
   nameJa: '水星',
   parentId: null,
   category: 'planet',
-  physical: { radiusKm: 2439.7, massKg: 3.3011e23, rotationPeriodDays: 58.646, axialTiltDeg: 0.034 },
+  physical: {
+    radiusKm: 2439.7, massKg: 3.3011e23, rotationPeriodDays: 58.646, axialTiltDeg: 0.034,
+    poleRaJ2000Deg: 281.0103, poleDecJ2000Deg: 61.4155,  // IAU WGCCRE 2015
+  },
   propagator: new KeplerPropagator({
     a: 0.38709927, aDot: 0.00000037,
     e: 0.20563593, eDot: 0.00001906,
@@ -67,7 +70,14 @@ export const VENUS: BodyDescriptor = {
   nameJa: '金星',
   parentId: null,
   category: 'planet',
-  physical: { radiusKm: 6051.8, massKg: 4.8675e24, rotationPeriodDays: -243.025, axialTiltDeg: 177.36 },
+  physical: {
+    radiusKm: 6051.8, massKg: 4.8675e24, rotationPeriodDays: -243.025, axialTiltDeg: 177.36,
+    // Venus rotates retrograde — its "north pole" by IAU convention points
+    // south of the ecliptic. RA/Dec values reflect that (Dec is positive
+    // but in the southern equatorial hemisphere of the spin axis the body
+    // appears to rotate clockwise as viewed from solar north).
+    poleRaJ2000Deg: 272.76, poleDecJ2000Deg: 67.16,
+  },
   propagator: new KeplerPropagator({
     a: 0.72333566, aDot: 0.00000390,
     e: 0.00677672, eDot: -0.00004107,
@@ -92,7 +102,12 @@ export const EARTH: BodyDescriptor = {
   nameJa: '地球',
   parentId: null,
   category: 'planet',
-  physical: { radiusKm: 6371.0, massKg: 5.972e24, rotationPeriodDays: 0.99726968, axialTiltDeg: 23.4393 },
+  physical: {
+    radiusKm: 6371.0, massKg: 5.972e24, rotationPeriodDays: 0.99726968, axialTiltDeg: 23.4393,
+    // Earth's pole by IAU convention. Note: setRotationAngle(gmstRad)
+    // overrides the spin angle each frame, so this just orients the tilt.
+    poleRaJ2000Deg: 0.0, poleDecJ2000Deg: 90.0,
+  },
   propagator: new KeplerPropagator({
     a: 1.00000261, aDot: 0.00000562,
     e: 0.01671123, eDot: -0.00004392,
@@ -119,7 +134,10 @@ export const MARS: BodyDescriptor = {
   nameJa: '火星',
   parentId: null,
   category: 'planet',
-  physical: { radiusKm: 3389.5, massKg: 6.4171e23, rotationPeriodDays: 1.02595675, axialTiltDeg: 25.19 },
+  physical: {
+    radiusKm: 3389.5, massKg: 6.4171e23, rotationPeriodDays: 1.02595675, axialTiltDeg: 25.19,
+    poleRaJ2000Deg: 317.681, poleDecJ2000Deg: 52.886,
+  },
   propagator: new KeplerPropagator({
     a: 1.52371034, aDot: 0.00001847,
     e: 0.09339410, eDot: 0.00007882,
@@ -206,7 +224,14 @@ export const URANUS: BodyDescriptor = {
   nameJa: '天王星',
   parentId: null,
   category: 'planet',
-  physical: { radiusKm: 25362, massKg: 8.6810e25, rotationPeriodDays: -0.71833, axialTiltDeg: 97.77 },
+  physical: {
+    radiusKm: 25362, massKg: 8.6810e25, rotationPeriodDays: -0.71833, axialTiltDeg: 97.77,
+    // The "rolling barrel" planet — pole points almost into the orbital
+    // plane (97.77° from ecliptic normal). IAU pole sits near south
+    // ecliptic pole region, which is visually what makes Uranus look
+    // sideways when its orbit phase is right.
+    poleRaJ2000Deg: 257.311, poleDecJ2000Deg: -15.175,
+  },
   propagator: new KeplerPropagator({
     a: 19.18916464, aDot: -0.00196176,
     e: 0.04725744, eDot: -0.00004397,
@@ -231,7 +256,10 @@ export const NEPTUNE: BodyDescriptor = {
   nameJa: '海王星',
   parentId: null,
   category: 'planet',
-  physical: { radiusKm: 24622, massKg: 1.02413e26, rotationPeriodDays: 0.6713, axialTiltDeg: 28.32 },
+  physical: {
+    radiusKm: 24622, massKg: 1.02413e26, rotationPeriodDays: 0.6713, axialTiltDeg: 28.32,
+    poleRaJ2000Deg: 299.36, poleDecJ2000Deg: 43.46,
+  },
   propagator: new KeplerPropagator({
     a: 30.06992276, aDot: 0.00026291,
     e: 0.00859048, eDot: 0.00005105,
