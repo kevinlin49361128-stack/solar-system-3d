@@ -1,270 +1,180 @@
-# GitHub Sponsors — activation checklist
+# Donation activation checklist — Lemon Squeezy
 
-**Status**: waiting on GitHub Sponsors approval email for
-`kevinlin49361128-stack`.
-
-When the approval email arrives, work through this file top-to-bottom.
-Everything that follows is pre-written and validated; the activation
-is a copy + commit + push, ~30 minutes total.
+**Status**: platform decided → **Lemon Squeezy**. No approval wait.
+Activation is split into Part A (你在 Lemon Squeezy 後台做，~15 min)
+and Part B (repo 變更，拿到商品 URL 後 ~10 min copy + commit + push).
 
 ---
 
-## Decided plan
+## Why Lemon Squeezy (not GitHub Sponsors / Ko-fi)
 
-**Tier ladder (5× geometric)**
+Both GitHub Sponsors and Ko-fi require the creator to hold their **own
+Stripe Connect account**, which means passing Stripe's KYC for the
+creator's country. For a Taiwan-based individual that path stalls —
+GitHub Sponsors never approved, and Ko-fi's Stripe Connect onboarding
+froze mid-flow (the "選擇帳戶" page hung).
 
-| Tier | Monthly | One-time |
-|---|---|---|
-| 🌟 Stargazer | $1 | $5 |
-| 🔭 Observer | $5 | $25 |
-| 🏛️ Observatory | $25 | $100 |
+Lemon Squeezy is a **Merchant of Record**: it is the legal seller, it
+runs payments on *its own* US Stripe entity, handles end-customer tax /
+VAT / compliance, and pays the net amount to you as a "supplier". The
+creator's country never touches Stripe's regional limits. That is the
+decisive difference — it is the only one of the three that actually
+works from Taiwan without fighting a KYC wall.
 
-Rationale: $1 monthly is GitHub Sponsors' floor and maximises
-"click without thinking" small donations. 5× geometric jumps are
-intuitive ("each tier is meaningfully more"). $25/mo top ($300/yr)
-is comfortable for hobby observers; $100 one-time fits schools /
-astronomy clubs without pretending to be an enterprise sponsor.
-
-**No exclusive features per tier.** All sponsors get the same MIT-
-licensed app. Rewards are recognition-only — protects the open-
-source story and avoids fragmenting users.
+Trade-offs accepted (and why they don't matter here):
+- **~5 % fee** — irrelevant; the project's goal is portfolio, not income.
+- **Store-shaped, not donate-shaped** — the in-app button only says
+  "❤ Support" → links out; <1 % of users ever see the destination's
+  shape. Naming the product clearly as a donation closes the gap.
+- **Owned by Stripe since 2024** — if it's ever sunset, swapping the
+  one `custom:` URL in FUNDING.yml is a 5-minute change.
 
 ---
 
-## Step 1 — Create `.github/FUNDING.yml` (5 min)
+## Decided plan — ONE pay-what-you-want product
 
-Create the file `/Users/kevinlin/太陽系模擬/.github/FUNDING.yml`
-with exactly this content:
+The earlier GitHub-Sponsors plan had 3 tiers × (monthly + one-time) =
+6 price points. On GitHub Sponsors tiers are a native feature; on
+Lemon Squeezy every price point is a separate product/variant to
+maintain. Six products for a project whose goal is *not income* is
+wasted operational surface.
+
+**Instead: a single one-time "pay what you want" product.**
+
+- The buyer names their own price. Suggested amounts double as the
+  "tier" UX without any extra products:
+
+  | | 建議金額 | 適合 |
+  |---|---|---|
+  | 🌟 Stargazer  | $5   | 「這個有幫到我」 |
+  | 🔭 Observer   | $25  | 課堂 / 長期使用 |
+  | 🏛️ Observatory | $100 | 學校 / 天文社團 / 機構 |
+
+- **One-time only, no subscription.** Recurring donations to a hobby
+  project are rare and add tax / renewal complexity for ~no return.
+  If recurring is ever wanted, a Lemon Squeezy subscription variant is
+  a 10-minute add later.
+- **No exclusive features, ever.** Every sponsor gets the exact same
+  MIT-licensed app as every free user. Rewards are recognition-only:
+  CONTRIBUTORS.md listing, About-panel credit, release-note thanks,
+  priority issue replies. This protects the open-source story.
+
+---
+
+## Part A — Lemon Squeezy dashboard (你做)
+
+1. **Store** — confirm you have a store (you already opened an account).
+   Store name something neutral like `Kevin Lin` or `Solar System 3D`.
+
+2. **Create a product**:
+   - Pricing model: **Pay what you want** (single payment / one-time —
+     NOT subscription).
+   - Minimum price: `$1` (or `$3` — low floor maximises "click without
+     thinking" small donations).
+   - Suggested / default price: `$5`.
+   - Name: something that reads as a donation, e.g.
+     `Support Solar System 3D` / `贊助 太陽系模擬`.
+   - Short description: one line + a link back to the GitHub repo.
+
+3. **Turn OFF license-key generation** for this product. Lemon Squeezy
+   can auto-issue software license keys per order — this is a donation,
+   not a licensed product, so disable it (Product → Settings).
+
+4. **Publish** the product.
+
+5. **Tax form** — Settings → fill the seller tax form. As a non-US
+   individual you'll complete a **W-8BEN**-equivalent. Lemon Squeezy
+   handles end-customer VAT itself; this form is just so it can pay
+   *you*. Lighter than the GitHub→Stripe direct path but still required.
+
+6. **Payout** — connect your payout method (Wise or PayPal). You
+   already started Wise setup; finish it here. Lemon Squeezy → Wise
+   works for Taiwan.
+
+7. **Copy the product's public checkout URL.** It looks like
+   `https://<store>.lemonsqueezy.com/buy/<uuid>` (or a custom checkout
+   link). **Give this URL to Claude** — Part B needs it. Until then,
+   Part B stays staged below.
+
+---
+
+## Part B — repo activation (拿到 URL 後)
+
+Everything below is pre-written. When the Lemon Squeezy URL is known,
+replace every `<<LEMONSQUEEZY_URL>>` with it, then apply + commit + push.
+
+### B1 — Create `.github/FUNDING.yml`
 
 ```yaml
-# Enables the 💜 Sponsor button on the GitHub repo page and on
-# Issues / PRs. Once committed, GitHub auto-renders the button
-# linking to https://github.com/sponsors/kevinlin49361128-stack
-github: [kevinlin49361128-stack]
+# The 💜 Sponsor button on the repo + Issues/PRs links here.
+# Lemon Squeezy (Merchant of Record) was chosen because it sidesteps
+# the Taiwan Stripe Connect KYC wall that blocks GitHub Sponsors + Ko-fi.
+custom: ['<<LEMONSQUEEZY_URL>>']
 ```
 
-Verify after pushing: visit
-https://github.com/kevinlin49361128-stack/solar-system-3d and
-confirm the "Sponsor" button appears at the top of the repo.
+Verify after push: the "Sponsor" button appears on the repo page.
 
----
-
-## Step 2 — Update `SUPPORT.md` (5 min)
-
-Replace the `## ☕ 小額贊助` section's placeholder text with:
+### B2 — Replace the `## ☕ 小額贊助` section in `SUPPORT.md`
 
 ```markdown
 ## ☕ 小額贊助
 
-[![GitHub Sponsors](https://img.shields.io/github/sponsors/kevinlin49361128-stack?style=flat-square&logo=github&logoColor=white&label=Sponsor&color=ea4aaa)](https://github.com/sponsors/kevinlin49361128-stack)
-
 如果這個專案對你有用、且你的預算允許，可以透過
-[GitHub Sponsors](https://github.com/sponsors/kevinlin49361128-stack)
-小額贊助。三種等級：
+[Lemon Squeezy 贊助頁面](<<LEMONSQUEEZY_URL>>)小額支持。
 
-| Tier | 月 | 一次性 |
+頁面採「**自訂金額**」(pay what you want) — 你決定給多少。建議參考：
+
+| | 金額 | 適合 |
 |---|---|---|
-| 🌟 Stargazer | $1 | $5 |
-| 🔭 Observer | $5 | $25 |
-| 🏛️ Observatory | $25 | $100 |
+| 🌟 Stargazer  | $5   | 「這個有幫到我」 |
+| 🔭 Observer   | $25  | 課堂 / 長期使用 |
+| 🏛️ Observatory | $100 | 學校 / 天文社團 / 機構 |
 
-**沒有任何付費限定功能** —— 所有贊助者跟所有免費使用者拿到完全
-相同的 MIT 授權版本。贊助回饋是純粹的「致謝」: CONTRIBUTORS.md
-留名 / About 面板列名 / release notes 致謝 / issue 優先回覆。
+**沒有任何付費限定功能** — 所有贊助者跟所有免費使用者拿到完全相同的
+MIT 授權版本。贊助回饋是純粹的「致謝」：CONTRIBUTORS.md 留名 /
+About 面板列名 / release notes 致謝 / issue 優先回覆。
 
 也歡迎不贊助 — `Star` + 分享給天文社群朋友就是對作者很棒的支持。
 ```
 
-And in the English section at the bottom, replace the `donation
-link will be added` line with:
+And in the English section, replace
+`A donation link will be added later — for now there's nothing to pay
+for and nothing being asked.` with:
 
 ```markdown
-Donations welcome (but never required) via
-[GitHub Sponsors](https://github.com/sponsors/kevinlin49361128-stack).
-Three tiers: Stargazer ($1/mo), Observer ($5/mo), Observatory
-($25/mo). No paywalled features — sponsors and free users get the
-same MIT-licensed build, always. Sponsorship rewards are
-recognition-only: name in CONTRIBUTORS, listing in the About
-panel, acknowledgement in major release notes.
+If the project is useful to you, an optional pay-what-you-want
+donation is available via [Lemon Squeezy](<<LEMONSQUEEZY_URL>>).
+There are no paywalled features — every sponsor gets the same
+MIT-licensed app. Starring and sharing the repo helps just as much.
 ```
 
----
+### B3 — Update `README.md`
 
-## Step 3 — Add Sponsor badge to README (3 min)
-
-Edit the top of `README.md`, immediately after the `> 🇹🇼 中文 ·
-🇺🇸 English · 🇯🇵 日本語` line, add:
+Line ~157, replace:
 
 ```markdown
-[![GitHub Sponsors](https://img.shields.io/github/sponsors/kevinlin49361128-stack?style=flat-square&logo=github&logoColor=white&label=Sponsor&color=ea4aaa)](https://github.com/sponsors/kevinlin49361128-stack)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-236%20passed-success?style=flat-square)](https://github.com/kevinlin49361128-stack/solar-system-3d/actions)
+- ☕ [小額贊助](SUPPORT.md) — Buy Me a Coffee / GitHub Sponsors
 ```
 
----
-
-## Step 4 — Configure tiers on github.com/sponsors (15 min)
-
-This is done in the GitHub web UI, not in code. Go to:
-https://github.com/sponsors/kevinlin49361128-stack/dashboard/tiers
-
-### Tier 1 — 🌟 Stargazer
-
-- **Monthly**: $1
-- **One-time**: $5 (configure as a separate one-time tier)
-- **Description** (paste verbatim):
-
-```
-☕ Thank you! Your name goes in CONTRIBUTORS.md, and your GitHub
-avatar appears in the README's supporters wall.
-
-The simulator stays MIT-licensed, all features remain free for
-everyone — this tier is recognition, not access.
-```
-
-### Tier 2 — 🔭 Observer
-
-- **Monthly**: $5
-- **One-time**: $25
-- **Description**:
-
-```
-Everything in Stargazer, plus:
-  • Your name listed in the in-app About / Credits panel
-  • Priority response on GitHub issues — tagged "sponsor" and
-    triaged before the general queue
-
-Same MIT-licensed app, no exclusive features.
-```
-
-### Tier 3 — 🏛️ Observatory
-
-- **Monthly**: $25
-- **One-time**: $100
-- **Description**:
-
-```
-Everything in Observer, plus:
-  • Acknowledged by name in major release notes
-  • Direct email line for support / consultation
-  • For schools / astronomy clubs / educators: I'm happy to
-    discuss customisation needs (translation, kiosk modes,
-    specific events) — please reach out directly.
-
-The simulator core remains MIT-licensed and free; customised
-variants for institutional use can be discussed separately.
-```
-
-### Welcome message (sent automatically on new sponsor)
-
-```
-Thank you for sponsoring 太陽系模擬 / Solar System 3D!
-
-This is a weekend hobby project — your support means I can keep
-spending evenings on real Kepler propagators, galactic flythroughs,
-and the next 12 exoplanet systems instead of feeling guilty about
-the Vercel bill. 🙏
-
-A few practical things:
-1. I'll add you to CONTRIBUTORS.md within a few days.
-2. If you sponsored at Observer ($5/mo) or higher, your name will
-   appear in the in-app About panel on the next release.
-3. If you have GitHub issues open, ping me on them — they'll get
-   priority triage.
-4. If you sponsored at Observatory ($25/mo) and want to discuss a
-   specific feature or customisation, reply to this thread.
-
-The project will always stay MIT-licensed and free. Donations are
-welcome but never required — feel free to cancel anytime.
-
-— Kevin
-kevin.lin.49361128@gmail.com
-```
-
----
-
-## Step 5 — Create `CONTRIBUTORS.md` (2 min)
-
-Create `/Users/kevinlin/太陽系模擬/CONTRIBUTORS.md` with the
-template:
+with:
 
 ```markdown
-# Contributors
-
-Thank you to the following people who have supported this project
-through code, bug reports, design feedback, or
-[GitHub Sponsors](https://github.com/sponsors/kevinlin49361128-stack).
-
-## Sponsors
-
-_(Sponsors added here as they come in. Order: month of first
-sponsorship.)_
-
-## Bug reports / feature suggestions
-
-_(Names + GitHub handles + one-line on what they reported)_
-
-## Code contributors
-
-See [GitHub's contributor graph](https://github.com/kevinlin49361128-stack/solar-system-3d/graphs/contributors).
+- ☕ [小額贊助](SUPPORT.md) — Lemon Squeezy（自訂金額，無付費限定功能）
 ```
 
----
-
-## Step 6 — Update `docs/show-hn.md` (3 min)
-
-In the first-comment text, just before the existing roadmap
-paragraph, add a single line:
-
-> Built on weekends. MIT licensed; donations via [GitHub Sponsors](https://github.com/sponsors/kevinlin49361128-stack) welcome but never required — no paywalled features, ever.
-
-The "never required + no paywalled features" framing is the HN-
-culture-friendly version of an open-source donation pitch.
-
----
-
-## Step 7 — Smoke test (2 min)
-
-1. Repo page shows 💜 Sponsor button at top
-2. README badge renders (not broken image)
-3. Click ★ Star link in app footer — lands at correct repo (no 404)
-4. Click Support link in app footer — lands at updated `SUPPORT.md`
-5. `https://github.com/sponsors/kevinlin49361128-stack` shows the
-   three tiers with the descriptions above
-6. Send yourself a $1 sponsorship from a second GitHub account (if
-   you have one) — verify the welcome message lands as expected
-
----
-
-## Step 8 — Single commit (3 min)
+### B4 — Commit + push
 
 ```bash
-git add .github/FUNDING.yml SUPPORT.md README.md CONTRIBUTORS.md docs/show-hn.md
-git commit -m "$(cat <<'EOF'
-chore: enable GitHub Sponsors
-
-GitHub Sponsors application was approved; activate the program:
-
-- .github/FUNDING.yml enables the 💜 Sponsor button on repo + Issues
-- SUPPORT.md replaces 「贊助連結建置中」 placeholder with live tier
-  table + GitHub Sponsors link
-- README badge surfaces the link prominently
-- CONTRIBUTORS.md scaffold ready to populate as sponsors come in
-- docs/show-hn.md picks up the "MIT, donations welcome but never
-  required, no paywalled features" framing for the HN post
-
-Tier ladder: Stargazer $1/mo, Observer $5/mo, Observatory $25/mo.
-No exclusive features per tier — same MIT-licensed app for everyone.
-EOF
-)"
+git add .github/FUNDING.yml SUPPORT.md README.md CONTRIBUTORS.md
+git commit -m "feat: activate Lemon Squeezy donations (pay-what-you-want)"
 git push
 ```
 
-Then remove this file (its job is done):
+Then delete this checklist (its job is done):
 
 ```bash
 git rm docs/TODO_SPONSORS_ACTIVATION.md
-git commit -m "docs: remove sponsors activation checklist (done)"
+git commit -m "docs: remove donation activation checklist (done)"
 git push
 ```
 
@@ -272,16 +182,20 @@ git push
 
 ## Notes for future-me
 
-- **Don't go retroactive.** If you decide to add a new tier later,
-  add it at the top of the ladder; never restructure existing tiers
-  (sponsors get downgrade notifications and it feels bad).
-- **Don't mention specific $ amounts in app UI text.** Only put $
-  in `SUPPORT.md` / `README.md` / GitHub Sponsors page. The app
-  itself just says "❤ Sponsor" → link out. This way you can change
-  pricing later without touching the app.
-- **Tax: W-8BEN form due to GitHub.** You're in Taiwan; GitHub will
-  ask for a W-8BEN within ~30 days of first sponsorship payout.
-  Sponsors stops paying out until it's filed.
-- **Stripe Connect / Wise.** GitHub Sponsors uses Stripe for fiat.
-  You already started Wise setup — finish that before the W-8BEN
-  flow asks for an account number.
+- **CONTRIBUTORS.md is already created** (platform-independent scaffold).
+  Populate the Supporters section as donations come in — ask each donor,
+  at donation time, what display name they want (or anonymous).
+- **Don't mention specific $ amounts in app UI text.** The app only
+  shows "❤ Support" → links out. $ figures live only in SUPPORT.md /
+  README / the Lemon Squeezy page, so pricing can change without
+  touching the app build.
+- **One-time only by design.** If you later want recurring, add a
+  Lemon Squeezy *subscription* variant — don't restructure the
+  existing one-time product.
+- **Tax**: the W-8BEN-equivalent is filed inside Lemon Squeezy, not
+  with GitHub. Lemon Squeezy remits end-customer VAT itself.
+- **Payout**: Lemon Squeezy → Wise (or PayPal). Finish Wise setup.
+- **If Lemon Squeezy is ever sunset** (it's Stripe-owned now): the only
+  load-bearing repo reference is the single `custom:` URL in
+  FUNDING.yml + the links in SUPPORT.md/README. Swapping platforms is
+  a find-replace, not a rebuild.
