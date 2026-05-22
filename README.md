@@ -118,6 +118,8 @@ UI / 整合測試還沒做（成本較高，物理回歸測試已經是 high-bug
 
 **桌上正在看**：HW 官方完整 LUT（quintic Bezier 過 6 control points × 10 turbidities × 2 albedos）、全 12-order WMM 替換我們的 n=3 截斷、HYG 15k 大量星表的 PM 重建（需 HYG CSV）、helper repo `npm publish`（需 `npm login`）。
 
+**已規劃的觀測者工具**（見 [`docs/future-observer-tools.md`](docs/future-observer-tools.md)）：ISS / 衛星可見過境預報、行星逆行軌跡描繪、日行跡 Analemma、彗星雙尾（離子尾 + 塵埃尾）。
+
 **已知限制**：觀測者本地地形只覆蓋 ~45 km 半徑（25 個 zoom-12 tile）；HYG 15k 大量星表沒有 proper motion（拉到遠期會略錯位 — 名星 catalogue 已套用 PM + 年差光行差）；N-body 只含太陽系內主要天體，彗星與太空船不參與攝動；行動陀螺儀 AR 在多支實機上未完整驗證。
 
 ## 第三方資料來源 / 授權
