@@ -35,6 +35,7 @@ import { ObservationLogPanel } from './ui/ObservationLogPanel';
 import { ObservationQueuePanel } from './ui/ObservationQueuePanel';
 import { setupNightVision } from './ui/NightVision';
 import { formatDMS } from './ui/formatAngles';
+import { createScreenPickers } from './bootstrap/picking';
 import {
   getStoredLayoutMode, setStoredLayoutMode,
   autoDetectLayoutMode, applyLayoutMode, showLayoutPicker,
@@ -228,6 +229,7 @@ scaleCtl.subscribe(() => {
 const raycaster = new Raycaster();
 const pointer = new Vector2();
 let pointerDownPos: { x: number; y: number } | null = null;
+const pickers = createScreenPickers({ solarSystem, cameraCtl });
 
 renderer.domElement.addEventListener('pointerdown', (e) => {
   pointerDownPos = { x: e.clientX, y: e.clientY };
@@ -276,7 +278,7 @@ renderer.domElement.addEventListener('pointerup', (e) => {
   //    then HYG via RealStarfield. Tolerance is generous — stars are
   //    sub-pixel sprites so the user has to aim near rather than at.
   if (cameraCtl.getMode() === 'observer') {
-    const starHit = pickNamedStarAtScreen(e.clientX, e.clientY, rect, 14);
+    const starHit = pickers.pickNamedStarAtScreen(e.clientX, e.clientY, rect, 14);
     if (starHit) { infoPanel.showStar(starHit); return; }
     // 3b) Bulk-catalogue picks — checks the loaded NGC / Sharpless /
     //     Abell layers in priority order. Tolerance widens
@@ -286,11 +288,11 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     //     Priority: NGC (galaxies the user is most likely looking
     //     for) > Sharpless (emission nebulae) > Abell (faint clusters).
     for (const tol of [8, 14, 20]) {
-      const ngcHit = pickNGCAtScreen(e.clientX, e.clientY, rect, tol);
+      const ngcHit = pickers.pickNGCAtScreen(e.clientX, e.clientY, rect, tol);
       if (ngcHit) { infoPanel.showNGCFull(ngcHit); return; }
-      const shHit = pickSharplessAtScreen(e.clientX, e.clientY, rect, tol);
+      const shHit = pickers.pickSharplessAtScreen(e.clientX, e.clientY, rect, tol);
       if (shHit) { infoPanel.showSharpless(shHit); return; }
-      const abHit = pickAbellAtScreen(e.clientX, e.clientY, rect, tol);
+      const abHit = pickers.pickAbellAtScreen(e.clientX, e.clientY, rect, tol);
       if (abHit) { infoPanel.showAbell(abHit); return; }
     }
     const rsf = solarSystem.getRealStarfield();
@@ -300,142 +302,6 @@ renderer.domElement.addEventListener('pointerup', (e) => {
     }
   }
 });
-
-/**
- * Screen-space pick over the loaded NGC bulk catalogue. Same shape
- * as pickNamedStarAtScreen — projects each catalogue entry's J2000
- * RA/Dec to the screen, returns the nearest within tolerance.
- * Returns null when the layer isn't enabled / loaded yet.
- */
-function pickNGCAtScreen(
-  clientX: number, clientY: number, rect: DOMRect, tolerancePx: number,
-): [number, number, number, number, number, number, number] | null {
-  const layer = solarSystem.getNGCFullLayer();
-  if (!layer || !layer.isLoaded()) return null;
-  const data = layer.getRawData();
-  if (data.length === 0) return null;
-  const cssX = clientX - rect.left;
-  const cssY = clientY - rect.top;
-  const W = rect.width, H = rect.height;
-  const v = new Vector3();
-  let best: { row: typeof data[number]; dist: number } | null = null;
-  for (const row of data) {
-    const [, raH, decD] = row;
-    const dirEcl = raDecToEcliptic(raH, decD);
-    v.copy(eclipticToScene(dirEcl)).multiplyScalar(4000).project(cameraCtl.camera);
-    if (v.z > 1 || v.z < -1) continue;
-    const sx = (v.x * 0.5 + 0.5) * W;
-    const sy = (-v.y * 0.5 + 0.5) * H;
-    const d = Math.hypot(sx - cssX, sy - cssY);
-    if (d < tolerancePx && (!best || d < best.dist)) {
-      best = { row, dist: d };
-    }
-  }
-  return best?.row ?? null;
-}
-
-/** Screen-space pick over the Sharpless 2 catalogue. */
-function pickSharplessAtScreen(
-  clientX: number, clientY: number, rect: DOMRect, tolerancePx: number,
-): [number, number, number, number, number, number] | null {
-  const layer = solarSystem.getSharplessLayer();
-  if (!layer || !layer.isLoaded()) return null;
-  const data = layer.getRawData();
-  if (data.length === 0) return null;
-  const cssX = clientX - rect.left;
-  const cssY = clientY - rect.top;
-  const W = rect.width, H = rect.height;
-  const v = new Vector3();
-  let best: { row: typeof data[number]; dist: number } | null = null;
-  for (const row of data) {
-    const [, raH, decD] = row;
-    const dirEcl = raDecToEcliptic(raH, decD);
-    v.copy(eclipticToScene(dirEcl)).multiplyScalar(4000).project(cameraCtl.camera);
-    if (v.z > 1 || v.z < -1) continue;
-    const sx = (v.x * 0.5 + 0.5) * W;
-    const sy = (-v.y * 0.5 + 0.5) * H;
-    const d = Math.hypot(sx - cssX, sy - cssY);
-    if (d < tolerancePx && (!best || d < best.dist)) {
-      best = { row, dist: d };
-    }
-  }
-  return best?.row ?? null;
-}
-
-/** Screen-space pick over the Abell galaxy-cluster catalogue. */
-function pickAbellAtScreen(
-  clientX: number, clientY: number, rect: DOMRect, tolerancePx: number,
-): [number, number, number, number, number, number] | null {
-  const layer = solarSystem.getAbellLayer();
-  if (!layer || !layer.isLoaded()) return null;
-  const data = layer.getRawData();
-  if (data.length === 0) return null;
-  const cssX = clientX - rect.left;
-  const cssY = clientY - rect.top;
-  const W = rect.width, H = rect.height;
-  const v = new Vector3();
-  let best: { row: typeof data[number]; dist: number } | null = null;
-  for (const row of data) {
-    const [, raH, decD] = row;
-    const dirEcl = raDecToEcliptic(raH, decD);
-    v.copy(eclipticToScene(dirEcl)).multiplyScalar(4000).project(cameraCtl.camera);
-    if (v.z > 1 || v.z < -1) continue;
-    const sx = (v.x * 0.5 + 0.5) * W;
-    const sy = (-v.y * 0.5 + 0.5) * H;
-    const d = Math.hypot(sx - cssX, sy - cssY);
-    if (d < tolerancePx && (!best || d < best.dist)) {
-      best = { row, dist: d };
-    }
-  }
-  return best?.row ?? null;
-}
-
-/**
- * Screen-space pick over the NAMED_STARS catalogue. Returns the nearest
- * star within `tolerancePx` of the click, or null. Mirror of
- * RealStarfield.pickAtScreen but uses RA/Dec → ecliptic → scene
- * conversion since named stars aren't stored as a Points geometry.
- */
-function pickNamedStarAtScreen(
-  clientX: number, clientY: number, rect: DOMRect, tolerancePx: number,
-): import('./data/stars').NamedStar | null {
-  const cssX = clientX - rect.left;
-  const cssY = clientY - rect.top;
-  const W = rect.width, H = rect.height;
-  const v = new Vector3();
-  let best: { star: import('./data/stars').NamedStar; dist: number } | null = null;
-  // Use the StarMap's cached PM + aberration corrected positions so the
-  // click hit detection lines up exactly with where the sprite is drawn.
-  // Falls back to the catalogue J2000 projection if StarMap isn't ready
-  // (mostly a first-frame edge case).
-  const starMap = solarSystem.getStarMap();
-  if (starMap) {
-    starMap.forEachStarScenePosition((s, pos) => {
-      v.copy(pos).project(cameraCtl.camera);
-      if (v.z > 1 || v.z < -1) return;
-      const sx = (v.x * 0.5 + 0.5) * W;
-      const sy = (-v.y * 0.5 + 0.5) * H;
-      const d = Math.hypot(sx - cssX, sy - cssY);
-      if (d < tolerancePx && (!best || d < best.dist)) {
-        best = { star: s, dist: d };
-      }
-    });
-  } else {
-    for (const s of NAMED_STARS) {
-      const dirEcl = raDecToEcliptic(s.raHours, s.decDeg);
-      const dirScene = eclipticToScene(dirEcl).multiplyScalar(4000);
-      v.copy(dirScene).project(cameraCtl.camera);
-      if (v.z > 1 || v.z < -1) continue;
-      const sx = (v.x * 0.5 + 0.5) * W;
-      const sy = (-v.y * 0.5 + 0.5) * H;
-      const d = Math.hypot(sx - cssX, sy - cssY);
-      if (d < tolerancePx && (!best || d < best.dist)) {
-        best = { star: s, dist: d };
-      }
-    }
-  }
-  return best?.star ?? null;
-}
 
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
