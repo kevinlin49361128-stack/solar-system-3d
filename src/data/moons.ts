@@ -89,7 +89,7 @@ export const MOON: BodyDescriptor = {
   // ~6 arcmin (basic Kepler) to ~10 arcsec, restoring eclipse / occultation
   // timing fidelity.
   propagator: new LunarPropagator(),
-  appearance: { color: 0xb8b3a8, textureUrl: '/textures/moon.jpg' },
+  appearance: { color: 0xb8b3a8, textureUrl: '/textures/moon.webp' },
   details: DETAILS.moon,
 };
 

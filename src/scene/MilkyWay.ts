@@ -151,7 +151,7 @@ export class MilkyWay {
    */
   private loadPhotographicTexture(): void {
     new TextureLoader().load(
-      '/textures/milkyway-eso-4k.jpg',
+      '/textures/milkyway-eso-4k.webp',
       (loaded) => {
         loaded.colorSpace = SRGBColorSpace;
         loaded.wrapS = ClampToEdgeWrapping;

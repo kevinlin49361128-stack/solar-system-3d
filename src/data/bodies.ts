@@ -34,7 +34,7 @@ export const SUN: BodyDescriptor = {
     axialTiltDeg: 7.25,
   },
   propagator: null,
-  appearance: { color: 0xffd56b, emissive: true, textureUrl: '/textures/sun.jpg' },
+  appearance: { color: 0xffd56b, emissive: true, textureUrl: '/textures/sun.webp' },
   description: { 'zh-Hant': 'G2V 主序星，太陽系質量約佔 99.86%。', 'en': 'G2V main-sequence star; ~99.86% of solar-system mass.', 'ja': 'G2V 主系列星。太陽系全質量の 99.86% を占める。' },
   details: DETAILS.sun,
 };
@@ -59,7 +59,7 @@ export const MERCURY: BodyDescriptor = {
     OmegaDeg: 48.33076593, OmegaDotDeg: -0.12534081,
     periodDays: 87.9691,
   }, JPL_APPROX_POS),
-  appearance: { color: 0x8c8275, textureUrl: '/textures/mercury.jpg' },
+  appearance: { color: 0x8c8275, textureUrl: '/textures/mercury.webp' },
   details: DETAILS.mercury,
 };
 
@@ -89,7 +89,7 @@ export const VENUS: BodyDescriptor = {
   }, JPL_APPROX_POS),
   appearance: {
     color: 0xe4c186,
-    textureUrl: '/textures/venus.jpg',
+    textureUrl: '/textures/venus.webp',
     atmosphere: { color: 0xf0d493, power: 2.0, scale: 1.06, intensity: 1.2 },
   },
   details: DETAILS.venus,
@@ -119,9 +119,9 @@ export const EARTH: BodyDescriptor = {
   }, JPL_APPROX_POS),
   appearance: {
     color: 0x3d7ec9,
-    textureUrl: '/textures/earth.jpg',
-    cloudTextureUrl: '/textures/earth-clouds.jpg',
-    nightTextureUrl: '/textures/earth-night.jpg',
+    textureUrl: '/textures/earth.webp',
+    cloudTextureUrl: '/textures/earth-clouds.webp',
+    nightTextureUrl: '/textures/earth-night.webp',
     atmosphere: { color: 0x4a8eff, power: 2.5, scale: 1.025, intensity: 1.4 },
   },
   details: DETAILS.earth,
@@ -149,7 +149,7 @@ export const MARS: BodyDescriptor = {
   }, JPL_APPROX_POS),
   appearance: {
     color: 0xc1542d,
-    textureUrl: '/textures/mars.jpg',
+    textureUrl: '/textures/mars.webp',
     atmosphere: { color: 0xd07a3e, power: 3.0, scale: 1.015, intensity: 0.6 },
   },
   details: DETAILS.mars,
@@ -180,7 +180,7 @@ export const JUPITER: BodyDescriptor = {
   }, JPL_APPROX_POS),
   appearance: {
     color: 0xd5b48a,
-    textureUrl: '/textures/jupiter.jpg',
+    textureUrl: '/textures/jupiter.webp',
     atmosphere: { color: 0xc9a878, power: 2.5, scale: 1.03, intensity: 1.0 },
   },
   details: DETAILS.jupiter,
@@ -211,7 +211,7 @@ export const SATURN: BodyDescriptor = {
   }, JPL_APPROX_POS),
   appearance: {
     color: 0xe6c87a,
-    textureUrl: '/textures/saturn.jpg',
+    textureUrl: '/textures/saturn.webp',
     atmosphere: { color: 0xe0c280, power: 2.5, scale: 1.04, intensity: 0.9 },
   },
   details: DETAILS.saturn,
@@ -243,7 +243,7 @@ export const URANUS: BodyDescriptor = {
   }, JPL_APPROX_POS),
   appearance: {
     color: 0x9fd6e2,
-    textureUrl: '/textures/uranus.jpg',
+    textureUrl: '/textures/uranus.webp',
     atmosphere: { color: 0x88c8e0, power: 2.5, scale: 1.04, intensity: 1.0 },
   },
   details: DETAILS.uranus,
@@ -271,7 +271,7 @@ export const NEPTUNE: BodyDescriptor = {
   }, JPL_APPROX_POS),
   appearance: {
     color: 0x4166f5,
-    textureUrl: '/textures/neptune.jpg',
+    textureUrl: '/textures/neptune.webp',
     atmosphere: { color: 0x4068ff, power: 2.5, scale: 1.04, intensity: 1.1 },
   },
   details: DETAILS.neptune,
