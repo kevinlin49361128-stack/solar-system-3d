@@ -19,14 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Note: This MIT license covers the source code in this repository.
-
-The application loads third-party data and imagery at runtime (NASA JPL,
-Hipparcos / Yale BSC, IAU constellations, AWS Open Terrain, Esri World
-Imagery, OpenStreetMap, Solar System Scope textures). Each source has its
-own license — see README.md "第三方資料來源 / 授權" and LICENSE-CONTENT.md
-for details. Notably, Esri World Imagery is free for personal / development
-use only; public commercial deployments require an ArcGIS Developer account.
