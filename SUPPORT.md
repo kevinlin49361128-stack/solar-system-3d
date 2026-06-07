@@ -13,8 +13,22 @@
 
 ## ☕ 小額贊助
 
-贊助連結建置中。在那之前，**Star + 分享**就是對作者最棒的支持。
-（目前沒有任何付費功能、沒有廣告、沒有 freemium 限制，也不打算有。）
+如果這個專案對你有用、且預算允許，可以透過
+[**Wise 付款連結**](https://wise.com/pay/me/link213) 小額支持。
+
+頁面採「**自訂金額**」(pay what you want) — 你決定給多少。建議參考：
+
+| | 金額 | 適合 |
+|---|---|---|
+| 🌟 Stargazer  | $5   | 「這個有幫到我」 |
+| 🔭 Observer   | $25  | 課堂 / 長期使用 |
+| 🏛️ Observatory | $100 | 學校 / 天文社團 / 機構 |
+
+**沒有任何付費限定功能** — 所有人拿到的都是同一版 MIT 授權的軟體。
+贊助回饋僅是純致謝：CONTRIBUTORS.md 留名（你想要的話）、release notes
+致謝。
+
+也歡迎不贊助 — **Star + 分享**對作者一樣是很棒的支持。
 
 ## 🏫 教育機構 / 客製化
 
@@ -37,8 +51,11 @@
 
 This is a fully **free, open-source** personal project under the MIT
 license. The best support is starring the repo and sharing the demo
-with astronomy / education communities. A donation link will be added
-later — for now there's nothing to pay for and nothing being asked.
+with astronomy / education communities. If the project is useful to
+you, an optional pay-what-you-want donation is available via
+[Wise](https://wise.com/pay/me/link213) — every sponsor gets the same
+MIT-licensed app, no paywalled features. Recognition only
+(CONTRIBUTORS.md listing if you want it, release-note thanks).
 
 For institutional / educational customization (custom skies, branding,
 languages, kiosk integration) please email the address above.
