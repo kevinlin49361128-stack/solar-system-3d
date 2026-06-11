@@ -1,5 +1,5 @@
 import { ACESFilmicToneMapping, Color, Raycaster, Vector2, Vector3, WebGLRenderer } from 'three';
-import { getAtmosphericConditions, setAtmosphericConditions, raDecToEcliptic } from './physics/topocentric';
+import { setAtmosphericConditions, raDecToEcliptic } from './physics/topocentric';
 import { eclipticToScene } from './physics/frame';
 import { NAMED_STARS } from './data/stars';
 import { SolarSystem } from './scene/SolarSystem';
@@ -35,6 +35,11 @@ import { ObservationLogPanel } from './ui/ObservationLogPanel';
 import { ObservationQueuePanel } from './ui/ObservationQueuePanel';
 import { setupNightVision } from './ui/NightVision';
 import { formatDMS } from './ui/formatAngles';
+import {
+  cardinalLabel, paCardinal, formatRate, formatFov, formatFocal,
+  formatLocalMeanTime,
+} from './ui/readoutFormat';
+import { bennettRefractionArcmin } from './physics/refraction';
 import { createScreenPickers } from './bootstrap/picking';
 import {
   getStoredLayoutMode, setStoredLayoutMode,
@@ -1370,7 +1375,6 @@ setupUiPersistence();
   temp.addEventListener('input', apply);
   apply();
 })();
-void getAtmosphericConditions; // ensure import is retained for readers
 
 // Side-panel collapse toggles (chevron buttons that slide each panel
 // off-screen). State persists in localStorage so the user's layout
@@ -1479,15 +1483,7 @@ function updateLocalTimeReadout(): void {
     return;
   }
   const { lon } = cameraCtl.getObserverLocation();
-  const jd = clock.getJd();
-  // Local mean solar time = UT + lon/15h. We display in HH:MM:SS form,
-  // wrapping at 24h boundaries.
-  const offsetMin = (lon / 15) * 60;
-  const localMs = (jd - 2440587.5) * 86400000 + offsetMin * 60000;
-  const d = new Date(localMs);
-  const hh = String(d.getUTCHours()).padStart(2, '0');
-  const mm = String(d.getUTCMinutes()).padStart(2, '0');
-  const ss = String(d.getUTCSeconds()).padStart(2, '0');
+  const localTime = formatLocalMeanTime(clock.getJd(), lon);
   // Site label: prefer the matched preset's name; fall back to manual lat/lon.
   const presetSel = document.getElementById('observer-preset') as HTMLSelectElement | null;
   const presetVal = presetSel?.value;
@@ -1498,7 +1494,7 @@ function updateLocalTimeReadout(): void {
   }
   localTimeReadoutEl.style.display = '';
   localTimeReadoutEl.innerHTML =
-    `<span class="clock">🕐 ${hh}:${mm}:${ss}</span>` +
+    `<span class="clock">🕐 ${localTime}</span>` +
     `<span class="site">${siteLabel}</span>`;
 }
 
@@ -1508,17 +1504,6 @@ function updateLocalTimeReadout(): void {
 // from the pure-sidereal rate at the body's declination — useful for
 // understanding why the moon needs faster-than-sidereal tracking.
 const trackReadoutEl = document.getElementById('track-readout')!;
-function paCardinal(paDeg: number): string {
-  // Convert PA (0=up, 90=east) to compass-style cardinal label for the
-  // motion direction. Use 16-point compass in the horizontal frame.
-  const labels = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖'];
-  const idx = Math.round(paDeg / 45) % 8;
-  return labels[idx];
-}
-function formatRate(arcsecPerSec: number): string {
-  if (arcsecPerSec >= 60) return `${(arcsecPerSec / 60).toFixed(2)}′/s`;
-  return `${arcsecPerSec.toFixed(2)}″/s`;
-}
 function updateTrackReadout(): void {
   if (cameraCtl.getMode() !== 'observer' || !cameraCtl.getObserverFollow()) {
     trackReadoutEl.classList.remove('visible');
@@ -1544,17 +1529,6 @@ function updateTrackReadout(): void {
 // FOV / magnification / equiv. 35mm focal length pill below the crosshair.
 const fovReadoutEl = document.getElementById('fov-readout')!;
 const fovReadoutToggle = document.getElementById('toggle-fov-readout') as HTMLInputElement | null;
-function formatFov(deg: number): string {
-  if (deg >= 1) return `${deg.toFixed(deg < 10 ? 2 : 1)}°`;
-  const arcmin = deg * 60;
-  if (arcmin >= 1) return `${arcmin.toFixed(arcmin < 10 ? 2 : 1)}′`;
-  return `${(arcmin * 60).toFixed(1)}″`;
-}
-function formatFocal(mm: number): string {
-  if (mm >= 1000) return `${(mm / 1000).toFixed(2)} m`;
-  if (mm >= 100)  return `${mm.toFixed(0)} mm`;
-  return `${mm.toFixed(1)} mm`;
-}
 function updateFovReadout(): void {
   if (!fovReadoutToggle?.checked) {
     fovReadoutEl.classList.remove('visible');
@@ -1671,12 +1645,6 @@ function updateSelectionMarker(): void {
   selectionMarkerEl.style.transform = `translate(${x}px, ${y}px)`;
   selectionMarkerLabel.textContent = labelText;
   selectionMarkerEl.classList.add('visible');
-}
-
-function cardinalLabel(azDeg: number): string {
-  const labels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-  const idx = Math.round(azDeg / 45) % 8;
-  return labels[idx];
 }
 
 const perfHUD = new PerfHUD();
@@ -1877,18 +1845,6 @@ function updateSaturnRingShadow(): void {
   const inv = saturn.mesh.mesh.matrixWorld.clone().invert();
   _localZenithCache.copy(sunFromSaturn).transformDirection(inv);
   saturn.mesh.setRingShadowSun(_localZenithCache);
-}
-
-// Bennett 1982 atmospheric refraction (apparent − true), arcmin.
-// Includes T/P scaling (Meeus 1998) so observers at altitude / cold sites
-// get correctly reduced refraction.
-function bennettRefractionArcmin(altDeg: number): number {
-  if (altDeg < -1.5) return 0;
-  const h = Math.max(-0.5, altDeg);
-  const baseArcmin = 1 / Math.tan(((h + 7.31 / (h + 4.4)) * Math.PI) / 180);
-  const { pressureMbar, temperatureC } = getAtmosphericConditions();
-  const scale = (pressureMbar / 1010) * (283 / (273 + temperatureC));
-  return baseArcmin * scale;
 }
 
 const _refractWorld = new Vector3();
