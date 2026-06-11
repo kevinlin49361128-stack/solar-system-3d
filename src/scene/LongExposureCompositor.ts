@@ -78,8 +78,9 @@ export class LongExposureCompositor {
     this.fullCam = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
     // Blend shader: max(prev * decay, curr) per channel.
+    // (GLSL1 by default — three r18x warns if glslVersion is passed as
+    // an explicit undefined, so the key is simply omitted.)
     const blendMat = new RawShaderMaterial({
-      glslVersion: undefined,
       uniforms: {
         uPrev: { value: null as Texture | null },
         uCurr: { value: null as Texture | null },

@@ -23,12 +23,12 @@
     "textures:webp": "node scripts/textures-to-webp.mjs"
   },
   "dependencies": {
-    "lil-gui": "^0.20.0",
+    "lil-gui": "^0.21.0",
     "satellite.js": "^6.0.2",
-    "three": "^0.170.0"
+    "three": "^0.184.0"
   },
   "devDependencies": {
-    "@types/three": "^0.170.0",
+    "@types/three": "^0.184.1",
     "happy-dom": "^20.9.0",
     "puppeteer-core": "^23.11.1",
     "rollup-plugin-visualizer": "^7.0.1",
