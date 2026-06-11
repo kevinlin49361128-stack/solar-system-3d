@@ -32,14 +32,15 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Split Three.js into its own vendor chunk. Three is ~600 KB raw
-          // / ~150 KB gz and never changes between deploys, so isolating it
-          // lets the browser long-cache the heavy bit while our app code
-          // (which DOES change between deploys) lives in a small chunk
-          // that gets re-downloaded. Net effect: returning visitors save
-          // ~150 KB on every release.
-          three: ['three'],
+        // Split Three.js into its own vendor chunk. Three is ~600 KB raw
+        // / ~150 KB gz and never changes between deploys, so isolating it
+        // lets the browser long-cache the heavy bit while our app code
+        // (which DOES change between deploys) lives in a small chunk
+        // that gets re-downloaded. Net effect: returning visitors save
+        // ~150 KB on every release.
+        // (Function form — vite 8 / rolldown dropped the object syntax.)
+        manualChunks(id: string) {
+          if (id.includes('node_modules/three/')) return 'three';
         },
       },
     },
