@@ -34,6 +34,13 @@ export default defineConfig({
   test: {
     environment: 'node',
     setupFiles: ['./test/setup.ts'],
+    // `npm run test:coverage` surfaces blind spots (run on demand, no gate).
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: ['src/**/*.ts'],
+      exclude: ['**/*.test.ts', 'src/main.ts', 'src/vite-env.d.ts'],
+    },
   },
   build: {
     target: 'es2022',

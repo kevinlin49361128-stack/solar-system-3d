@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "og:capture": "node scripts/og-capture.mjs",
     "screenshots": "node scripts/readme-screenshots.mjs",
     "lockfile:regen": "rm -rf node_modules package-lock.json && npx -y npm@10.9.2 install --no-audit --no-fund",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@types/three": "^0.184.1",
+    "@vitest/coverage-v8": "^4.1.8",
     "happy-dom": "^20.9.0",
     "puppeteer-core": "^23.11.1",
     "rollup-plugin-visualizer": "^7.0.1",

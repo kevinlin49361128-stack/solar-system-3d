@@ -528,8 +528,13 @@ export function scanEvents(
   return events;
 }
 
-/** Helper: detect angular crossing through `target` between two consecutive measurements (in degrees). */
-function crossesAngle(prev: number, curr: number, target: number): boolean {
+/**
+ * Helper: detect angular crossing through `target` between two consecutive
+ * measurements (in degrees). Exported for unit testing — it is the single
+ * gate behind every equinox/solstice detection, so a regression here would
+ * silently drop those markers.
+ */
+export function crossesAngle(prev: number, curr: number, target: number): boolean {
   // Normalise: signed shortest difference from target
   const dp = ((prev - target + 540) % 360) - 180;
   const dc = ((curr - target + 540) % 360) - 180;
