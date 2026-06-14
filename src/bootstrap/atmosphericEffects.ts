@@ -7,7 +7,7 @@
  * from updateSkyForObserver() / tick(); scratch Vector3s are module-local
  * so the render loop stays allocation-free.
  */
-import { Vector3 } from 'three';
+import { Matrix4, Vector3 } from 'three';
 import type { SolarSystem } from '../scene/SolarSystem';
 import { bennettRefractionArcmin } from '../physics/refraction';
 
@@ -43,6 +43,9 @@ export function createAtmosphericEffects(solarSystem: SolarSystem): AtmosphericE
   const _refractAxis = new Vector3();
   const _localZenithCache = new Vector3(0, 1, 0);
   const _earthshineSunDir = new Vector3(1, 0, 0);
+  // Reused per-frame inverse-matrix scratch — avoids a Matrix4.clone()
+  // (16-float alloc) on every observer frame in the three sites below.
+  const _invMat = new Matrix4();
 
   /**
    * Tint each visible body by atmospheric extinction (per-channel airmass)
@@ -122,7 +125,7 @@ export function createAtmosphericEffects(solarSystem: SolarSystem): AtmosphericE
     // Convert world-space direction → Saturn's mesh-local frame (parent of
     // body sphere is the tilt group; its world matrix encodes axial tilt +
     // rotation, which we want to undo for the shader's local-frame trace).
-    const inv = saturn.mesh.mesh.matrixWorld.clone().invert();
+    const inv = _invMat.copy(saturn.mesh.mesh.matrixWorld).invert();
     _localZenithCache.copy(sunFromSaturn).transformDirection(inv);
     saturn.mesh.setRingShadowSun(_localZenithCache);
   }
@@ -186,7 +189,7 @@ export function createAtmosphericEffects(solarSystem: SolarSystem): AtmosphericE
       const rBot = bennettRefractionArcmin(Math.max(0, altDeg - angRadiusDeg));
       const yScale = Math.max(0.5, (2 * angRadiusDeg + (rTop - rBot) / 60) / (2 * angRadiusDeg));
       // Convert world zenith to body-local frame via inverse of mesh.matrixWorld
-      const inv = entry.mesh.mesh.matrixWorld.clone().invert();
+      const inv = _invMat.copy(entry.mesh.mesh.matrixWorld).invert();
       _localZenithCache.copy(zenith).transformDirection(inv);
       entry.mesh.setAtmosphericFlattening(_localZenithCache, yScale);
     }
@@ -333,7 +336,7 @@ export function createAtmosphericEffects(solarSystem: SolarSystem): AtmosphericE
     // of the body group's matrix (rotation/tilt only).
     const moonGroup = moon.mesh.group;
     const localSun = _tmpVec1.copy(sunFromMoon)
-      .applyMatrix4(moonGroup.matrixWorld.clone().invert());
+      .applyMatrix4(_invMat.copy(moonGroup.matrixWorld).invert());
     // Strip translation: only direction matters.
     localSun.normalize();
     moon.mesh.setEarthshine(intensity, localSun);

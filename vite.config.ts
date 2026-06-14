@@ -45,6 +45,10 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
+    // The default 500 KB warning fires on minified RAW size; our real
+    // transfer is ~320 KB gzip (three ~142 + index ~176), healthy for a
+    // WebGL app. Raise the threshold so the build log isn't misleading.
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
         // Split Three.js into its own vendor chunk. Three is ~600 KB raw
