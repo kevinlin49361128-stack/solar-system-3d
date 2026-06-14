@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           # Bumped to 22 (current LTS) because rollup-plugin-visualizer
           # 7.x in devDependencies requires node >=22. Node 20 worked
