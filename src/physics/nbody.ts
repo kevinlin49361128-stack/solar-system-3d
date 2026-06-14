@@ -323,7 +323,7 @@ export class NBodySimulation {
    */
   advanceTo(targetJd: number): void {
     const maxJump = 365 * 10; // 10 years max in one call
-    let dt = targetJd - this.jd;
+    const dt = targetJd - this.jd;
     if (Math.abs(dt) > maxJump) {
       this.jd = targetJd;
       // Don't simulate huge jumps — would take many seconds.

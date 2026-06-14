@@ -1,6 +1,5 @@
 import { Vector3 } from 'three';
 import { AU_KM } from './constants';
-import type { BodyDescriptor } from './types';
 
 /**
  * Per-body observable quantities — apparent magnitude, phase, angular
@@ -204,19 +203,3 @@ export function rocheLimitAU(
   return dKm / AU_KM;
 }
 
-/** Convenience: get H₀ for a body if known, else NaN. UI uses this to
- *  decide whether a magnitude row is meaningful. */
-export function knownAbsoluteMagnitude(bodyId: string): number {
-  return MAGNITUDE_COEFFS[bodyId]?.H0 ?? NaN;
-}
-
-// Helper for tests to read coefficient table without exporting the whole map.
-export function _hasMagnitudeCoeffs(bodyId: string): boolean {
-  return bodyId in MAGNITUDE_COEFFS;
-}
-
-// Convenience: extract body radius from a descriptor without forcing the
-// caller to drill into descriptor.physical.
-export function bodyRadiusKm(d: BodyDescriptor): number {
-  return d.physical.radiusKm;
-}

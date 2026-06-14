@@ -17,7 +17,7 @@ describe('localSiderealDeg', () => {
   it('shifts +90° when lon advances by +90°', () => {
     const lst0 = localSiderealDeg(JD_2023_FEB_25, 0);
     const lst90 = localSiderealDeg(JD_2023_FEB_25, 90);
-    let diff = (lst90 - lst0 + 360) % 360;
+    const diff = (lst90 - lst0 + 360) % 360;
     expect(diff).toBeCloseTo(90, 0);
   });
 });

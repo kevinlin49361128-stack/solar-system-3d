@@ -825,7 +825,7 @@ import type { BodyDescriptor } from './physics/types';
   const btn = document.getElementById('horizons-load') as HTMLButtonElement | null;
   const status = document.getElementById('horizons-status');
   if (!input || !btn || !status) return;
-  let runtimeIds: string[] = [];
+  const runtimeIds: string[] = [];
   btn.addEventListener('click', async () => {
     const target = input.value.trim();
     if (!target) return;

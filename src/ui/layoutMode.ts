@@ -42,11 +42,6 @@ export function setStoredLayoutMode(mode: LayoutMode): void {
   try { localStorage.setItem(STORAGE_KEY, mode); } catch { /* ignore */ }
 }
 
-/** Clear stored preference. Used by the "show picker again" debug path. */
-export function clearStoredLayoutMode(): void {
-  try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
-}
-
 /**
  * Auto-detect what the new visitor probably wants. Touch + narrow
  * viewport → mobile. Anything else → desktop. iPads and other

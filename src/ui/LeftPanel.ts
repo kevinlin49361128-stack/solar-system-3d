@@ -897,7 +897,7 @@ function escapeForDescription(s: string): string {
     .replace(/>/g, '&gt;');
 }
 
-function showSiteInfo(loc: ReturnType<typeof finder>): void {
+function showSiteInfo(loc: NonNullable<ReturnType<typeof findPreset>>): void {
   const panel = document.getElementById('site-info')!;
   panel.style.display = '';
 
@@ -964,8 +964,6 @@ function hideSiteInfo(): void {
   document.getElementById('site-info')!.style.display = 'none';
 }
 
-// Type helper so showSiteInfo's parameter type is sourced from the data file.
-const finder = (id: string) => findPreset(id)!;
 
 /**
  * Resolve a preset id across all three pools — cities, observatories,

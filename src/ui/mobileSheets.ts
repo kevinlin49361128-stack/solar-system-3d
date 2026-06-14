@@ -164,7 +164,3 @@ export function buildMobileSheets(): Record<SheetId, () => void> {
   return handlers as Record<SheetId, () => void>;
 }
 
-/** Expose for debugging / future settings menu. */
-export function dismissAllToolbarSheets(): void {
-  toolbarSheets.closeAll();
-}

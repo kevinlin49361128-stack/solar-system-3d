@@ -5,6 +5,12 @@ declare const L: any;
 const LEAFLET_VERSION = '1.9.4';
 const LEAFLET_JS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.js`;
 const LEAFLET_CSS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.css`;
+// Subresource Integrity: pin the exact bytes so a compromised/hijacked CDN
+// response can't execute arbitrary JS in our origin. sha384 computed from
+// the 1.9.4 files (verified identical across unpkg + jsdelivr). If
+// LEAFLET_VERSION ever changes, these MUST be recomputed.
+const LEAFLET_JS_SRI = 'sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH';
+const LEAFLET_CSS_SRI = 'sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H';
 
 /**
  * Inject the Leaflet CSS + JS on first call. Resolves once `window.L` is
@@ -25,6 +31,7 @@ function loadLeaflet(): Promise<void> {
       const link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = LEAFLET_CSS;
+      link.integrity = LEAFLET_CSS_SRI;
       link.crossOrigin = '';
       document.head.appendChild(link);
     }
@@ -35,6 +42,7 @@ function loadLeaflet(): Promise<void> {
     }
     const script = document.createElement('script');
     script.src = LEAFLET_JS;
+    script.integrity = LEAFLET_JS_SRI;
     script.crossOrigin = '';
     script.async = true;
     script.onload = () => resolve();

@@ -6,9 +6,19 @@ on:
   pull_request:
     branches: [main]
 
+# Least privilege: the job only reads the repo.
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same ref so a rapid push series doesn't
+# pile up redundant CI.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
-    name: Typecheck + tests + build
+    name: Lint + typecheck + tests + build
     runs-on: ubuntu-latest
 
     steps:
@@ -27,6 +37,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint
+        run: npm run lint
 
       - name: Typecheck
         run: npx tsc --noEmit

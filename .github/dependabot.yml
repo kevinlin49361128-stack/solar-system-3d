@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # npm dependencies. Dev-dependency minor/patch bumps are grouped into one
+  # PR to avoid weekly noise; major bumps come as individual review PRs.
+  # satellite.js is pinned to 6.x on purpose (7.x's WASM entry breaks the
+  # browser build — see the contract test), so its updates are ignored.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      dev-minor-patch:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: satellite.js
+        update-types: [version-update:semver-major]
+
+  # GitHub Actions used in the CI workflow.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3

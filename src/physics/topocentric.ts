@@ -282,7 +282,7 @@ export function dirToAltAz(
   const upComp = dx * zenith.x + dy * zenith.y + dz * zenith.z;
   const eastComp = dx * east.x + dy * east.y + dz * east.z;
   const northComp = dx * north.x + dy * north.y + dz * north.z;
-  let altRad = Math.asin(Math.max(-1, Math.min(1, upComp)));
+  const altRad = Math.asin(Math.max(-1, Math.min(1, upComp)));
   let azRad = Math.atan2(eastComp, northComp);
   if (azRad < 0) azRad += TWO_PI;
   return { altRad, azRad };
