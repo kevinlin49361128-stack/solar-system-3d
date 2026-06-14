@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="canonical" href="https://solar-system-3d-kappa.vercel.app/" />
     <title>太陽系 3D 模擬 / Solar System 3D — 可解釋的天文模擬器</title>
     <meta name="description" content="互動式 3D 太陽系 + 地表觀星雙視角模擬器。Three.js + Kepler/N-body + Meeus 月球太陽位置 + 8400 顆 BSC 恆星 + Messier 深空 + 天象事件偵測。NASA JPL J2000 根數，每個數字皆可追溯到模型與精度範圍。" />
 
@@ -41,6 +42,30 @@
     <meta name="apple-mobile-web-app-title" content="太陽系 3D" />
     <meta name="application-name" content="太陽系 3D" />
     <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Structured data: lets search engines attach the author to the work
+         and surface it as a free educational web app. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Solar System 3D / 太陽系 3D 模擬",
+      "url": "https://solar-system-3d-kappa.vercel.app/",
+      "description": "Interactive 3D solar system + ground-based stargazing simulator with real NASA J2000 orbital mechanics, Hosek-Wilkie sky, and traceable accuracy for every figure.",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Any (WebGL2 browser)",
+      "inLanguage": ["zh-Hant", "en", "ja"],
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "author": {
+        "@type": "Person",
+        "name": "Kevin Lin",
+        "url": "https://github.com/kevinlin49361128-stack"
+      },
+      "license": "https://opensource.org/licenses/MIT",
+      "sameAs": ["https://github.com/kevinlin49361128-stack/solar-system-3d"]
+    }
+    </script>
 
     <!-- Leaflet (CDN) is now loaded on demand by src/ui/MapPicker.ts on
          first "select on map" click. Inlining a synchronous <script> tag

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://solar-system-3d-kappa.vercel.app/sitemap.xml
