@@ -102,7 +102,7 @@ describe('moonLibrationDeg — Meeus chapter 53 optical libration', () => {
 
   it('matches Meeus example 53.a at JD 2448724.5 (1992 Apr 12)', () => {
     // Meeus 1998 worked example: l' = -1.206°, b' = +4.196°.
-    // Our truncated Brown-theory expansion has ~10″ position error, so
+    // Our truncated Brown-theory expansion has ~19″ position error, so
     // libration here matches to ~0.2° rather than Meeus's 6 decimal places.
     const lib = moonLibrationDeg(2448724.5);
     expect(lib.longitudeDeg).toBeCloseTo(-1.206, 0);

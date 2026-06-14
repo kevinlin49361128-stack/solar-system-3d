@@ -1,7 +1,9 @@
 # Show HN — submission draft
 
-Updated for **v0.3.0** — galactic flythrough + click-to-land
-exoplanet systems. Save and tweak before posting.
+Updated for **v0.9.0** — observer-mode realism (Hosek-Wilkie sky,
+per-fragment planet-on-planet shadows, refraction/extinction), an
+INDI/ASCOM telescope bridge, live satellite TLEs, plus the galactic
+flythrough + click-to-land exoplanet systems. Save and tweak before posting.
 
 ---
 
@@ -91,11 +93,12 @@ animation.
 > Repo: https://github.com/kevinlin49361128-stack/solar-system-3d
 >
 > Built on weekends. Roadmap is whatever I'm curious about next —
-> recently shipped Lagrange points, click-through physics
-> transparency, and the galactic flythrough; eyeing planet-on-planet
-> shadows, Andromeda + Magellanic Cloud billboards, and a habitable-
-> zone overlay for exoplanet hosts. Feedback / nitpicks / "you got
-> the inclination wrong on Kepler-90 i" all welcome.
+> recently shipped per-fragment planet-on-planet shadows (real solar /
+> lunar eclipse silhouettes), a Hosek-Wilkie sky, an INDI/ASCOM
+> telescope bridge, and live satellite TLEs; eyeing an ISS visible-pass
+> predictor, a retrograde-motion tracer, and an analemma overlay.
+> Feedback / nitpicks / "you got the inclination wrong on Kepler-90 i"
+> all welcome.
 
 ---
 

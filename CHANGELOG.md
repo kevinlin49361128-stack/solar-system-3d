@@ -4,6 +4,74 @@ All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versions roughly follow [SemVer](https://semver.org/) once we hit 1.0.
 
+## [0.9.0] – 2026-06-12
+
+Hardening + correctness release. No new headline feature — instead a
+broad pass on production-readiness, accessibility, supply-chain hygiene,
+and the kind of "every number is traceable" honesty the project is about.
+
+### Added
+- **Live satellite TLEs**: the satellite layer now fetches each object's
+  current element set from CelesTrak at runtime (`SatelliteLayer.refreshFromCelesTrak`)
+  instead of drawing fabricated placeholders. Bundled real snapshots are
+  the offline fallback.
+- **Production API proxies**: Vercel edge functions `api/horizons.ts` +
+  `api/tle.ts` so the JPL Horizons feature (dev-only Vite proxy before)
+  and the TLE fetch work in production.
+- **WebGL availability guard**: a browser/GPU without WebGL now shows an
+  explained, localized message instead of hanging on the loader.
+- **Accessibility**: `prefers-reduced-motion` support, keyboard-focusable
+  `<button>` close controls, `role="dialog"` + Escape on the mobile sheet,
+  a canvas `aria-label`, and localized tooltips on icon-only buttons.
+- **SEO**: canonical link, JSON-LD `WebApplication`, `robots.txt`, `sitemap.xml`.
+- **In-app CC BY attribution** for the planet textures + Milky Way panorama.
+- **Tooling**: ESLint (flat config) + `npm run lint` in CI, Dependabot,
+  `test:coverage`, CI least-privilege permissions, baseline security
+  headers, and Subresource Integrity on the Leaflet CDN load.
+- **Tests**: SimulationClock, jd↔date round-trip, eventScanner golden
+  tests, exoplanet derivation, Bennett refraction, readout formatters,
+  satellite.js contract (327 → 390).
+
+### Changed
+- Decomposed `main.ts` (2460 → ~1600 LOC) into `bootstrap/` modules
+  (picking, readouts, atmosphericEffects, uiPersistence) + extracted pure
+  helpers (readoutFormat, refraction).
+- Deps: Three.js 0.170 → 0.184, Vite 5 → 8 (clears the esbuild dev-server
+  advisory GHSA-67mh-4wv8-2f99), lil-gui 0.21, Vitest 4.1.8.
+- Planet textures → WebP (−62%); HYG star positions rounded to 4dp
+  (−176 KB gzip on the on-demand fetch).
+
+### Fixed
+- Lunar-position accuracy docstring corrected (~19″, not the claimed ~10″).
+- Per-observer-frame `Matrix4.clone()` allocations removed.
+
+## [0.8.0] – 2026-05-22
+
+Observer-realism release. Makes the ground-based view physically faithful.
+
+### Added
+- **Hosek-Wilkie atmospheric scattering** sky shader (selectable vs Preetham),
+  with coefficients interpolated across sun elevation.
+- **Per-fragment planet-on-planet shadows** via sun-disc-vs-occluder
+  geometry — real solar/lunar eclipse silhouettes, Galilean shadow transits.
+- **Magnetic declination** (WMM to n=3) so the AR gyro compass shows true north.
+- **Habitable-zone** classification + overlay (Kopparapu+2013) for exoplanet hosts.
+- **IAU WGCCRE 2015 pole orientations** for all planets + Pluto (Saturn's
+  rings now phase correctly).
+- Meeus ch. 53 optical lunar libration, proper motion + annual aberration
+  on named stars, solar + transit-penumbra limb darkening, chromatic
+  stellar scintillation.
+
+## [0.7.0] – 2026-05-17
+
+Telescope + perturbation release.
+
+### Added
+- **INDI/ASCOM telescope bridge** (browser WS client): dome reticle +
+  slew / sync / park with safety gates.
+- **J2 oblateness** perturbation (Brouwer-Kozai secular decorator) wired
+  into inner moons, with an N-body Sun-J2 toggle.
+
 ## [0.3.0] – 2026-05-10
 
 Galactic flythrough release. Adds a smooth zoom-out from the solar

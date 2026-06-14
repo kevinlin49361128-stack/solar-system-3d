@@ -8,9 +8,9 @@ import type { OrbitPropagator, PropagatorKind, PropagatorSource, StateVector, St
  * accumulates ~6 arcmin error from ignored perturbations (evection,
  * variation, parallactic inequality, etc.).
  *
- * Accuracy with the term subset below: longitude ~10″, latitude ~10″,
- * distance ~50 km. Plenty for visualisation; lunar eclipses align to within
- * a couple of minutes.
+ * Accuracy with the term subset below: longitude ~19″, latitude ~15″,
+ * distance ~35 km (measured against Meeus example 47.a). Plenty for
+ * visualisation; lunar eclipses align to within a couple of minutes.
  *
  * Returns position in **J2000 ecliptic frame**, in AU. The renderer adds the
  * Moon to Earth's group, so this geocentric vector ends up world-correct.
