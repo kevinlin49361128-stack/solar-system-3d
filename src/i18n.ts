@@ -282,6 +282,11 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'toast.terrainFailed': { 'zh-Hant': '地形 / 衛星影像載入失敗，使用程序化代用地形', 'en': 'Terrain / imagery load failed; using procedural fallback', 'ja': '地形 / 衛星画像の読み込みに失敗、代替地形を使用' },
   'toast.iauFailed': { 'zh-Hant': 'IAU 88 星座邊界載入失敗，圖層不可用', 'en': 'IAU 88 boundary load failed', 'ja': 'IAU 88 境界の読み込みに失敗' },
   'toast.bscFailed': { 'zh-Hant': 'Yale 亮星表載入失敗，僅顯示 67 顆名星', 'en': 'BSC catalogue load failed; showing 67 named stars only', 'ja': 'Yale輝星目録の読み込みに失敗、67恒星のみ表示' },
+  'toast.tleFailed': { 'zh-Hant': '即時衛星軌道資料載入失敗，使用內建範例軌道', 'en': 'Live satellite TLE fetch failed; using bundled sample orbits', 'ja': 'リアルタイム衛星TLEの取得に失敗、内蔵サンプル軌道を使用' },
+
+  // WebGL unsupported fallback
+  'webgl.unsupportedTitle': { 'zh-Hant': '無法啟動 3D 繪圖', 'en': 'Could not start 3D rendering', 'ja': '3D描画を起動できません' },
+  'webgl.unsupportedBody': { 'zh-Hant': '你的瀏覽器或顯示卡不支援 WebGL（或硬體加速被關閉）。請改用較新版本的 Chrome / Firefox / Safari，並確認已開啟硬體加速。', 'en': 'Your browser or GPU does not support WebGL (or hardware acceleration is disabled). Try a recent Chrome / Firefox / Safari with hardware acceleration enabled.', 'ja': 'お使いのブラウザまたはGPUがWebGLに対応していません（またはハードウェアアクセラレーションが無効）。最新のChrome / Firefox / Safariでハードウェアアクセラレーションを有効にしてお試しください。' },
 
   // Tooltip / aria
   'btn.screenshot': { 'zh-Hant': '儲存當前畫面為 PNG', 'en': 'Save current frame as PNG', 'ja': '現在の画面をPNG保存' },

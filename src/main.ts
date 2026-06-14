@@ -68,12 +68,32 @@ await initLayoutMode();
 
 const canvasContainer = document.getElementById('app')!;
 
-const renderer = new WebGLRenderer({
-  antialias: true,
-  powerPreference: 'high-performance',
-  preserveDrawingBuffer: true,
-  logarithmicDepthBuffer: true,
-});
+// WebGL guard: on a browser/GPU without WebGL2 (or with hardware
+// acceleration disabled), `new WebGLRenderer` throws. Without this the
+// app would hang forever on the "載入中…" loader with a blank screen and
+// a console error — the worst possible first impression for a pasted
+// link. Catch it and swap the loader for an explained fallback instead.
+let renderer: WebGLRenderer;
+try {
+  renderer = new WebGLRenderer({
+    antialias: true,
+    powerPreference: 'high-performance',
+    preserveDrawingBuffer: true,
+    logarithmicDepthBuffer: true,
+  });
+} catch (err) {
+  const loading = document.getElementById('loading');
+  if (loading) {
+    loading.classList.remove('hidden');
+    loading.innerHTML =
+      '<div style="max-width:420px;text-align:center;line-height:1.7;padding:0 24px">' +
+      '<div style="font-size:15px;color:#e8eef7;margin-bottom:8px">' +
+      t('webgl.unsupportedTitle') + '</div>' +
+      '<div style="font-size:13px;color:#8a96ad">' + t('webgl.unsupportedBody') + '</div>' +
+      '</div>';
+  }
+  throw err;
+}
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x000005, 1);
