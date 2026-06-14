@@ -10,6 +10,8 @@ import {
 import { twoline2satrec, propagate, gstime, type SatRec } from 'satellite.js';
 import { AU_KM, DEG2RAD } from '../physics/constants';
 import { SATELLITES, type SatelliteEntry } from '../data/satellites';
+import { toast } from '../ui/toast';
+import { t } from '../i18n';
 import type { ScaleController } from '../controls/ScaleController';
 
 const EARTH_TILT_RAD = 23.4393 * DEG2RAD;
@@ -101,6 +103,42 @@ export class SatelliteLayer {
     this.points = new Points(geom, this.mat);
     this.points.frustumCulled = false;
     this.object.add(this.points);
+  }
+
+  /**
+   * Replace each satellite's bundled snapshot TLE with its CURRENT element
+   * set from CelesTrak (via the /api/tle proxy), so positions are real and
+   * not weeks-stale. Swaps satrecs in place — the satellite count and the
+   * geometry buffers are unchanged, so the next frame simply propagates the
+   * fresh elements. Per-satellite failures keep that satellite's bundled
+   * snapshot; only if EVERY fetch fails do we surface a single toast.
+   * Fire-and-forget: the layer already renders from the bundled snapshots,
+   * so this is a best-effort upgrade, never a blocker.
+   */
+  async refreshFromCelesTrak(): Promise<void> {
+    let anyOk = false;
+    let anyFail = false;
+    await Promise.all(this.satrecs.map(async (s) => {
+      const norad = s.entry.noradId;
+      if (!norad) { anyFail = true; return; }
+      try {
+        const r = await fetch(`/api/tle?catnr=${norad}`);
+        if (!r.ok) throw new Error(`status ${r.status}`);
+        const lines = (await r.text()).trim().split(/\r?\n/).map((l) => l.trimEnd());
+        const l1 = lines.find((l) => l.startsWith('1 '));
+        const l2 = lines.find((l) => l.startsWith('2 '));
+        if (!l1 || !l2) throw new Error('no TLE lines in response');
+        const rec = twoline2satrec(l1, l2);
+        if (rec.error) throw new Error(`satrec error ${rec.error}`);
+        s.rec = rec;
+        anyOk = true;
+      } catch {
+        anyFail = true;
+      }
+    }));
+    if (!anyOk && anyFail) {
+      toast.warn(t('toast.tleFailed'));
+    }
   }
 
   /**

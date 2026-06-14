@@ -297,6 +297,10 @@ export class SolarSystem {
       // have flipped it during the load.
       const toggle = document.getElementById('toggle-satellites') as HTMLInputElement | null;
       if (toggle) this.satellites.setVisible(toggle.checked);
+      // Upgrade the bundled snapshot TLEs to live CelesTrak elements in the
+      // background. The layer already renders from snapshots, so this is
+      // fire-and-forget — never block the load on it.
+      void this.satellites.refreshFromCelesTrak();
     })();
     return this.satellitesPromise;
   }

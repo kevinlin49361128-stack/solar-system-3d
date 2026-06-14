@@ -6,16 +6,24 @@ export default defineConfig({
     port: 5180,
     strictPort: true,
     open: false,
-    // CORS proxy for NASA JPL Horizons API. The public endpoint at
-    // ssd.jpl.nasa.gov/api/horizons.api does NOT set Access-Control-Allow-Origin,
-    // so direct fetch from a browser is blocked. Routing through the dev
-    // server (or a deployed Cloudflare Worker / Netlify Function in prod)
-    // strips that restriction. Production deploys must mirror this.
+    // CORS proxies mirroring the production Vercel edge functions in
+    // api/horizons.ts and api/tle.ts. The upstream APIs (JPL Horizons,
+    // CelesTrak) either send no Access-Control-Allow-Origin or are
+    // friendlier through a same-origin proxy, so dev routes them here and
+    // prod routes the identical paths through the edge functions.
     proxy: {
       '/api/horizons': {
         target: 'https://ssd.jpl.nasa.gov',
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api\/horizons/, '/api/horizons.api'),
+      },
+      '/api/tle': {
+        target: 'https://celestrak.org',
+        changeOrigin: true,
+        rewrite: (p) => {
+          const catnr = new URL(p, 'http://x').searchParams.get('catnr') ?? '';
+          return `/NORAD/elements/gp.php?CATNR=${encodeURIComponent(catnr)}&FORMAT=TLE`;
+        },
       },
     },
   },
