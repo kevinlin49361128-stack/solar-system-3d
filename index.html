@@ -2052,6 +2052,28 @@
       body.mobile-ui .mobile-bottombar .mb-label {
         min-height: 0 !important;
       }
+
+      /* Close buttons (×) — were <span>; now <button> for keyboard focus.
+         Reset the native button chrome so they look identical to before. */
+      button.close {
+        background: none;
+        border: none;
+        font: inherit;
+        padding: 0;
+        line-height: 1;
+      }
+
+      /* Respect the OS "reduce motion" setting: neutralise the looping
+         onboarding pulse and shorten every transition/animation so motion-
+         sensitive users don't get continuous movement. */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
     </style>
   </head>
   <body>
@@ -2127,7 +2149,7 @@
     </div>
 
     <button id="panel-toggle" aria-label="Toggle controls">☰</button>
-    <button id="night-vision-toggle" aria-label="Toggle night vision (red light)" title="夜視（紅光）模式 · R">🌙</button>
+    <button id="night-vision-toggle" data-i18n-attr="aria-label:ui.nightVision,title:ui.nightVision" aria-label="夜視（紅光）模式 · R" title="夜視（紅光）模式 · R">🌙</button>
 
     <!-- ───────── Mobile UI: topbar / bottombar / statechip ─────────
          All three only render when body.mobile-ui is set (see CSS
@@ -2223,9 +2245,9 @@
       <button id="btn-share" data-i18n-attr="title:btn.share" title="複製分享連結（包含目前視角與時間）">🔗</button>
     </div>
 
-    <button id="left-panel-toggle" class="panel-toggle" title="收合 / 展開左側面板">◀</button>
-    <button id="info-panel-toggle" class="panel-toggle" title="收合 / 展開資訊面板">▶</button>
-    <button id="sky-panel-toggle" class="panel-toggle" title="收合 / 展開天空面板">◀</button>
+    <button id="left-panel-toggle" class="panel-toggle" data-i18n-attr="aria-label:ui.toggleLeftPanel,title:ui.toggleLeftPanel" aria-label="收合 / 展開左側面板" title="收合 / 展開左側面板">◀</button>
+    <button id="info-panel-toggle" class="panel-toggle" data-i18n-attr="aria-label:ui.toggleInfoPanel,title:ui.toggleInfoPanel" aria-label="收合 / 展開資訊面板" title="收合 / 展開資訊面板">▶</button>
+    <button id="sky-panel-toggle" class="panel-toggle" data-i18n-attr="aria-label:ui.toggleSkyPanel,title:ui.toggleSkyPanel" aria-label="收合 / 展開天空面板" title="收合 / 展開天空面板">◀</button>
 
     <div id="left-panel" class="panel">
       <div id="left-tab-bar">
@@ -2537,7 +2559,7 @@
     </div>
 
     <div id="info-panel" class="panel">
-      <span class="close" id="info-close">×</span>
+      <button class="close" id="info-close" aria-label="Close" data-i18n-attr="aria-label:common.close">×</button>
       <h2 id="info-name">—</h2>
       <div class="subtitle" id="info-subtitle"></div>
       <div id="info-action-row" style="display:none;gap:6px;margin:6px 0;">
@@ -2580,7 +2602,7 @@
     </div>
 
     <div id="auto-events-panel" class="panel" style="display:none;">
-      <span class="close" id="auto-events-close">×</span>
+      <button class="close" id="auto-events-close" aria-label="Close" data-i18n-attr="aria-label:common.close">×</button>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div data-i18n="events.title" style="color:var(--accent);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">未來事件（自動偵測）</div>
         <button id="auto-events-rescan" data-i18n="events.rescan" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">重掃</button>
@@ -2592,7 +2614,7 @@
     <!-- 我的觀測 — observation log listing. Built by src/ui/ObservationLogPanel.ts.
          Toggled via the 📔 button in the Observe tab. Persisted in localStorage. -->
     <div id="observation-log-panel" class="panel" style="display:none;">
-      <span class="close" id="observation-log-close">×</span>
+      <button class="close" id="observation-log-close" aria-label="Close" data-i18n-attr="aria-label:common.close">×</button>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div data-i18n="obslog.title" style="color:#76d18a;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">📔 我的觀測</div>
         <span id="observation-log-summary" style="color:var(--text-dim);font-size:10px;font-variant-numeric:tabular-nums;"></span>
@@ -2609,7 +2631,7 @@
     <!-- "今晚看什麼" — ranked observable list. Built by src/ui/TonightPlanPanel.ts.
          Toggled via the 🌟 button in the Observe tab (only useful in observer mode). -->
     <div id="tonight-plan-panel" class="panel" style="display:none;">
-      <span class="close" id="tonight-plan-close">×</span>
+      <button class="close" id="tonight-plan-close" aria-label="Close" data-i18n-attr="aria-label:common.close">×</button>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div data-i18n="tonight.title" style="color:#ffcc40;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">🌟 今晚看什麼</div>
         <button id="tonight-plan-refresh" data-i18n="tonight.refresh" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">重新計算</button>
@@ -2619,7 +2641,7 @@
     </div>
 
     <div id="observation-queue-panel" class="panel" style="display:none;">
-      <span class="close" id="queue-close">×</span>
+      <button class="close" id="queue-close" aria-label="Close" data-i18n-attr="aria-label:common.close">×</button>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div data-i18n="queue.title" style="color:#7cd4a0;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">📋 觀測隊列</div>
         <button id="queue-clear" data-i18n="queue.clearAll" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:3px 8px;border-radius:4px;cursor:pointer;font-size:10px;">清空</button>
@@ -2630,21 +2652,21 @@
     </div>
 
     <div id="eclipse-map" class="panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(900px,92vw);max-height:88vh;z-index:200;">
-      <span class="close" id="eclipse-map-close">×</span>
+      <button class="close" id="eclipse-map-close" aria-label="Close" data-i18n-attr="aria-label:common.close">×</button>
       <div id="eclipse-map-title" style="color:var(--accent);font-size:14px;font-weight:600;margin-bottom:8px;">日食食帶</div>
       <canvas id="eclipse-map-canvas" style="width:100%;height:min(450px,50vh);border:1px solid rgba(120,160,220,0.2);border-radius:6px;background:#0a1020;"></canvas>
       <div id="eclipse-map-details" style="font-size:11px;line-height:1.6;margin-top:8px;color:var(--text);"></div>
     </div>
 
     <div id="lunar-eclipse-map" class="panel" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(700px,92vw);max-height:88vh;z-index:200;">
-      <span class="close" id="lunar-eclipse-map-close">×</span>
+      <button class="close" id="lunar-eclipse-map-close" aria-label="Close" data-i18n-attr="aria-label:common.close">×</button>
       <div id="lunar-eclipse-map-title" style="color:var(--accent);font-size:14px;font-weight:600;margin-bottom:8px;">月食</div>
       <canvas id="lunar-eclipse-map-canvas" style="width:100%;height:min(450px,55vh);border:1px solid rgba(120,160,220,0.2);border-radius:6px;background:#0a1020;"></canvas>
       <div id="lunar-eclipse-map-details" style="font-size:11px;line-height:1.6;margin-top:8px;color:var(--text);"></div>
     </div>
 
     <div id="calc-panel" class="panel" style="display:none;">
-      <span class="close" id="calc-close">×</span>
+      <button class="close" id="calc-close" aria-label="Close" data-i18n-attr="aria-label:common.close">×</button>
       <div data-i18n="calc.title" style="color:var(--accent);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">計算模式 · 相對量</div>
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
         <span data-i18n="calc.reference" style="font-size:11px;color:var(--text-dim);">參考點</span>
@@ -2655,7 +2677,7 @@
     </div>
 
     <div id="site-info" class="panel" style="display:none;">
-      <span class="close" id="site-info-close">×</span>
+      <button class="close" id="site-info-close" aria-label="Close" data-i18n-attr="aria-label:common.close">×</button>
       <h3 id="site-name" style="margin:0 0 2px 0;color:var(--accent);font-size:15px;"></h3>
       <div id="site-subtitle" class="subtitle"></div>
       <div id="site-meta" style="font-size:11px;color:var(--text-dim);margin:6px 0;"></div>
@@ -2726,11 +2748,11 @@
       </div>
     </div>
 
-    <div id="search-overlay" style="display:none;">
+    <div id="search-overlay" role="dialog" aria-modal="true" aria-label="Search" data-i18n-attr="aria-label:search.placeholder" style="display:none;">
       <div id="search-box" class="panel">
-        <input type="text" id="search-input" data-i18n-attr="placeholder:search.placeholder" placeholder="搜尋天體、恆星、觀測站、星座..."
+        <input type="text" id="search-input" role="combobox" aria-expanded="true" aria-controls="search-results" aria-autocomplete="list" data-i18n-attr="placeholder:search.placeholder" placeholder="搜尋天體、恆星、觀測站、星座..."
                style="width:100%;background:rgba(255,255,255,0.06);border:1px solid var(--accent);color:var(--text);padding:8px 10px;border-radius:6px;font-size:14px;outline:none;" />
-        <div id="search-results" style="margin-top:8px;max-height:300px;overflow-y:auto;font-size:12px;"></div>
+        <div id="search-results" role="listbox" aria-label="Search results" style="margin-top:8px;max-height:300px;overflow-y:auto;font-size:12px;"></div>
         <div style="color:var(--text-dim);font-size:10px;margin-top:6px;" data-i18n="search.usage">↑↓ 選擇 · Enter 跳轉 · Esc 取消</div>
       </div>
     </div>

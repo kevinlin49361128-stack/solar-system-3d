@@ -74,6 +74,8 @@ export class BottomSheet {
     this.root = document.createElement('div');
     this.root.className = 'bs-root';
     this.root.dataset.sheetId = opts.id;
+    this.root.setAttribute('role', 'dialog');
+    this.root.setAttribute('aria-modal', 'true');
 
     this.headerEl = document.createElement('div');
     this.headerEl.className = 'bs-header';
@@ -112,13 +114,21 @@ export class BottomSheet {
     this.titleEl.textContent = s;
   }
 
+  // Escape-to-dismiss while open (parity with the desktop dialogs, which
+  // all handle Escape). Bound once; added on open, removed on dismiss.
+  private readonly onKeydown = (e: KeyboardEvent): void => {
+    if (e.key === 'Escape' && this.isOpen()) this.dismiss();
+  };
+
   open(snap: SnapPoint = 'small'): void {
     if (snap === 'closed') { this.dismiss(); return; }
     this.applySnap(snap, true);
+    document.addEventListener('keydown', this.onKeydown);
   }
 
   dismiss(): void {
     this.applySnap('closed', true);
+    document.removeEventListener('keydown', this.onKeydown);
     if (this.onDismiss) this.onDismiss();
   }
 

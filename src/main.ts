@@ -102,6 +102,10 @@ renderer.setClearColor(0x000005, 1);
 renderer.toneMapping = ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.9;
 canvasContainer.appendChild(renderer.domElement);
+// Give the WebGL canvas an accessible name (it's created by Three.js with
+// none). Re-applied on language change so it tracks the active locale.
+renderer.domElement.setAttribute('aria-label', t('canvas.ariaLabel'));
+onLanguageChange(() => renderer.domElement.setAttribute('aria-label', t('canvas.ariaLabel')));
 
 TextureConfig.maxAnisotropy = renderer.capabilities.getMaxAnisotropy();
 
